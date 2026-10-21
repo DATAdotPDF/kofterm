@@ -1,5 +1,9 @@
 // Fronteira com o sistema operacional: todos os `extern` da libc ficam aqui.
 //
+// O nome comeca com "00_" de proposito: o KOF 0.6.6 compila os arquivos em ordem alfabetica,
+// e um `extern` declarado num arquivo que vem DEPOIS passa String errado para o C nos arquivos
+// que vem ANTES (brain.kf recebia ENOENT ate para caminho literal). Nao renomeie.
+//
 // Regras aprendidas na Fase 0 (ver spikes/README.md):
 // - Ponteiros sao Long (malloc/free + buffer.peek/poke na forma de endereco).
 //   Buffer(U8) so existe dentro de `extern`, nao como parametro de funcao comum.
@@ -21,6 +25,9 @@ extern "libc.so.6" mkdir(String path, Int mode): Int
 extern "libc.so.6" chmod(String path, Int mode): Int
 extern "libc.so.6" readlink(String path, Long buf, Long size): Long
 extern "libc.so.6" access(String path, Int mode): Int
+extern "libc.so.6" opendir(String path): Long
+extern "libc.so.6" readdir(Long dir): Long // struct dirent*: d_type em +18, d_name em +19
+extern "libc.so.6" closedir(Long dir): Int
 
 extern "libc.so.6" read(Int fd, Long buf, Long n): Long
 extern "libc.so.6" write(Int fd, Long buf, Long n): Long

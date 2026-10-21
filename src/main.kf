@@ -49,8 +49,26 @@ main() {
     session.loadHistory()
     session.panelPath = dir + "/panel"
     session.loadPanelSetting()
-    session.tab.index.load(loadLines(findIndex(dir)))
+    session.tab.index.load(loadLines(findShared(dir, "index/pt_BR.txt")))
     session.onResize(winRows(ws), winCols(ws))
+
+    // o "cerebro": indice compartilhado com a aba, corpus do projeto e o que o usuario ja fez
+    var brain = session.brain
+    brain.index = session.tab.index
+    brain.home = getenv("HOME")
+    brain.eventsPath = dir + "/events"
+    brain.loadKnown()
+    brain.loadCorpus(loadLines(findShared(dir, "corpus/sessions.txt")))
+    var events = loadLines(brain.eventsPath)
+    if (events.size == 0) {
+        // primeira vez com a Fase 4: aproveita o historico da Fase 2 (sem codigos de saida)
+        var prev = ""
+        for (var h in session.hist.items) {
+            brain.model.observe(prev, h, "", 1)
+            prev = h
+        }
+    }
+    brain.loadEvents(events)
     var keys = KeyDecoder()
     var scanner = PromptScanner()
 
@@ -92,6 +110,10 @@ main() {
                     if (n <= 0L) {
                         running = false // bash saiu (EIO no master)
                     } else {
+                        if (!session.editing) {
+                            // o fim da saida do comando ajuda a sugerir "sudo ..." depois de um erro
+                            session.brain.noteOutput(strndup(buf, n))
+                        }
                         // separa o marcador de prompt do resto da saida
                         var o = 0L
                         var i = 0L

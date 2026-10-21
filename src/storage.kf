@@ -130,29 +130,37 @@ String exeDir() {
     return path.substring(0, cut - 1)
 }
 
-// O indice: primeiro o instalado em ~/.local/share/kofterm/index, depois o do repositorio
-// (o binario fica em <repo>/build/kofterm/Default/Main).
-String findIndex(String dataDirPath) {
-    var installed = dataDirPath + "/index/pt_BR.txt"
+// Arquivos que acompanham o kofterm (indice, corpus): primeiro os instalados em
+// ~/.local/share/kofterm, depois os do repositorio (o binario fica em <repo>/build/kofterm/Default/Main).
+String findShared(String dataDirPath, String rel) {
+    var installed = dataDirPath + "/" + rel
     if (access(installed, 0) == 0) {
         return installed
     }
-    return exeDir() + "/../../../index/pt_BR.txt"
+    return exeDir() + "/../../../" + rel
 }
 
 // bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel
 // (ESC ] 7770 ; status ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
 // o \[ \] do PS1 nao e necessario.
+//
+// O gancho se reinstala a cada prompt: o ~/.bashrc do Kali faz
+// PROMPT_COMMAND="PROMPT_COMMAND=echo", que se sobrescreve no primeiro prompt e apagaria o
+// gancho (o codigo de saida ficava sempre 0). Sem barra invertida: o KOF nao a produz em String.
 String shellRc() {
     var esc = "\u001b"
     var bel = "\u0007"
     return "# KofTerm: gerado a cada inicio. Nao edite.\n" +
         "[ -f ~/.bashrc ] && . ~/.bashrc\n" +
         "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$PWD" + bel + "'\n" +
-        "__kofterm_prompt() { [[ \"$PS1\" == *\"$__kofterm_mark\" ]] || PS1=\"$PS1$__kofterm_mark\"; }\n" +
-        "if [[ \"$(declare -p PROMPT_COMMAND 2>/dev/null)\" == \"declare -a\"* ]]; then\n" +
-        "  PROMPT_COMMAND=('__kofterm_s=$?' \"${PROMPT_COMMAND[@]}\" '__kofterm_prompt')\n" +
-        "else\n" +
-        "  PROMPT_COMMAND='__kofterm_s=$?;'\"${PROMPT_COMMAND:+${PROMPT_COMMAND%;};}\"'__kofterm_prompt'\n" +
-        "fi\n"
+        "__kofterm_pre() { __kofterm_s=$?; }\n" +
+        "__kofterm_hook() {\n" +
+        "  if [[ \"$(declare -p PROMPT_COMMAND 2>/dev/null)\" == \"declare -a\"* ]]; then\n" +
+        "    [[ \"${PROMPT_COMMAND[0]}\" == __kofterm_pre ]] || PROMPT_COMMAND=(__kofterm_pre \"${PROMPT_COMMAND[@]}\" __kofterm_prompt)\n" +
+        "  else\n" +
+        "    case \"$PROMPT_COMMAND\" in \"__kofterm_pre;\"*) ;; *) PROMPT_COMMAND=\"__kofterm_pre;${PROMPT_COMMAND:+${PROMPT_COMMAND%;};}__kofterm_prompt\" ;; esac\n" +
+        "  fi\n" +
+        "}\n" +
+        "__kofterm_prompt() { [[ \"$PS1\" == *\"$__kofterm_mark\" ]] || PS1=\"$PS1$__kofterm_mark\"; __kofterm_hook; }\n" +
+        "__kofterm_hook\n"
 }

@@ -1,0 +1,543 @@
+// O "cerebro" da Fase 4: um modelo de contagens que aprende com cada comando executado.
+// Modulo puro (sem libc), testado com `kof test src/model.kf`.
+//
+// O que ele aprende (tudo local, em memoria, reconstruido do arquivo de eventos):
+// - quantas vezes cada linha foi usada e quao recente ela e;
+// - qual linha costuma vir DEPOIS de qual (contexto entre linhas);
+// - em que tipo de pasta cada comando e usado ("tem .git", "tem package.json"...),
+//   nunca o nome da pasta;
+// - qual palavra costuma vir depois de outras duas (n-gram de palavras).
+// Nada aqui e mandado para fora da maquina.
+//
+// Por que nao Map<K,V>: no KOF 0.6.6 native, o Map nativo derruba o programa (SIGSEGV) por
+// volta de 3.650 chaves; no JVM funciona. Lista e String nao tem o problema. Entao o mapa
+// abaixo e feito em KOF, com baldes de listas e String.hashCode().
+
+// Balde de um mapa: chaves e valores lado a lado.
+class KtIntBucket {
+    List<String> keys = listOf<String>()
+    List<Int> vals = listOf<Int>()
+}
+
+class KtIntMap {
+    List<KtIntBucket> buckets = listOf<KtIntBucket>()
+    List<String> order = listOf<String>()
+    Int size = 0
+
+    KtIntBucket bucketFor(String key) {
+        if (buckets.size == 0) {
+            grow(256)
+        }
+        var h = key.hashCode() % buckets.size
+        if (h < 0) {
+            h = h + buckets.size
+        }
+        return buckets.get(h)
+    }
+
+    grow(Int n) {
+        var old = buckets
+        buckets = listOf<KtIntBucket>()
+        var i = 0
+        while (i < n) {
+            buckets.add(KtIntBucket())
+            i = i + 1
+        }
+        for (var b in old) {
+            var j = 0
+            while (j < b.keys.size) {
+                var nb = bucketFor(b.keys.get(j))
+                nb.keys.add(b.keys.get(j))
+                nb.vals.add(b.vals.get(j))
+                j = j + 1
+            }
+        }
+    }
+
+    Int indexIn(KtIntBucket b, String key) {
+        var j = 0
+        while (j < b.keys.size) {
+            if (b.keys.get(j) == key) {
+                return j
+            }
+            j = j + 1
+        }
+        return -1
+    }
+
+    Boolean containsKey(String key) {
+        return indexIn(bucketFor(key), key) >= 0
+    }
+
+    // Valor da chave, ou 0 se nao existir.
+    Int get(String key) {
+        var b = bucketFor(key)
+        var j = indexIn(b, key)
+        if (j < 0) {
+            return 0
+        }
+        return b.vals.get(j)
+    }
+
+    put(String key, Int value) {
+        var b = bucketFor(key)
+        var j = indexIn(b, key)
+        if (j >= 0) {
+            b.vals.set(j, value)
+            return
+        }
+        b.keys.add(key)
+        b.vals.add(value)
+        order.add(key)
+        size = size + 1
+        if (size > buckets.size * 4) {
+            grow(buckets.size * 4)
+        }
+    }
+
+    List<String> keys() {
+        return order
+    }
+}
+
+// O mesmo mapa com valores String (guarda a String como indice numa lista).
+class KtTextMap {
+    KtIntMap idx = KtIntMap()
+    List<String> vals = listOf<String>()
+
+    Boolean containsKey(String key) {
+        return idx.containsKey(key)
+    }
+
+    // Valor da chave, ou "" se nao existir.
+    String get(String key) {
+        if (!idx.containsKey(key)) {
+            return ""
+        }
+        return vals.get(idx.get(key))
+    }
+
+    put(String key, String value) {
+        if (idx.containsKey(key)) {
+            vals.set(idx.get(key), value)
+            return
+        }
+        idx.put(key, vals.size)
+        vals.add(value)
+    }
+}
+
+class Model {
+    KtIntMap lineCount = KtIntMap()
+    KtIntMap lastSeen = KtIntMap()
+    KtIntMap trans = KtIntMap()
+    KtIntMap featWord = KtIntMap()
+    KtIntMap tokCount = KtIntMap()
+    KtTextMap tokBest = KtTextMap()
+    KtIntMap firstWords = KtIntMap()
+    List<String> lines = listOf<String>()
+    Int seq = 0
+
+    String sep() {
+        return "\u001f"
+    }
+
+    Int count(KtIntMap m, String key) {
+        return m.get(key)
+    }
+
+    String text(KtTextMap m, String key) {
+        return m.get(key)
+    }
+
+    bump(KtIntMap m, String key, Int by) {
+        m.put(key, count(m, key) + by)
+    }
+
+    // Um comando foi executado: `prev` e a linha anterior, `feats` as caracteristicas da pasta.
+    observe(String prev, String line, String feats, Int weight) {
+        var l = line.trim()
+        if (l.length() == 0 || l.length() > 300 || isDangerous(l)) {
+            return
+        }
+        seq = seq + 1
+        if (!lineCount.containsKey(l)) {
+            lines.add(l)
+        }
+        bump(lineCount, l, weight)
+        lastSeen.put(l, seq)
+        var p = prev.trim()
+        if (p.length() > 0) {
+            bump(trans, p + sep() + l, weight)
+        }
+        var w = commandName(l)
+        bump(firstWords, w, weight)
+        if (feats.length() > 0) {
+            for (var f in splitWords(feats, ",")) {
+                bump(featWord, f + sep() + w, weight)
+            }
+        }
+        // n-gram de palavras: (anterior2, anterior1) -> proxima, com o inicio marcado por "^"
+        var toks = splitWords(l, " ")
+        var a = "^"
+        var b = "^"
+        for (var t in toks) {
+            learnToken(a + sep() + b, t, weight)
+            learnToken(b, t, weight)
+            a = b
+            b = t
+        }
+    }
+
+    learnToken(String ctx, String next, Int weight) {
+        var key = ctx + sep() + sep() + next
+        bump(tokCount, key, weight)
+        var c = count(tokCount, key)
+        if (!tokBest.containsKey(ctx) || count(tokCount, ctx + sep() + sep() + text(tokBest, ctx)) < c) {
+            tokBest.put(ctx, next)
+        }
+    }
+
+    Int score(String line, String prev, String feats) {
+        var s = count(lineCount, line) + 3 * count(trans, prev.trim() + sep() + line)
+        var w = commandName(line)
+        for (var f in splitWords(feats, ",")) {
+            s = s + 2 * count(featWord, f + sep() + w)
+        }
+        if (seq - count(lastSeen, line) < 30) {
+            s = s + 2
+        }
+        return s
+    }
+
+    // A melhor linha completa que comeca com `prefix` (sem o prefixo), ou "".
+    String completeLine(String prefix, String prev, String feats) {
+        if (prefix.trim().length() == 0) {
+            return ""
+        }
+        var best = ""
+        var bestScore = -1
+        for (var l in lines) {
+            if (l.length() > prefix.length() && l.startsWith(prefix)) {
+                var s = score(l, prev, feats)
+                if (s > bestScore) {
+                    best = l
+                    bestScore = s
+                }
+            }
+        }
+        if (best.length() == 0) {
+            return ""
+        }
+        return best.substring(prefix.length(), best.length())
+    }
+
+    // Linha vazia: o comando que costuma vir depois de `prev` (visto pelo menos 2 vezes).
+    String nextLine(String prev, String feats) {
+        var p = prev.trim()
+        if (p.length() == 0) {
+            return ""
+        }
+        var best = ""
+        var bestScore = 0
+        for (var l in lines) {
+            var t = count(trans, p + sep() + l)
+            if (t >= 2 && l != p) {
+                var s = t * 10 + score(l, prev, feats)
+                if (s > bestScore) {
+                    best = l
+                    bestScore = s
+                }
+            }
+        }
+        return best
+    }
+
+    // Proxima palavra para uma linha que termina em espaco, ou "".
+    String nextToken(String line) {
+        var toks = splitWords(line, " ")
+        var a = "^"
+        var b = "^"
+        if (toks.size >= 2) {
+            a = toks.get(toks.size - 2)
+        }
+        if (toks.size >= 1) {
+            b = toks.get(toks.size - 1)
+        }
+        var tri = text(tokBest, a + sep() + b)
+        if (tri.length() > 0) {
+            return tri
+        }
+        if (toks.size >= 1) {
+            return text(tokBest, b)
+        }
+        return ""
+    }
+
+    // O comando conhecido mais parecido com `word` (ate 2 letras de diferenca), ou "".
+    String closestCommand(String word, List<String> extra) {
+        if (word.length() < 2) {
+            return ""
+        }
+        var best = ""
+        var bestD = 3
+        var bestC = -1
+        var all = listOf<String>()
+        for (var k in firstWords.keys()) {
+            all.add(k)
+        }
+        for (var k in extra) {
+            all.add(k)
+        }
+        for (var c in all) {
+            if (c != word && c.length() >= 2) {
+                var d = levenshtein(word, c)
+                var n = count(firstWords, c)
+                if (d < bestD || d == bestD && n > bestC) {
+                    best = c
+                    bestD = d
+                    bestC = n
+                }
+            }
+        }
+        if (bestD > 2) {
+            return ""
+        }
+        return best
+    }
+}
+
+// Correcao para a linha vazia depois de um erro: "sudo <comando>" ou o nome corrigido.
+String fixLine(Model m, String prev, Int status, String outputLower, List<String> known) {
+    var p = prev.trim()
+    if (p.length() == 0 || status == 0) {
+        return ""
+    }
+    if (status == 127) {
+        var w = commandName(p)
+        var c = m.closestCommand(w, known)
+        if (c.length() > 0) {
+            var at = p.indexOf(w)
+            return p.substring(0, at) + c + p.substring(at + w.length(), p.length())
+        }
+        return ""
+    }
+    if (!p.startsWith("sudo ")) {
+        for (var hint in listOf("permission denied", "permissão negada", "are you root", "você é root",
+                "must be root", "precisa ser root", "operation not permitted", "operação não permitida")) {
+            if (outputLower.contains(hint)) {
+                return "sudo " + p
+            }
+        }
+    }
+    return ""
+}
+
+// Comandos que podem destruir o sistema ou dados. Nunca sao sugeridos e ficam em vermelho.
+Boolean isDangerous(String line) {
+    var compact = ""
+    for (var w in splitWords(line, " ")) {
+        compact = compact + w
+    }
+    if (compact.contains(":(){") || compact.contains(">/dev/sd") || compact.contains(">/dev/nvme")) {
+        return true
+    }
+    var words = splitWords(line, " ")
+    var i = 0
+    while (i < words.size && (words.get(i) == "sudo" || words.get(i).startsWith("-") && i > 0 && words.get(i - 1) == "sudo")) {
+        i = i + 1
+    }
+    if (i >= words.size) {
+        return false
+    }
+    var cmd = words.get(i)
+    var recursive = false
+    var targets = listOf<String>()
+    var j = i + 1
+    while (j < words.size) {
+        var w = words.get(j)
+        if (w == "--recursive" || w == "--no-preserve-root" || w.startsWith("-") && !w.startsWith("--") && (w.contains("r") || w.contains("R"))) {
+            recursive = true
+        } else if (!w.startsWith("-")) {
+            targets.add(w)
+        }
+        j = j + 1
+    }
+    if (cmd.startsWith("mkfs")) {
+        return true
+    }
+    if (cmd == "dd") {
+        for (var t in targets) {
+            if (t.startsWith("of=/dev/sd") || t.startsWith("of=/dev/nvme") || t.startsWith("of=/dev/hd") || t.startsWith("of=/dev/mmcblk")) {
+                return true
+            }
+        }
+    }
+    var critical = listOf("/", "/*", "~", "~/", "~/*", "*", "/home", "/etc", "/usr", "/boot", "/var", "/bin", "/lib", "$HOME")
+    if (recursive && (cmd == "rm" || cmd == "chmod" || cmd == "chown")) {
+        for (var t in targets) {
+            for (var c in critical) {
+                if (t == c) {
+                    return true
+                }
+            }
+        }
+    }
+    return false
+}
+
+// O nome do comando (pulando sudo e VAR=valor).
+String commandName(String line) {
+    for (var w in splitWords(line, " ")) {
+        if (w != "sudo" && !(w.contains("=") && !w.startsWith("-"))) {
+            return w
+        }
+    }
+    return ""
+}
+
+// Separa por `sep` e descarta pedacos vazios.
+List<String> splitWords(String s, String sep) {
+    var out = listOf<String>()
+    var start = 0
+    var i = 0
+    while (i + sep.length() <= s.length()) {
+        if (s.substring(i, i + sep.length()) == sep) {
+            if (i > start) {
+                out.add(s.substring(start, i))
+            }
+            i = i + sep.length()
+            start = i
+        } else {
+            i = i + 1
+        }
+    }
+    if (s.length() > start) {
+        out.add(s.substring(start, s.length()))
+    }
+    return out
+}
+
+Int levenshtein(String a, String b) {
+    var prev = listOf<Int>()
+    var j = 0
+    while (j <= b.length()) {
+        prev.add(j)
+        j = j + 1
+    }
+    var i = 1
+    while (i <= a.length()) {
+        var cur = listOf<Int>()
+        cur.add(i)
+        j = 1
+        while (j <= b.length()) {
+            var cost = 1
+            if (a.substring(i - 1, i) == b.substring(j - 1, j)) {
+                cost = 0
+            }
+            var best = prev.get(j) + 1
+            if (cur.get(j - 1) + 1 < best) {
+                best = cur.get(j - 1) + 1
+            }
+            if (prev.get(j - 1) + cost < best) {
+                best = prev.get(j - 1) + cost
+            }
+            cur.add(best)
+            j = j + 1
+        }
+        prev = cur
+        i = i + 1
+    }
+    return prev.get(b.length())
+}
+
+test "aprende a sequencia e preve a proxima linha" {
+    var m = Model()
+    m.observe("", "sudo apt update", "", 1)
+    m.observe("sudo apt update", "sudo apt upgrade", "", 1)
+    m.observe("", "sudo apt update", "", 1)
+    m.observe("sudo apt update", "sudo apt upgrade", "", 1)
+    assert(m.nextLine("sudo apt update", "") == "sudo apt upgrade", "proxima linha")
+    assert(m.nextLine("ls", "") == "", "sem contexto suficiente")
+}
+
+test "o contexto da linha anterior desempata" {
+    var m = Model()
+    m.observe("", "git status", "", 1)
+    m.observe("", "git status", "", 1)
+    m.observe("git add .", "git commit -m", "", 1)
+    assert(m.completeLine("git ", "git add .", "") == "commit -m", "depois do add vem commit")
+    assert(m.completeLine("git ", "ls", "") == "status", "sem o add, o mais usado")
+}
+
+test "a pasta influencia a sugestao" {
+    var m = Model()
+    m.observe("", "npm install", "node", 1)
+    m.observe("", "make install", "make", 1)
+    m.observe("", "make install", "make", 1)
+    assert(m.completeLine("n", "", "node") == "pm install", "npm numa pasta node")
+    assert(m.completeLine("m", "", "node") == "ake install", "make so pelo prefixo")
+}
+
+test "proxima palavra" {
+    var m = Model()
+    m.observe("", "git commit -m inicial", "", 1)
+    m.observe("", "git commit -m outra", "", 1)
+    assert(m.nextToken("git commit ") == "-m", "trigram")
+    assert(m.nextToken("tar ") == "", "nada aprendido")
+}
+
+test "comandos perigosos" {
+    assert(isDangerous("rm -rf /"), "rm -rf /")
+    assert(isDangerous("sudo rm -rf --no-preserve-root /"), "no-preserve-root")
+    assert(isDangerous("rm -fr ~"), "home")
+    assert(isDangerous("sudo mkfs.ext4 /dev/sda1"), "mkfs")
+    assert(isDangerous("dd if=x.iso of=/dev/sdb"), "dd")
+    assert(isDangerous(":(){ :|:& };:"), "fork bomb")
+    assert(isDangerous("sudo chmod -R 777 /"), "chmod /")
+    assert(!isDangerous("rm -rf ./build"), "pasta local e ok")
+    assert(!isDangerous("rm notas.txt"), "arquivo e ok")
+    assert(!isDangerous("dd if=/dev/zero of=teste.img bs=1M count=1"), "dd para arquivo e ok")
+}
+
+test "perigoso nunca e aprendido nem sugerido" {
+    var m = Model()
+    m.observe("", "rm -rf /", "", 5)
+    assert(m.completeLine("rm", "", "") == "", "nao sugere")
+}
+
+test "corrige sudo e nome errado" {
+    var m = Model()
+    m.observe("", "git status", "", 1)
+    var known = listOf("ls", "cat")
+    assert(fixLine(m, "apt install htop", 100, "e: não foi possível abrir... você é root?", known) == "sudo apt install htop", "sudo")
+    assert(fixLine(m, "gti status", 127, "", known) == "git status", "typo")
+    assert(fixLine(m, "sudo cta x", 127, "", known) == "sudo cat x", "typo com sudo")
+    assert(fixLine(m, "ls", 0, "permission denied", known) == "", "sem erro, sem correcao")
+}
+
+test "mapa proprio aguenta 20 mil chaves (o Map nativo cai em ~3.650)" {
+    var m = KtIntMap()
+    var i = 0
+    while (i < 20000) {
+        m.put("chave" + i, i)
+        i = i + 1
+    }
+    m.put("chave7", 70)
+    assert(m.size == 20000, "tamanho")
+    assert(m.get("chave19999") == 19999, "ultima")
+    assert(m.get("chave7") == 70, "sobrescreve")
+    assert(m.get("nao-existe") == 0, "ausente vale 0")
+    assert(m.keys().size == 20000, "ordem de insercao")
+    var t = KtTextMap()
+    t.put("a", "x")
+    t.put("a", "y")
+    assert(t.get("a") == "y" && t.get("b") == "", "texto")
+}
+
+test "distancia de edicao" {
+    assert(levenshtein("gti", "git") == 2, "troca")
+    assert(levenshtein("sl", "ls") == 2, "sl")
+    assert(levenshtein("grpe", "grep") == 2, "grpe")
+    assert(levenshtein("cat", "cat") == 0, "igual")
+}

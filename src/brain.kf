@@ -1,0 +1,264 @@
+// Liga o modelo (model.kf) ao mundo real: corpus inicial, arquivo de eventos, caracteristicas
+// da pasta, saida do ultimo comando, arquivos da pasta e opcoes do indice.
+//
+// Arquivo de eventos (~/.local/share/kofterm/events, 0600), uma linha por comando executado:
+//   <codigo de saida> TAB <caracteristicas da pasta> TAB <comando>
+// As caracteristicas sao palavras como "git,node", nunca o nome ou caminho da pasta.
+
+class Brain {
+    Model model = Model()
+    CommandIndex index = CommandIndex()
+    List<String> known = listOf<String>()
+    String eventsPath = ""
+    String home = ""
+    String lastCmd = ""
+    Int lastStatus = 0
+    String pendingCmd = ""
+    String pendingFeats = ""
+    String outputTail = ""
+
+    String tab() {
+        return "\u0009"
+    }
+
+    // Corpus do projeto: blocos separados por linha em branco; "@ x,y" da as caracteristicas.
+    loadCorpus(List<String> lines) {
+        var prev = ""
+        var feats = ""
+        for (var raw in lines) {
+            var line = raw.trim()
+            if (line.startsWith(";")) {
+                continue
+            }
+            if (line.length() == 0) {
+                prev = ""
+                feats = ""
+            } else if (line.startsWith("@ ")) {
+                feats = line.substring(2, line.length()).trim()
+            } else {
+                model.observe(prev, line, feats, 2)
+                prev = line
+            }
+        }
+    }
+
+    loadEvents(List<String> lines) {
+        var prev = ""
+        for (var raw in lines) {
+            var parts = splitOn(raw, tab())
+            if (parts.size >= 3 && parts.get(0) != "127") {
+                var cmd = parts.get(2)
+                model.observe(prev, cmd, parts.get(1), 1)
+                prev = cmd
+                lastCmd = cmd
+                lastStatus = 0
+            }
+        }
+    }
+
+    loadKnown() {
+        for (var e in index.entries) {
+            var w = commandName(e.name)
+            if (w.length() > 1) {
+                known.add(w)
+            }
+        }
+    }
+
+    // "git,node,make,python,kof,home" conforme o que existe na pasta.
+    String features(String cwd) {
+        var f = listOf<String>()
+        if (cwd == home) {
+            f.add("home")
+        }
+        if (access(cwd + "/.git", 0) == 0) {
+            f.add("git")
+        }
+        if (access(cwd + "/package.json", 0) == 0) {
+            f.add("node")
+        }
+        if (access(cwd + "/Makefile", 0) == 0) {
+            f.add("make")
+        }
+        if (access(cwd + "/requirements.txt", 0) == 0 || access(cwd + "/pyproject.toml", 0) == 0) {
+            f.add("python")
+        }
+        if (access(cwd + "/kof.toml", 0) == 0 || access(cwd + "/src/main.kf", 0) == 0) {
+            f.add("kof")
+        }
+        var out = ""
+        for (var x in f) {
+            if (out.length() > 0) {
+                out = out + ","
+            }
+            out = out + x
+        }
+        return out
+    }
+
+    // Enter: o comando foi enviado; o codigo de saida chega no proximo prompt.
+    commandSent(String line, String feats) {
+        pendingCmd = line.trim()
+        pendingFeats = feats
+        outputTail = ""
+    }
+
+    // Saida do comando que esta rodando (so o fim, em minusculas, para achar "permission denied").
+    noteOutput(String chunk) {
+        outputTail = outputTail + chunk.toLowerCase()
+        if (outputTail.length() > 2000) {
+            outputTail = outputTail.substring(outputTail.length() - 2000, outputTail.length())
+        }
+    }
+
+    // Prompt novo: aprende com o comando que acabou (aprendizado continuo, local).
+    promptReturned(Int status) {
+        if (pendingCmd.length() == 0) {
+            return
+        }
+        // 127 = comando nao encontrado: um erro de digitacao nao deve virar sugestao
+        if (status != 127) {
+            model.observe(lastCmd, pendingCmd, pendingFeats, 1)
+        }
+        if (!isDangerous(pendingCmd)) {
+            appendLine(eventsPath, "" + status + tab() + pendingFeats + tab() + pendingCmd)
+        }
+        lastCmd = pendingCmd
+        lastStatus = status
+        pendingCmd = ""
+    }
+
+    // O ghost text para a linha atual (o que falta), ou "".
+    String suggest(String line, String cwd, String feats) {
+        var g = rawSuggest(line, cwd, feats)
+        if (g.length() > 0 && isDangerous(line + g)) {
+            return ""
+        }
+        return g
+    }
+
+    String rawSuggest(String line, String cwd, String feats) {
+        if (line.length() == 0) {
+            var fix = fixLine(model, lastCmd, lastStatus, outputTail, known)
+            if (fix.length() > 0) {
+                return fix
+            }
+            return model.nextLine(lastCmd, feats)
+        }
+        var full = model.completeLine(line, lastCmd, feats)
+        if (full.length() > 0) {
+            return full
+        }
+        if (line.endsWith(" ")) {
+            return model.nextToken(line)
+        }
+        var words = splitWords(line, " ")
+        var tok = words.get(words.size - 1)
+        if (words.size == 1) {
+            return completeFromIndex(line)
+        }
+        if (tok.startsWith("-")) {
+            return completeOption(line, tok)
+        }
+        var sub = completeFromIndex(line)
+        if (sub.length() > 0) {
+            return sub
+        }
+        return completePath(cwd, tok)
+    }
+
+    // "git co" -> "mmit" a partir das entradas do indice ("git commit", "git clone"...).
+    String completeFromIndex(String line) {
+        var best = ""
+        for (var e in index.entries) {
+            if (e.name.length() > line.length() && e.name.startsWith(line)) {
+                if (best.length() == 0 || e.name.length() < best.length()) {
+                    best = e.name
+                }
+            }
+        }
+        if (best.length() == 0) {
+            return ""
+        }
+        return best.substring(line.length(), best.length())
+    }
+
+    // "ls --a" -> "ll" a partir das opcoes do comando no indice.
+    String completeOption(String line, String tok) {
+        var e = index.forLine(line)
+        if (e == null) {
+            return ""
+        }
+        var best = ""
+        for (var o in must(e).options) {
+            for (var n in splitOn(o.names, ",")) {
+                var name = n.trim()
+                if (name.length() > tok.length() && name.startsWith(tok)) {
+                    if (best.length() == 0 || name.length() < best.length()) {
+                        best = name
+                    }
+                }
+            }
+        }
+        if (best.length() == 0) {
+            return ""
+        }
+        return best.substring(tok.length(), best.length())
+    }
+
+    // Completa um nome de arquivo ou pasta da pasta do bash. Pastas ganham "/".
+    String completePath(String cwd, String tok) {
+        if (tok.contains("$") || tok.contains("*") || tok.contains("\"") || tok.contains("'")) {
+            return ""
+        }
+        var cut = tok.length()
+        while (cut > 0 && tok.substring(cut - 1, cut) != "/") {
+            cut = cut - 1
+        }
+        var dirPart = tok.substring(0, cut)
+        var base = tok.substring(cut, tok.length())
+        var dir = cwd + "/" + dirPart
+        if (dirPart.startsWith("/")) {
+            dir = dirPart
+        } else if (dirPart.startsWith("~/")) {
+            dir = home + "/" + dirPart.substring(2, dirPart.length())
+        }
+        if (dir.length() == 0) {
+            dir = "/"
+        }
+        var matches = listOf<String>()
+        var d = opendir(dir)
+        if (d == 0L) {
+            return ""
+        }
+        var ent = readdir(d)
+        while (ent != 0L) {
+            var name = strndup(ent + 19L, strlen(ent + 19L))
+            var hiddenOk = base.startsWith(".") || !name.startsWith(".")
+            if (name != "." && name != ".." && hiddenOk && name.startsWith(base)) {
+                if (buffer.peek8(ent + 18L) == 4) {
+                    name = name + "/"
+                }
+                matches.add(name)
+            }
+            ent = readdir(d)
+        }
+        closedir(d)
+        if (matches.size == 0) {
+            return ""
+        }
+        // prefixo comum de todos os candidatos
+        var common = matches.get(0)
+        for (var m in matches) {
+            var i = 0
+            while (i < common.length() && i < m.length() && common.substring(i, i + 1) == m.substring(i, i + 1)) {
+                i = i + 1
+            }
+            common = common.substring(0, i)
+        }
+        if (common.length() <= base.length()) {
+            return ""
+        }
+        return common.substring(base.length(), common.length())
+    }
+}

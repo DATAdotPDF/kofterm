@@ -20,11 +20,13 @@ class Session {
     LineEditor ed = LineEditor()
     History hist = History()
     IndexTab tab = IndexTab()
+    Brain brain = Brain()
     Boolean editing = false
     String ghost = ""
     String draftAfterClear = ""
     Int lastStatus = 0
     String cwd = ""
+    String feats = ""
     Int rows = 24
     Int cols = 80
 
@@ -156,6 +158,9 @@ class Session {
         }
         var top = rows - h + 1
         var lines = listOf<String>()
+        if (isDangerous(ed.line)) {
+            lines.add(esc() + "[1;31m⚠ Cuidado: este comando pode apagar ou estragar o sistema ou seus dados. Confira antes de apertar Enter." + esc() + "[0m")
+        }
         var e = tab.index.forLine(ed.line)
         if (e != null) {
             var entry = must(e)
@@ -199,6 +204,8 @@ class Session {
     onPrompt(Int status, String dir) {
         lastStatus = status
         cwd = dir
+        brain.promptReturned(status)
+        feats = brain.features(dir)
         editing = true
         ed.set(draftAfterClear)
         draftAfterClear = ""
@@ -247,9 +254,12 @@ class Session {
     render() {
         ghost = ""
         if (ed.atEnd()) {
-            ghost = hist.suggest(ed.line)
+            ghost = brain.suggest(ed.line, cwd, feats)
         }
         var shown = ed.line
+        if (isDangerous(ed.line)) {
+            shown = esc() + "[1;31m" + ed.line + esc() + "[0m" // perigoso: em vermelho
+        }
         if (ghost.length() > 0) {
             shown = shown + esc() + "[90m" + ghost + esc() + "[0m"
         }
@@ -356,6 +366,7 @@ class Session {
             appendLine(histPath, line)
         }
         hist.resetBrowse()
+        brain.commandSent(line, feats)
         sendText(line + "\r")
     }
 

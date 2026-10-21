@@ -1,0 +1,143 @@
+; KofTerm — corpus inicial do modelo (sequências típicas de comandos)
+; Escrito pelo projeto KofTerm, licença GPLv3. Dá sugestões razoáveis no primeiro uso;
+; depois disso, o que você digita pesa mais.
+;
+; Formato: cada bloco separado por linha em branco é uma "sessão", na ordem em que os
+; comandos costumam ser digitados. "@ caracteristicas" no início de um bloco diz em que
+; tipo de pasta ele acontece (git, node, python, make, kof, home).
+; Para contribuir: só comandos genéricos, sem caminhos, nomes de máquina ou dados pessoais.
+
+sudo apt update
+sudo apt upgrade
+sudo apt autoremove
+
+sudo apt update
+sudo apt upgrade -y
+
+sudo apt update
+sudo apt install
+
+apt search
+sudo apt install
+
+@ git
+git status
+git add .
+git commit -m ""
+git push
+
+@ git
+git status
+git diff
+git add -A
+git commit -m ""
+git push
+
+@ git
+git pull
+git status
+git log --oneline
+
+@ git
+git checkout -b
+git push -u origin
+
+@ git
+git fetch
+git status
+git pull
+
+mkdir -p
+cd
+
+ls -la
+cd ..
+ls -la
+
+cd ~
+ls -la
+
+pwd
+ls -lh
+
+cd -
+ls
+
+cat
+less
+
+ps aux | grep
+kill
+
+top
+htop
+
+df -h
+du -sh *
+
+ip a
+ping -c 4
+
+ssh
+exit
+
+chmod +x
+./
+
+tail -f /var/log/syslog
+
+find . -name ""
+grep -rn "" .
+
+history | grep
+
+@ node
+npm install
+npm run dev
+
+@ node
+npm install
+npm test
+
+@ python
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+@ python
+source .venv/bin/activate
+python3
+
+@ make
+make
+make install
+
+@ make
+make clean
+make
+
+@ kof
+kof build src --target native --output build
+kof run src --target native
+
+@ kof
+kof test
+kof build
+
+tar -czvf
+tar -tzvf
+
+tar -xzvf
+ls
+
+sudo systemctl status
+sudo systemctl restart
+
+sudo systemctl start
+sudo systemctl status
+
+whoami
+id
+
+man
+clear
