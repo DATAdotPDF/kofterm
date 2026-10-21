@@ -18,6 +18,10 @@ List<Int> toList(Long buf, Long n) {
 }
 
 main() {
+    var sub = runSubcommand(commandArgs())
+    if (sub >= 0) {
+        process.exit(sub)
+    }
     var saved = ttySave(Sys.STDIN)
     if (saved == 0L) {
         println("kofterm: a entrada padrao nao e um terminal")
@@ -59,6 +63,9 @@ main() {
     brain.eventsPath = dir + "/events"
     brain.loadKnown()
     brain.loadCorpus(loadLines(findShared(dir, "corpus/sessions.txt")))
+    for (var f in listFiles(findShared(dir, "datasets/contrib"), ".kofdata")) {
+        brain.loadContrib(loadLines(f))
+    }
     var events = loadLines(brain.eventsPath)
     if (events.size == 0) {
         // primeira vez com a Fase 4: aproveita o historico da Fase 2 (sem codigos de saida)

@@ -5,3 +5,5 @@ out/
 *.kofw
 model.bin
 index.db
+build.log
+*.kofdata.tmp

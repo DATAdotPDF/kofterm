@@ -130,14 +130,91 @@ String exeDir() {
     return path.substring(0, cut - 1)
 }
 
-// Arquivos que acompanham o kofterm (indice, corpus): primeiro os instalados em
-// ~/.local/share/kofterm, depois os do repositorio (o binario fica em <repo>/build/kofterm/Default/Main).
-String findShared(String dataDirPath, String rel) {
-    var installed = dataDirPath + "/" + rel
-    if (access(installed, 0) == 0) {
-        return installed
+// Onde estao os arquivos que acompanham o binario (index/, corpus/, datasets/):
+// - instalado ou release: ao lado do binario (~/.local/share/kofterm/kofterm);
+// - compilado no repositorio: <repo>/build/kofterm/Default/Main -> tres pastas acima.
+String sourceRoot() {
+    var dir = exeDir()
+    if (access(dir + "/index/pt_BR.txt", 0) == 0) {
+        return dir
     }
-    return exeDir() + "/../../../" + rel
+    return dir + "/../../.."
+}
+
+// Um arquivo compartilhado: o que acompanha o binario em uso, ou o instalado.
+String findShared(String dataDirPath, String rel) {
+    var near = sourceRoot() + "/" + rel
+    if (access(near, 0) == 0) {
+        return near
+    }
+    return dataDirPath + "/" + rel
+}
+
+// Arquivos de uma pasta que terminam com `suffix` (caminhos completos).
+List<String> listFiles(String dir, String suffix) {
+    var out = listOf<String>()
+    var d = opendir(dir)
+    if (d == 0L) {
+        return out
+    }
+    var ent = readdir(d)
+    while (ent != 0L) {
+        var name = strndup(ent + 19L, strlen(ent + 19L))
+        if (name.endsWith(suffix) && buffer.peek8(ent + 18L) != 4) {
+            out.add(dir + "/" + name)
+        }
+        ent = readdir(d)
+    }
+    closedir(d)
+    return out
+}
+
+// Copia um arquivo byte a byte e aplica o modo (0644, 0755...).
+Boolean copyFile(String from, String to, Int mode) {
+    var src = open(from, Sys.O_RDONLY, 0)
+    if (src < 0) {
+        return false
+    }
+    unlink(to)
+    var dst = open(to, Sys.O_WRITE_TRUNC, mode)
+    if (dst < 0) {
+        close(src)
+        return false
+    }
+    var buf = malloc(65536L)
+    var n = read(src, buf, 65536L)
+    while (n > 0L) {
+        writeAll(dst, buf, n)
+        n = read(src, buf, 65536L)
+    }
+    free(buf)
+    close(src)
+    close(dst)
+    chmod(to, mode)
+    return true
+}
+
+// Argumentos da linha de comando, lidos de /proc/self/cmdline (separados por NUL).
+List<String> commandArgs() {
+    var args = listOf<String>()
+    var fd = open("/proc/self/cmdline", Sys.O_RDONLY, 0)
+    if (fd < 0) {
+        return args
+    }
+    var buf = malloc(65536L)
+    var n = read(fd, buf, 65535L)
+    close(fd)
+    var start = 0L
+    var i = 0L
+    while (i < n) {
+        if (buffer.peek8(buf + i) == 0) {
+            args.add(strndup(buf + start, i - start))
+            start = i + 1L
+        }
+        i = i + 1L
+    }
+    free(buf)
+    return args
 }
 
 // bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel

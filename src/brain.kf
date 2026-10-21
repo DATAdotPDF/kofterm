@@ -56,7 +56,34 @@ class Brain {
         }
     }
 
+    // Contribuicoes da comunidade (datasets/contrib/*.kofdata), ja anonimizadas e validadas
+    // no CI. Pesam no maximo 5 por linha, para nao abafar o que o proprio usuario faz.
+    loadContrib(List<String> lines) {
+        for (var raw in lines) {
+            var parts = splitOn(raw, " ")
+            if (parts.size >= 3 && !raw.startsWith("#")) {
+                var n = parts.get(1).toInt()
+                if (n > 5) {
+                    n = 5
+                }
+                var body = raw.substring(parts.get(0).length() + parts.get(1).length() + 2, raw.length())
+                if (parts.get(0) == "L") {
+                    model.observe("", body, "", n)
+                } else if (parts.get(0) == "T" && body.contains(" => ")) {
+                    model.observe(before(body, " => "), after(body, " => "), "", n)
+                } else if (parts.get(0) == "F" && parts.size == 4) {
+                    model.bump(model.featWord, parts.get(2) + model.sep() + parts.get(3), n)
+                }
+            }
+        }
+    }
+
     loadKnown() {
+        for (var w in loadLines(findShared(dataDir(), "corpus/commands.txt"))) {
+            if (!w.startsWith(";") && w.trim().length() > 1) {
+                known.add(w.trim())
+            }
+        }
         for (var e in index.entries) {
             var w = commandName(e.name)
             if (w.length() > 1) {
@@ -131,6 +158,12 @@ class Brain {
     // O ghost text para a linha atual (o que falta), ou "".
     String suggest(String line, String cwd, String feats) {
         var g = rawSuggest(line, cwd, feats)
+        // linhas vindas das contribuicoes tem marcadores (<PATH>, <FILE>...): a sugestao para
+        // antes do primeiro, que e onde o usuario precisa digitar o dele
+        var mark = g.indexOf("<")
+        if (mark >= 0) {
+            g = g.substring(0, mark)
+        }
         if (g.length() > 0 && isDangerous(line + g)) {
             return ""
         }

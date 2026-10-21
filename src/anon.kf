@@ -1,0 +1,503 @@
+// Anonimizador da contribuicao (`kofterm contribute`) e validador (`kofterm check`).
+// Modulo puro (sem libc), testado com `kof test src/anon.kf`.
+//
+// Regra geral: so passa como esta o que e publico e generico (nome de comando ou subcomando
+// da lista do projeto, opcao, operador do shell). Todo o resto vira um marcador:
+//   <CMD> programa fora da lista   <PATH> caminho     <FILE> arquivo     <URL> endereco web
+//   <IP>  endereco IP              <HOST> dominio     <USER> usuario     <NUM> numero
+//   <STR> texto entre aspas        <ARG> outro argumento                <VAL> valor de opcao
+// Linhas com cara de segredo sao descartadas inteiras, nunca mascaradas.
+
+class Anonymizer {
+    List<String> vocab = listOf<String>()
+
+    addVocab(String w) {
+        var t = w.trim()
+        if (t.length() > 0 && !t.startsWith(";") && !known(t)) {
+            vocab.add(t)
+        }
+    }
+
+    Boolean known(String w) {
+        for (var v in vocab) {
+            if (v == w) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Linha anonimizada, ou "" se estiver vazia ou parecer conter um segredo.
+    String line(String raw) {
+        if (raw.trim().length() == 0 || isSecret(raw)) {
+            return ""
+        }
+        var out = ""
+        var commandPos = true
+        for (var t in anonTokens(raw)) {
+            var a = token(t, commandPos)
+            commandPos = isOperator(t) && t != ">" && t != ">>" && t != "2>" && t != "<"
+            if (out.length() > 0) {
+                out = out + " "
+            }
+            out = out + a
+            if (t == "sudo") {
+                commandPos = true
+            }
+        }
+        return out
+    }
+
+    String token(String t, Boolean commandPos) {
+        if (isOperator(t) || t == "*" || t == "." || t == ".." || t == "~" || t == "-" || t == "--") {
+            return t
+        }
+        if (t.startsWith("\"") || t.startsWith("'")) {
+            if (t == "\"\"" || t == "''") {
+                return t // aspas vazias (git commit -m "") nao revelam nada
+            }
+            return "<STR>"
+        }
+        if (commandPos) {
+            if (known(t)) {
+                return t
+            }
+            if (t.startsWith("/") || t.startsWith("./") || t.startsWith("~") || t.startsWith("../")) {
+                return "<PATH>"
+            }
+            return "<CMD>"
+        }
+        if (t.startsWith("-")) {
+            var eq = t.indexOf("=")
+            if (eq > 0) {
+                return t.substring(0, eq) + "=<VAL>"
+            }
+            if (t.length() <= 25 && anonPlain(t)) {
+                return t
+            }
+            return "<ARG>"
+        }
+        if (t.startsWith("$")) {
+            if (anonUpper(t.substring(1, t.length()))) {
+                return t // $HOME, $PATH: nomes genericos
+            }
+            return "<ARG>"
+        }
+        if (known(t)) {
+            return t
+        }
+        if (t.contains("://")) {
+            return "<URL>"
+        }
+        if (t.contains("@")) {
+            var at = t.indexOf("@")
+            var rest = t.substring(at + 1, t.length())
+            var host = "<HOST>"
+            if (anonIp(anonBefore(rest, ":"))) {
+                host = "<IP>"
+            }
+            if (rest.contains(":")) {
+                return "<USER>@" + host + ":<PATH>"
+            }
+            return "<USER>@" + host
+        }
+        if (anonIp(anonBefore(t, ":"))) {
+            if (t.contains(":")) {
+                return "<IP>:<NUM>"
+            }
+            return "<IP>"
+        }
+        if (anonDigits(t)) {
+            return "<NUM>"
+        }
+        if (t.contains("/")) {
+            return "<PATH>"
+        }
+        if (t.contains(".")) {
+            for (var tld in listOf(".com", ".org", ".net", ".br", ".io", ".dev", ".gov", ".edu", ".local", ".app")) {
+                if (t.endsWith(tld)) {
+                    return "<HOST>"
+                }
+            }
+            return "<FILE>"
+        }
+        return "<ARG>"
+    }
+
+    Boolean isSecret(String raw) {
+        var low = raw.toLowerCase()
+        for (var hint in listOf("password", "passwd=", "--pass", "pass=", "pwd=", "token", "secret",
+                "apikey", "api_key", "api-key", "authorization", "bearer", "private_key", "privatekey",
+                "sshpass", "aws_access", "aws_secret", "credential")) {
+            if (low.contains(hint)) {
+                return true
+            }
+        }
+        var toks = anonTokens(raw)
+        if (toks.size > 0 && toks.get(0) == "export") {
+            for (var t in toks) {
+                if (t.contains("=")) {
+                    return true
+                }
+            }
+        }
+        var i = 0
+        while (i < toks.size) {
+            var t = toks.get(i)
+            if ((t == "-u" || t == "--user") && i + 1 < toks.size && toks.get(i + 1).contains(":")) {
+                return true
+            }
+            if ((toks.get(0) == "mysql" || toks.get(0) == "mariadb") && t.startsWith("-p") && t.length() > 2) {
+                return true
+            }
+            // pedaco longo misturando letras e numeros: chave, token ou hash
+            var v = t
+            if (t.contains("=")) {
+                v = t.substring(t.indexOf("=") + 1, t.length())
+            }
+            if (v.length() >= 24 && !v.contains("/") && anonHasDigit(v) && anonHasLetter(v)) {
+                return true
+            }
+            i = i + 1
+        }
+        return false
+    }
+
+    // Validador do CI: "" se a linha do arquivo .kofdata esta ok, senao o motivo.
+    String check(String fileLine) {
+        var l = fileLine.trim()
+        if (l.length() == 0 || l.startsWith("#")) {
+            return ""
+        }
+        var parts = anonSplit(l, " ")
+        if (parts.size < 3 || !anonDigits(parts.get(1))) {
+            return "formato invalido"
+        }
+        var kind = parts.get(0)
+        if (kind != "L" && kind != "T" && kind != "F") {
+            return "tipo desconhecido: " + kind
+        }
+        var body = l.substring(kind.length() + parts.get(1).length() + 2, l.length())
+        if (isSecret(body)) {
+            return "parece conter um segredo"
+        }
+        if (kind == "F") {
+            var f = parts.get(2)
+            var ok = false
+            for (var x in listOf("git", "node", "make", "python", "kof", "home")) {
+                if (f == x) {
+                    ok = true
+                }
+            }
+            if (!ok || parts.size != 4 || !(known(parts.get(3)) || parts.get(3) == "<CMD>")) {
+                return "caracteristica ou comando invalido"
+            }
+            return ""
+        }
+        for (var t in anonSplit(body, " ")) {
+            if (!tokenOk(t)) {
+                return "palavra nao anonimizada: " + t
+            }
+        }
+        return ""
+    }
+
+    Boolean tokenOk(String t) {
+        if (t == "=>" || known(t) || isOperator(t) || t == "*" || t == "." || t == ".." || t == "~" || t == "-" || t == "--" || t == "\"\"" || t == "''") {
+            return true
+        }
+        if (t.startsWith("-")) {
+            var flag = anonBefore(t, "=")
+            return anonPlain(flag) && (!t.contains("=") || t.endsWith("=<VAL>"))
+        }
+        if (t.startsWith("$")) {
+            return anonUpper(t.substring(1, t.length()))
+        }
+        // so marcadores e os separadores @ e :
+        var rest = t
+        for (var m in listOf("<CMD>", "<PATH>", "<FILE>", "<URL>", "<IP>", "<HOST>", "<USER>", "<NUM>", "<STR>", "<ARG>")) {
+            rest = rest.replace(m, "")
+        }
+        rest = rest.replace("@", "").replace(":", "")
+        return rest.length() == 0
+    }
+}
+
+// Junta os eventos anonimizados e so mantem o que aparece pelo menos `minCount` vezes.
+class ContribBuilder {
+    List<String> keys = listOf<String>()
+    List<Int> counts = listOf<Int>()
+
+    bump(String key) {
+        var i = 0
+        while (i < keys.size) {
+            if (keys.get(i) == key) {
+                counts.set(i, counts.get(i) + 1)
+                return
+            }
+            i = i + 1
+        }
+        keys.add(key)
+        counts.add(1)
+    }
+
+    // `prevAnon` e `anonLine` ja anonimizados ("" = descartado); `feats` como "git,node".
+    add(String prevAnon, String anonLine, String feats, String cmdAnon) {
+        if (anonLine.length() == 0) {
+            return
+        }
+        bump("L " + anonLine)
+        if (prevAnon.length() > 0) {
+            bump("T " + prevAnon + " => " + anonLine)
+        }
+        for (var f in anonSplit(feats, ",")) {
+            bump("F " + f + " " + cmdAnon)
+        }
+    }
+
+    List<String> build(Int minCount, String version) {
+        var out = listOf<String>()
+        out.add("# kofterm-contrib v1")
+        out.add("# Gerado pelo KofTerm " + version + ". Leia antes de enviar: so comandos genericos e marcadores.")
+        var i = 0
+        while (i < keys.size) {
+            if (counts.get(i) >= minCount) {
+                var k = keys.get(i)
+                out.add(k.substring(0, 1) + " " + counts.get(i) + " " + k.substring(2, k.length()))
+            }
+            i = i + 1
+        }
+        return out
+    }
+}
+
+Boolean isOperator(String t) {
+    for (var op in listOf("|", "||", "&&", ";", ">", ">>", "2>", "2>&1", "&", "<", "&>")) {
+        if (t == op) {
+            return true
+        }
+    }
+    return false
+}
+
+// Separa a linha em palavras, mantendo juntos os trechos entre aspas.
+List<String> anonTokens(String s) {
+    var out = listOf<String>()
+    var cur = ""
+    var quote = ""
+    var i = 0
+    while (i < s.length()) {
+        var c = s.substring(i, i + 1)
+        if (quote.length() > 0) {
+            cur = cur + c
+            if (c == quote) {
+                quote = ""
+            }
+        } else if (c == "\"" || c == "'") {
+            quote = c
+            cur = cur + c
+        } else if (c == " ") {
+            if (cur.length() > 0) {
+                out.add(cur)
+            }
+            cur = ""
+        } else {
+            cur = cur + c
+        }
+        i = i + 1
+    }
+    if (cur.length() > 0) {
+        out.add(cur)
+    }
+    return out
+}
+
+List<String> anonSplit(String s, String sep) {
+    var out = listOf<String>()
+    var start = 0
+    var i = 0
+    while (i + sep.length() <= s.length()) {
+        if (s.substring(i, i + sep.length()) == sep) {
+            if (i > start) {
+                out.add(s.substring(start, i))
+            }
+            i = i + sep.length()
+            start = i
+        } else {
+            i = i + 1
+        }
+    }
+    if (s.length() > start) {
+        out.add(s.substring(start, s.length()))
+    }
+    return out
+}
+
+String anonBefore(String s, String sep) {
+    var i = s.indexOf(sep)
+    if (i < 0) {
+        return s
+    }
+    return s.substring(0, i)
+}
+
+Boolean anonCharIn(String c, String set) {
+    return set.contains(c)
+}
+
+Boolean anonDigits(String s) {
+    if (s.length() == 0) {
+        return false
+    }
+    var i = 0
+    while (i < s.length()) {
+        if (!anonCharIn(s.substring(i, i + 1), "0123456789")) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+Boolean anonUpper(String s) {
+    if (s.length() == 0) {
+        return false
+    }
+    var i = 0
+    while (i < s.length()) {
+        if (!anonCharIn(s.substring(i, i + 1), "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+// Opcao "limpa": letras, numeros e - _ (sem valor colado).
+Boolean anonPlain(String s) {
+    var i = 0
+    while (i < s.length()) {
+        if (!anonCharIn(s.substring(i, i + 1), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+Boolean anonHasDigit(String s) {
+    var i = 0
+    while (i < s.length()) {
+        if (anonCharIn(s.substring(i, i + 1), "0123456789")) {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+Boolean anonHasLetter(String s) {
+    var i = 0
+    while (i < s.length()) {
+        if (anonCharIn(s.substring(i, i + 1).toLowerCase(), "abcdefghijklmnopqrstuvwxyz")) {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+Boolean anonIp(String s) {
+    var parts = anonSplit(s, ".")
+    if (parts.size != 4 || s.endsWith(".")) {
+        return false
+    }
+    for (var p in parts) {
+        if (!anonDigits(p)) {
+            return false
+        }
+    }
+    return true
+}
+
+Anonymizer sampleAnon() {
+    var a = Anonymizer()
+    for (var w in listOf("ls", "git", "commit", "push", "origin", "main", "scp", "ssh", "cat", "grep", "sudo", "apt", "install", "curl", "ping", "cd", "mysql")) {
+        a.addVocab(w)
+    }
+    return a
+}
+
+test "o exemplo do plano" {
+    var a = sampleAnon()
+    assert(a.line("scp notas.txt pedro@10.0.0.5:/home/pedro") == "scp <FILE> <USER>@<IP>:<PATH>", "scp")
+}
+
+test "comandos e opcoes publicos passam" {
+    var a = sampleAnon()
+    assert(a.line("git commit -m \"corrige o login da empresa\"") == "git commit -m <STR>", "aspas viram STR")
+    assert(a.line("git commit -m \"\"") == "git commit -m \"\"", "aspas vazias passam")
+    assert(a.line("sudo apt install -y htop") == "sudo apt install -y <ARG>", "pacote vira ARG")
+    assert(a.line("ls -la ~/Documentos/cliente") == "ls -la <PATH>", "caminho")
+}
+
+test "programa fora da lista vira CMD" {
+    var a = sampleAnon()
+    assert(a.line("deploy-empresa-x --force") == "<CMD> --force", "nome proprio escondido")
+    assert(a.line("./backup.sh 3") == "<PATH> <NUM>", "script local")
+    assert(a.line("cat log.txt | meuscript") == "cat <FILE> | <CMD>", "depois do pipe e comando")
+}
+
+test "rede vira marcadores" {
+    var a = sampleAnon()
+    assert(a.line("curl https://intranet.empresa.com/api") == "curl <URL>", "url")
+    assert(a.line("ping meusite.com.br") == "ping <HOST>", "host")
+    assert(a.line("ssh admin@servidor-interno") == "ssh <USER>@<HOST>", "usuario e host")
+    assert(a.line("ping 192.168.0.10") == "ping <IP>", "ip")
+}
+
+test "segredos descartam a linha inteira" {
+    var a = sampleAnon()
+    assert(a.line("export GITHUB_TOKEN=ghp_abc") == "", "export")
+    assert(a.line("mysql -u root -pMinhaSenha123") == "", "mysql -p")
+    assert(a.line("curl -u pedro:senha123 https://x.com") == "", "curl -u")
+    assert(a.line("curl -H \"Authorization: Bearer xyz\" https://x.com") == "", "authorization")
+    assert(a.line("echo a8f5f167f44f4964e6c998dee827110c") == "", "hash/chave")
+    assert(a.line("git push origin main") == "git push origin main", "comum passa")
+}
+
+test "o validador aceita o que o anonimizador produz" {
+    var a = sampleAnon()
+    var b = ContribBuilder()
+    var i = 0
+    while (i < 3) {
+        b.add("", a.line("scp notas.txt pedro@10.0.0.5:/home/pedro"), "git", "scp")
+        b.add(a.line("git status"), a.line("git commit -m \"x\""), "", "git")
+        i = i + 1
+    }
+    var lines = b.build(3, "teste")
+    assert(lines.size > 2, "tem conteudo")
+    for (var l in lines) {
+        assert(a.check(l) == "", "valido")
+    }
+}
+
+test "o validador recusa dado pessoal" {
+    var a = sampleAnon()
+    assert(a.check("L 3 cat /home/pedro/segredo.txt") != "", "caminho cru")
+    assert(a.check("L 3 deploy-empresa-x") != "", "programa desconhecido")
+    assert(a.check("F 3 git ls") == "", "caracteristica ok")
+    assert(a.check("F 3 pastaDoPedro ls") != "", "caracteristica inventada")
+    assert(a.check("L 3 git push origin main") == "", "linha comum")
+}
+
+test "o minimo de repeticoes filtra o que e raro" {
+    var b = ContribBuilder()
+    b.add("", "ls -la", "", "ls")
+    b.add("", "ls -la", "", "ls")
+    b.add("", "git status", "", "git")
+    b.add("", "git status", "", "git")
+    b.add("", "git status", "", "git")
+    var out = b.build(3, "t")
+    assert(out.size == 3 && out.get(2) == "L 3 git status", "so o que apareceu 3 vezes")
+}

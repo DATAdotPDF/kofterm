@@ -1,0 +1,274 @@
+// Subcomandos: kofterm [contribute|check|install|uninstall|doctor|version|help]
+// Sem argumentos, abre o terminal (main.kf).
+
+class Version {
+    static String NUMBER = "0.5.0"
+}
+
+printHelp() {
+    println("KofTerm " + Version.NUMBER + " — terminal com autocomplete por IA local, 100% offline")
+    println("")
+    println("  kofterm                      abre o terminal")
+    println("  kofterm contribute --preview mostra o que seria enviado ao projeto (nada e gravado)")
+    println("  kofterm contribute           grava kofterm-contrib.kofdata na pasta atual")
+    println("  kofterm check ARQUIVO...     valida arquivos .kofdata (usado no CI)")
+    println("  kofterm install              instala em ~/.local/share/kofterm e cria ~/.local/bin/kofterm")
+    println("  kofterm uninstall            remove o programa (seu historico fica, a menos que use --purge)")
+    println("  kofterm doctor               confere a instalacao e mostra onde ficam seus dados")
+    println("  kofterm version              mostra a versao")
+    println("")
+    println("Dentro do terminal: TAB aceita a sugestao, F1 abre o indice, F2 liga o painel.")
+}
+
+// O anonimizador conhece: a lista publica de comandos, os nomes do indice e as palavras
+// simples do corpus. Mais nada.
+Anonymizer buildAnonymizer(String dir) {
+    var a = Anonymizer()
+    for (var w in loadLines(findShared(dir, "corpus/commands.txt"))) {
+        a.addVocab(w)
+    }
+    var idx = CommandIndex()
+    idx.load(loadLines(findShared(dir, "index/pt_BR.txt")))
+    for (var e in idx.entries) {
+        for (var w in anonSplit(e.name, " ")) {
+            if (anonPlain(w) && !w.startsWith("-")) {
+                a.addVocab(w)
+            }
+        }
+    }
+    for (var line in loadLines(findShared(dir, "corpus/sessions.txt"))) {
+        if (!line.startsWith(";") && !line.startsWith("@")) {
+            for (var w in anonSplit(line, " ")) {
+                if (anonPlain(w) && !w.startsWith("-") && !anonDigits(w)) {
+                    a.addVocab(w)
+                }
+            }
+        }
+    }
+    return a
+}
+
+Int runContribute(List<String> args) {
+    var preview = false
+    for (var a in args) {
+        if (a == "--preview") {
+            preview = true
+        }
+    }
+    var dir = dataDir()
+    var anon = buildAnonymizer(dir)
+    var b = ContribBuilder()
+    var prev = ""
+    var used = 0
+    for (var raw in loadLines(dir + "/events")) {
+        var parts = splitOn(raw, "\u0009")
+        if (parts.size >= 3 && parts.get(0) != "127") {
+            var line = anon.line(parts.get(2))
+            var cmd = ""
+            var toks = anonSplit(line, " ")
+            if (toks.size > 0) {
+                cmd = toks.get(0)
+                if (cmd == "sudo" && toks.size > 1) {
+                    cmd = toks.get(1)
+                }
+            }
+            b.add(prev, line, parts.get(1), cmd)
+            prev = line
+            used = used + 1
+        }
+    }
+    var out = b.build(3, Version.NUMBER)
+    // confere o proprio resultado com o mesmo validador do CI
+    for (var l in out) {
+        if (anon.check(l).length() > 0) {
+            println("kofterm: linha recusada pelo validador, nada foi gravado: " + l)
+            return 1
+        }
+    }
+    if (out.size <= 2) {
+        println("Ainda nao ha padroes repetidos pelo menos 3 vezes (" + used + " comandos lidos).")
+        println("Continue usando o KofTerm e tente de novo mais tarde.")
+        return 0
+    }
+    if (preview) {
+        for (var l in out) {
+            println(l)
+        }
+        println("")
+        println("(" + (out.size - 2) + " linhas. Nada foi gravado. Para gravar: kofterm contribute)")
+        return 0
+    }
+    var content = ""
+    for (var l in out) {
+        content = content + l + "\n"
+    }
+    saveFile("kofterm-contrib.kofdata", content)
+    println("Gravado: kofterm-contrib.kofdata (" + (out.size - 2) + " linhas)")
+    println("")
+    println("Para contribuir (so se quiser):")
+    println("  1. Leia o arquivo inteiro. So deve ter comandos genericos e marcadores como <PATH>.")
+    println("  2. Faca um fork de https://github.com/DATAdotPDF/kofterm")
+    println("  3. Copie o arquivo para datasets/contrib/<um-apelido>.kofdata")
+    println("  4. git add, git commit, git push e abra um Pull Request.")
+    println("O KofTerm nunca envia nada sozinho: quem envia e o seu Git, se voce decidir.")
+    return 0
+}
+
+Int runCheck(List<String> args) {
+    var dir = dataDir()
+    var anon = buildAnonymizer(dir)
+    var bad = 0
+    var files = 0
+    var i = 2
+    while (i < args.size) {
+        var path = args.get(i)
+        files = files + 1
+        var n = 0
+        for (var l in loadLines(path)) {
+            n = n + 1
+            var why = anon.check(l)
+            if (why.length() > 0) {
+                println(path + ":" + n + ": " + why)
+                bad = bad + 1
+            }
+        }
+        i = i + 1
+    }
+    if (files == 0) {
+        println("uso: kofterm check ARQUIVO.kofdata...")
+        return 2
+    }
+    if (bad > 0) {
+        println(bad + " problema(s) encontrado(s)")
+        return 1
+    }
+    println("ok: " + files + " arquivo(s) valido(s)")
+    return 0
+}
+
+Int runInstall() {
+    var dir = dataDir()
+    var root = sourceRoot()
+    var home = getenv("HOME")
+    var ok = copyFile("/proc/self/exe", dir + "/kofterm.new", Sys.MODE_755)
+    if (ok) {
+        unlink(dir + "/kofterm")
+        // rename via copia: o binario em uso pode ser o proprio destino
+        ok = copyFile(dir + "/kofterm.new", dir + "/kofterm", Sys.MODE_755)
+        unlink(dir + "/kofterm.new")
+    }
+    if (!ok) {
+        println("kofterm: nao consegui copiar o programa para " + dir)
+        return 1
+    }
+    for (var sub in listOf("index", "corpus", "datasets", "datasets/contrib")) {
+        mkdir(dir + "/" + sub, Sys.MODE_755)
+    }
+    var copied = 0
+    for (var sub in listOf("index", "corpus", "datasets/contrib")) {
+        for (var f in listFiles(root + "/" + sub, "")) {
+            var name = f.substring(f.lastIndexOf("/") + 1, f.length())
+            if (!name.startsWith(".") && copyFile(f, dir + "/" + sub + "/" + name, 420)) {
+                copied = copied + 1
+            }
+        }
+    }
+    mkdir(home + "/.local", Sys.MODE_755)
+    mkdir(home + "/.local/bin", Sys.MODE_755)
+    unlink(home + "/.local/bin/kofterm")
+    symlink(dir + "/kofterm", home + "/.local/bin/kofterm")
+    println("KofTerm " + Version.NUMBER + " instalado:")
+    println("  programa: " + dir + "/kofterm (" + copied + " arquivos de indice e corpus)")
+    println("  comando:  " + home + "/.local/bin/kofterm")
+    println("")
+    println("Abra com: kofterm")
+    println("Se o comando nao for encontrado, adicione ao ~/.bashrc:  export PATH=\"$HOME/.local/bin:$PATH\"")
+    return 0
+}
+
+Int runUninstall(List<String> args) {
+    var purge = false
+    for (var a in args) {
+        if (a == "--purge") {
+            purge = true
+        }
+    }
+    var dir = dataDir()
+    var home = getenv("HOME")
+    unlink(home + "/.local/bin/kofterm")
+    unlink(dir + "/kofterm")
+    unlink(dir + "/bashrc")
+    for (var sub in listOf("index", "corpus", "datasets/contrib")) {
+        for (var f in listFiles(dir + "/" + sub, "")) {
+            unlink(f)
+        }
+        rmdir(dir + "/" + sub)
+    }
+    rmdir(dir + "/datasets")
+    if (purge) {
+        for (var f in listOf("history", "events", "panel")) {
+            unlink(dir + "/" + f)
+        }
+        rmdir(dir)
+        println("KofTerm removido, junto com historico e aprendizado.")
+    } else {
+        println("KofTerm removido. Seu historico e o que o modelo aprendeu ficaram em " + dir)
+        println("Para apagar tambem: kofterm uninstall --purge (rode antes de remover) ou rm -r " + dir)
+    }
+    return 0
+}
+
+Int runDoctor() {
+    var dir = dataDir()
+    var exe = exeDir()
+    println("KofTerm " + Version.NUMBER)
+    println("  programa:   " + exe)
+    println("  arquivos:   " + sourceRoot())
+    println("  seus dados: " + dir + " (pasta 0700, arquivos 0600)")
+    var idx = CommandIndex()
+    idx.load(loadLines(findShared(dir, "index/pt_BR.txt")))
+    println("  indice:     " + idx.entries.size + " comandos")
+    println("  corpus:     " + loadLines(findShared(dir, "corpus/sessions.txt")).size + " linhas")
+    println("  contribuicoes da comunidade: " + listFiles(findShared(dir, "datasets/contrib"), ".kofdata").size + " arquivo(s)")
+    println("  aprendido com voce: " + loadLines(dir + "/events").size + " comandos, historico com " + loadLines(dir + "/history").size)
+    var bashOk = access("/bin/bash", 1) == 0 || access("/usr/bin/bash", 1) == 0
+    println("  bash:       " + bashOk)
+    println("  terminal:   " + (isatty(0) == 1) + " (entrada e um terminal)")
+    println("")
+    println("Rede: o KofTerm nao tem codigo de rede. Para conferir voce mesmo:")
+    println("  strace -f -e trace=network kofterm")
+    println("(nao deve aparecer nenhuma chamada socket/connect do kofterm)")
+    return 0
+}
+
+// Executa um subcomando e devolve o codigo de saida, ou -1 se nao houver subcomando.
+Int runSubcommand(List<String> args) {
+    if (args.size < 2) {
+        return -1
+    }
+    var cmd = args.get(1)
+    if (cmd == "contribute") {
+        return runContribute(args)
+    }
+    if (cmd == "check") {
+        return runCheck(args)
+    }
+    if (cmd == "install") {
+        return runInstall()
+    }
+    if (cmd == "uninstall") {
+        return runUninstall(args)
+    }
+    if (cmd == "doctor") {
+        return runDoctor()
+    }
+    if (cmd == "version" || cmd == "--version" || cmd == "-V") {
+        println("KofTerm " + Version.NUMBER)
+        return 0
+    }
+    printHelp()
+    if (cmd == "help" || cmd == "--help" || cmd == "-h") {
+        return 0
+    }
+    return 2
+}

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar KOF 0.6.6 (release oficial, SHA-256 fixo)
+        run: |
+          curl -fsSL -o kof.tar.gz \
+            https://github.com/KofLang/Kof4j/releases/download/kof-0.6.6-linux-x86_64/kof-0.6.6-linux-x86_64.tar.gz
+          echo "96dd0d804c02e1e0f066dc0b53a4b1c385595d32820d97aeb77bb5dc772296f6  kof.tar.gz" | sha256sum -c -
+          tar -xzf kof.tar.gz -C "$HOME"
+          rm kof.tar.gz
+          echo "$HOME/kof-0.6.6-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Sem código de rede no KofTerm
+        run: |
+          if grep -rnE 'import kof\.(web|net|http)|http\.(get|post|put|delete)|fetch\(|extern[^(]*\b(socket|connect|bind|listen|accept|getaddrinfo|gethostbyname|sendto|recvfrom)\(' src/; then
+            echo "::error::Código de rede encontrado em src/. O KofTerm é 100% offline."
+            exit 1
+          fi
+          echo "ok: nenhum import ou extern de rede"
+
+      - name: Testes unitários
+        run: |
+          for f in keys editor history prompt index model anon; do
+            kof test "src/$f.kf" --target native
+          done
+
+      - name: Build nativo
+        run: kof build src --target native --output build/kofterm
+
+      - name: Validar contribuições da comunidade
+        run: |
+          shopt -s nullglob
+          files=(datasets/contrib/*.kofdata)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "nenhuma contribuição ainda"
+          else
+            ./build/kofterm/Default/Main check "${files[@]}"
+          fi
+
+      - name: Smoke test
+        run: |
+          ./build/kofterm/Default/Main version
+          ./build/kofterm/Default/Main doctor

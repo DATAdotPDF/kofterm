@@ -28,6 +28,10 @@ extern "libc.so.6" access(String path, Int mode): Int
 extern "libc.so.6" opendir(String path): Long
 extern "libc.so.6" readdir(Long dir): Long // struct dirent*: d_type em +18, d_name em +19
 extern "libc.so.6" closedir(Long dir): Int
+extern "libc.so.6" symlink(String target, String linkpath): Int
+extern "libc.so.6" unlink(String path): Int
+extern "libc.so.6" rmdir(String path): Int
+extern "libc.so.6" isatty(Int fd): Int
 
 extern "libc.so.6" read(Int fd, Long buf, Long n): Long
 extern "libc.so.6" write(Int fd, Long buf, Long n): Long
