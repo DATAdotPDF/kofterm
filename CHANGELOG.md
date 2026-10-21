@@ -2,6 +2,24 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.2.0] - 21/10/2026
+
+Phase 2: line editor and ghost text.
+
+### Added
+- KofTerm edits the line at the prompt: Bash runs with `--noediting` and KofTerm's own bashrc, which loads `~/.bashrc` and adds an invisible prompt marker with the exit code and current folder
+- Ghost-text suggestion from history in grey; **TAB** or **→** accepts, **Ctrl+→** accepts one word
+- Line editing: ←/→, Home/End, Ctrl-A/E/B/F, Ctrl-U/K/W, Alt-B/F, Delete, Backspace, Ctrl-L (keeps the draft), ↑/↓ history, UTF-8 input
+- Persistent history in `~/.local/share/kofterm/history`; lines starting with a space are not saved
+- Pure modules with 19 unit tests: `keys.kf`, `editor.kf`, `history.kf`, `prompt.kf`
+
+### Fixed
+- Data folder forced to `0700` and files to `0600` with `chmod`, including folders created before
+
+### Known limitations
+- Bash's own TAB completion is off at the prompt (file completion planned for Phase 4)
+- Lines wrapping past the bottom of the screen may redraw in the wrong place
+
 ## [0.1.0] - 21/10/2026
 
 Phase 1: passthrough terminal.

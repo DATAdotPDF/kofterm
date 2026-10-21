@@ -64,5 +64,18 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Opt-in contribution: `kofterm contribute` exports an anonymized, aggregated file that the user reviews and sends by pull request with their own Git. CI re-validates it and retrains the base model, so each release ships a smarter model. KofTerm keeps zero network code.
 - Side panel explains each option separately (`-ld` → `-l` + `-d`) and shows reading links (ss64, man7.org, GNU Bash Manual, tldr) that KofTerm never opens itself.
 
+### Phase 2: line editor and ghost text (night)
+- Design decision: KofTerm owns the line, like fish. Bash starts with `--noediting --rcfile <kofterm bashrc> -i`. The bashrc loads `~/.bashrc`, captures `$?` first in `PROMPT_COMMAND` (string or array form) and appends an invisible marker `ESC ] 7770 ; status ; $PWD BEL` to the end of `PS1`. Without readline, `\[ \]` is not needed, which matters because KOF string literals cannot produce a backslash (`"\\"` gives nothing).
+- Probed first: `List<String>`, `String.startsWith/substring/length` (UTF-8 aware: `"a€b".length()` = 3), classes with mutable fields and methods, `"\u001b"` for ESC, and `getenv`, `strndup` (returns `String`), `strlen`, `open`, `mkdir`, `lseek`, `chmod` as externs.
+- Testing: `kof test` compiles one file at a time, and `package` + `--module-root` works for tests but breaks the native build (`PKG004`). Choice: pure modules are self-contained with their tests in the same file (`keys`, `editor`, `history`, `prompt`); `kof test src/<file>.kf` runs them. 19 tests pass.
+- `charAt` returns a character, not a `String`, so `charAt(i) == " "` is always false. Using `substring(i, i + 1)`.
+- 16:50: first Phase 2 build, 117 KB. Verified on Kali over `ssh -tt`:
+  - typing `e` shows `cho kofterm_ghost_ok` in grey; TAB accepts; Enter runs it;
+  - `false` then `echo st=$?` → `st=1` (exit code survives the marker);
+  - ↑ recalls the previous command; `read -p` and a `sudo` password prompt work in passthrough (password not typed; Ctrl-C cancels);
+  - `echo ação ok` (UTF-8), Ctrl+→ accepts one word at a time, Ctrl-W, Ctrl-A, Ctrl-L keeps the draft.
+- **New KOF trap:** the bashrc came out `644` instead of `600`. My own function `writeFile` was being replaced in silence by a KOF built-in of the same name. Renamed to `saveFile` (and `readLines` to `loadLines` to be safe), and added `chmod` so the folder is always `0700` and files `0600`, even if they existed before. To be reported to KofLang/Kof4j together with the `poll` case.
+
 ### Still to verify by hand
 - `vim`, `htop` and resizing with a real window, running `build/kofterm/Default/Main` in the VM.
+- Typing in a real window to feel the ghost text (latency, colors).

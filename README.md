@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <img src="https://img.shields.io/badge/Status-Phase_1_done-8b5cf6?style=flat-square" alt="Phase 1 done">
+  <img src="https://img.shields.io/badge/Status-Phase_2_done-8b5cf6?style=flat-square" alt="Phase 2 done">
 </p>
 
 <p align="center">
@@ -43,8 +43,9 @@
 
 - **Phase 0 (FFI spikes): done.** Raw keyboard mode, window size and Bash running inside a pseudo-terminal are proven in KOF native on Kali Linux. See [spikes/README.md](spikes/README.md).
 - **Phase 1 (passthrough terminal): done.** `kofterm` runs Bash in a pseudo-terminal, passes Bash's exit code through, follows window resizes and restores your terminal even when killed by `SIGTERM` or `SIGHUP`.
-- **Phase 2 (line editor and ghost text): next.**
-- It works as a plain terminal today; the suggestions arrive in Phase 2.
+- **Phase 2 (line editor and ghost text): done.** At the prompt, KofTerm edits the line itself and shows the rest of a matching command from your history in grey. **TAB** or **→** accepts it, **Ctrl+→** accepts one word, and ↑/↓ browse the history.
+- **Phase 3 (offline command index and side panel): next.**
+- Today the suggestions come from your own history only. The model that understands context arrives in Phase 4.
 
 ###
 
@@ -83,7 +84,9 @@
 | --- | --- |
 | Runs Bash inside a pseudo-terminal (colors, Ctrl-C, resize, exit code) | ✅ Phase 1 |
 | Terminal restored even if KofTerm is killed (`SIGTERM`, `SIGHUP`) | ✅ Phase 1 |
-| Ghost-text suggestion, **TAB** accepts the line, **Ctrl+→** accepts one word | Phase 2 |
+| Ghost-text suggestion, **TAB** / **→** accepts the line, **Ctrl+→** accepts one word | ✅ Phase 2 |
+| Line editing: ←/→, Home/End, Ctrl-A/E/U/K/W, Ctrl-L, ↑/↓ history, UTF-8 (accents) | ✅ Phase 2 |
+| Private history in `~/.local/share/kofterm` (folder 0700, files 0600) | ✅ Phase 2 |
 | Context-aware suggestions (what you typed, previous command, exit code, folders) | Phase 4 |
 | Learns from you as you type, locally | Phase 4 |
 | "Refactor" suggestions: `sudo` retry, typo fix, `cat f \| grep x` → `grep x f` | Phase 4 |
@@ -130,6 +133,12 @@ kofterm/
 │   └── 03_pty_bash/         Bash inside a PTY with forkpty + ppoll
 ├── src/                     The terminal itself, all .kf
 │   ├── main.kf              Event loop: keyboard, Bash output and signals
+│   ├── session.kf           At the prompt: line editing, ghost text, sending to Bash
+│   ├── keys.kf              Raw bytes → keys, with tests (future kof-ansi)
+│   ├── editor.kf            The line being typed and its cursor, with tests
+│   ├── history.kf           History and suggestions, with tests
+│   ├── prompt.kf            Finds the invisible prompt marker in Bash's output, with tests
+│   ├── storage.kf           Private files, UTF-8 conversions, KofTerm's bashrc
 │   ├── libc.kf              Every libc extern and Linux constant, in one place
 │   ├── tty.kf               Raw mode, restore, window size (future kof-tty)
 │   ├── pty.kf               Bash in a pseudo-terminal, exit status (future kof-tty)
@@ -171,7 +180,13 @@ kof build src --target native --output build/kofterm
 ./build/kofterm/Default/Main
 ```
 
-You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to come back; KofTerm exits with the same code as Bash.
+You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Run a few commands, then start typing one of them again: the rest appears in grey, and **TAB** completes it. Type `exit` to come back; KofTerm exits with the same code as Bash.
+
+Run the unit tests (19 tests, one file at a time):
+
+```bash
+for f in keys editor history prompt; do kof test src/$f.kf --target native; done
+```
 
 **4. Optional: run the Phase 0 spikes** (in a real terminal window, not through a pipe):
 
@@ -195,8 +210,8 @@ Spike 01 prints every key you press (`q` quits). Spike 03 opens a Bash inside Ko
 | --- | --- | --- |
 | 0 | FFI spikes: raw mode, window size, PTY | ✅ done (21/10/2026) |
 | 1 | Passthrough terminal, signal-safe restore (`signalfd`) | ✅ done (21/10/2026) |
-| 2 | Line editor and ghost text from history | next |
-| 3 | Offline command index, side panel, per-option explanations, reading links | planned |
+| 2 | Line editor and ghost text from history | ✅ done (21/10/2026) |
+| 3 | Offline command index, side panel, per-option explanations, reading links | next |
 | 4 | n-gram model with local continuous learning, context, grammar, safety rules | planned |
 | 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | planned |
 | 6 | Optional neural model in pure KOF (`kof-nn`) | planned |
@@ -223,9 +238,19 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **7. Phase 1: a real terminal.** The spike became `src/`, split into modules that will later form the `kof-tty` library. Signals are blocked and read as data through `signalfd` in the same `ppoll` loop, because KOF cannot keep a signal callback. That gives resize on `SIGWINCH` and a restored terminal on `SIGTERM` and `SIGHUP`. Verified on Kali: Bash's exit code passes through (`exit 7` → 7), and no orphan Bash is left behind.
 
-**8. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
+**8. Phase 2: KofTerm owns the line.** Bash starts without its own line editor (`--noediting`), and KofTerm's bashrc loads yours and adds an invisible marker at the end of the prompt with the last exit code and the current folder. When the marker arrives, KofTerm edits the line, draws the grey suggestion and only sends the finished line on Enter; while a command runs, every key goes straight to it. Two more KOF traps showed up: `charAt` returns a character, not a `String`, and a function you write yourself (`writeFile`) can be silently replaced by a KOF built-in of the same name. 19 unit tests now cover the pure modules.
+
+**9. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
 
 The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
+
+###
+
+<h3 align="left">KNOWN LIMITATIONS:</h3>
+
+- **TAB** accepts the suggestion; Bash's own TAB completion is off while KofTerm edits the line. File and folder completion returns in Phase 4, inside KofTerm.
+- A line that wraps past the bottom of the screen may redraw in the wrong place. Fix planned: ask the terminal for the cursor position instead of saving it.
+- Full-width characters (CJK, some emoji) count as one column.
 
 ###
 

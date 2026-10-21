@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Feito_com-KOF_0.6.6-f59e0b?style=flat-square" alt="Feito com KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Plataforma-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Rede-nenhuma-22c55e?style=flat-square" alt="Sem rede">
-  <img src="https://img.shields.io/badge/Status-Fase_1_conclu%C3%ADda-8b5cf6?style=flat-square" alt="Fase 1 concluída">
+  <img src="https://img.shields.io/badge/Status-Fase_2_conclu%C3%ADda-8b5cf6?style=flat-square" alt="Fase 2 concluída">
 </p>
 
 <p align="center">
@@ -43,8 +43,9 @@
 
 - **Fase 0 (spikes de FFI): concluída.** Modo raw do teclado, tamanho da janela e Bash rodando dentro de um pseudo-terminal estão provados em KOF native no Kali Linux. Veja [spikes/README.md](spikes/README.md).
 - **Fase 1 (terminal passthrough): concluída.** O `kofterm` roda o Bash num pseudo-terminal, repassa o código de saída do Bash, acompanha o redimensionamento da janela e restaura o seu terminal mesmo quando é morto por `SIGTERM` ou `SIGHUP`.
-- **Fase 2 (editor de linha e ghost text): próxima.**
-- Hoje funciona como um terminal comum; as sugestões chegam na Fase 2.
+- **Fase 2 (editor de linha e ghost text): concluída.** No prompt, o KofTerm edita a linha e mostra em cinza o resto de um comando do seu histórico que combina com o que você digitou. **TAB** ou **→** aceita, **Ctrl+→** aceita uma palavra, e ↑/↓ navegam no histórico.
+- **Fase 3 (índice offline e painel lateral): próxima.**
+- Hoje as sugestões vêm só do seu histórico. O modelo que entende contexto chega na Fase 4.
 
 ###
 
@@ -83,7 +84,9 @@
 | --- | --- |
 | Bash dentro de um pseudo-terminal (cores, Ctrl-C, redimensionar, código de saída) | ✅ Fase 1 |
 | Terminal restaurado mesmo se o KofTerm for morto (`SIGTERM`, `SIGHUP`) | ✅ Fase 1 |
-| Sugestão em ghost text, **TAB** aceita a linha, **Ctrl+→** aceita uma palavra | Fase 2 |
+| Sugestão em ghost text, **TAB** / **→** aceita a linha, **Ctrl+→** aceita uma palavra | ✅ Fase 2 |
+| Edição de linha: ←/→, Home/End, Ctrl-A/E/U/K/W, Ctrl-L, histórico com ↑/↓, UTF-8 (acentos) | ✅ Fase 2 |
+| Histórico privado em `~/.local/share/kofterm` (pasta 0700, arquivos 0600) | ✅ Fase 2 |
 | Sugestões com contexto (o que você digitou, comando anterior, código de saída, pastas) | Fase 4 |
 | Aprende com você enquanto você digita, localmente | Fase 4 |
 | Sugestões de "refatoração": repetir com `sudo`, corrigir typo, `cat f \| grep x` → `grep x f` | Fase 4 |
@@ -130,6 +133,12 @@ kofterm/
 │   └── 03_pty_bash/         Bash dentro de um PTY com forkpty + ppoll
 ├── src/                     O terminal em si, todo em .kf
 │   ├── main.kf              Laço de eventos: teclado, saída do Bash e sinais
+│   ├── session.kf           No prompt: edição da linha, ghost text, envio ao Bash
+│   ├── keys.kf              Bytes crus → teclas, com testes (futura kof-ansi)
+│   ├── editor.kf            A linha sendo digitada e o cursor, com testes
+│   ├── history.kf           Histórico e sugestões, com testes
+│   ├── prompt.kf            Acha o marcador invisível de prompt na saída do Bash, com testes
+│   ├── storage.kf           Arquivos privados, conversões UTF-8, o bashrc do KofTerm
 │   ├── libc.kf              Todos os extern da libc e constantes do Linux, num lugar só
 │   ├── tty.kf               Modo raw, restauração, tamanho da janela (futura kof-tty)
 │   ├── pty.kf               Bash num pseudo-terminal, código de saída (futura kof-tty)
@@ -171,7 +180,13 @@ kof build src --target native --output build/kofterm
 ./build/kofterm/Default/Main
 ```
 
-Você cai no seu Bash dentro do KofTerm (`echo $KOFTERM` mostra `1`). Digite `exit` para voltar; o KofTerm sai com o mesmo código do Bash.
+Você cai no seu Bash dentro do KofTerm (`echo $KOFTERM` mostra `1`). Rode alguns comandos e depois comece a digitar um deles de novo: o resto aparece em cinza, e o **TAB** completa. Digite `exit` para voltar; o KofTerm sai com o mesmo código do Bash.
+
+Rode os testes unitários (19 testes, um arquivo por vez):
+
+```bash
+for f in keys editor history prompt; do kof test src/$f.kf --target native; done
+```
 
 **4. Opcional: rode os spikes da Fase 0** (numa janela de terminal de verdade, não por pipe):
 
@@ -195,8 +210,8 @@ O spike 01 mostra cada tecla que você aperta (`q` sai). O spike 03 abre um Bash
 | --- | --- | --- |
 | 0 | Spikes de FFI: modo raw, tamanho da janela, PTY | ✅ concluída (21/10/2026) |
 | 1 | Terminal passthrough, restauração segura em sinais (`signalfd`) | ✅ concluída (21/10/2026) |
-| 2 | Editor de linha e ghost text a partir do histórico | próxima |
-| 3 | Índice offline, painel lateral, explicação por opção, links de leitura | planejada |
+| 2 | Editor de linha e ghost text a partir do histórico | ✅ concluída (21/10/2026) |
+| 3 | Índice offline, painel lateral, explicação por opção, links de leitura | próxima |
 | 4 | Modelo n-gram com aprendizado contínuo local, contexto, gramática, regras de segurança | planejada |
 | 5 | `kofterm contribute` (anonimizado, opcional), instalador, CI com checagem de "sem rede", primeira release | planejada |
 | 6 | Modelo neural opcional em KOF puro (`kof-nn`) | planejada |
@@ -223,9 +238,19 @@ Bibliotecas KOF paralelas que serão extraídas no caminho: `kof-tty` (terminal 
 
 **7. Fase 1: um terminal de verdade.** O spike virou o `src/`, dividido em módulos que depois formarão a biblioteca `kof-tty`. Os sinais são bloqueados e lidos como dados por um `signalfd` no mesmo laço do `ppoll`, porque o KOF não consegue guardar um callback de sinal. Isso dá redimensionamento no `SIGWINCH` e terminal restaurado no `SIGTERM` e no `SIGHUP`. Verificado no Kali: o código de saída do Bash é repassado (`exit 7` → 7) e nenhum Bash órfão fica para trás.
 
-**8. Aprendizado que volta.** O modelo aprende com cada usuário localmente. Quem quiser ajudar exporta um arquivo anonimizado (caminhos, hosts, usuários e números viram marcadores, e tudo que parece segredo é descartado), revisa e envia como pull request. O CI confere de novo e retreina o modelo base, então cada versão sai com um modelo mais inteligente. O KofTerm nunca toca a rede: quem envia é o Git do próprio usuário.
+**8. Fase 2: o KofTerm é dono da linha.** O Bash inicia sem o próprio editor de linha (`--noediting`), e o bashrc do KofTerm carrega o seu e acrescenta um marcador invisível no fim do prompt, com o último código de saída e a pasta atual. Quando o marcador chega, o KofTerm edita a linha, desenha a sugestão em cinza e só envia a linha pronta no Enter; enquanto um comando roda, cada tecla vai direto para ele. Mais duas armadilhas do KOF apareceram: `charAt` devolve um caractere, não uma `String`, e uma função escrita por você (`writeFile`) pode ser trocada em silêncio por uma função nativa do KOF com o mesmo nome. Agora 19 testes unitários cobrem os módulos puros.
+
+**9. Aprendizado que volta.** O modelo aprende com cada usuário localmente. Quem quiser ajudar exporta um arquivo anonimizado (caminhos, hosts, usuários e números viram marcadores, e tudo que parece segredo é descartado), revisa e envia como pull request. O CI confere de novo e retreina o modelo base, então cada versão sai com um modelo mais inteligente. O KofTerm nunca toca a rede: quem envia é o Git do próprio usuário.
 
 O registro completo e datado está em [docs/JOURNAL.md](docs/JOURNAL.md).
+
+###
+
+<h3 align="left">LIMITAÇÕES CONHECIDAS:</h3>
+
+- O **TAB** aceita a sugestão; o completar com TAB do próprio Bash fica desligado enquanto o KofTerm edita a linha. O completar de arquivos e pastas volta na Fase 4, dentro do KofTerm.
+- Uma linha que quebra além da última linha da tela pode ser redesenhada no lugar errado. Correção planejada: perguntar ao terminal a posição do cursor em vez de salvá-la.
+- Caracteres de largura dupla (CJK, alguns emoji) contam como uma coluna.
 
 ###
 
