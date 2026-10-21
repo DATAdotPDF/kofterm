@@ -322,6 +322,20 @@ String fixLine(Model m, String prev, Int status, String outputLower, List<String
         }
         return ""
     }
+    // "apt install claude" e o pacote nao existe com esse nome: procurar o nome certo
+    if (outputLower.contains("unable to locate package") || outputLower.contains("não é possível encontrar o pacote") ||
+            outputLower.contains("nao e possivel encontrar o pacote")) {
+        var words = splitWords(p, " ")
+        var pkg = ""
+        for (var w in words) {
+            if (!w.startsWith("-") && w != "sudo" && w != "apt" && w != "apt-get" && w != "install" && w != "update" && w != "&&") {
+                pkg = w
+            }
+        }
+        if (pkg.length() > 0) {
+            return "apt search " + pkg
+        }
+    }
     if (!p.startsWith("sudo ")) {
         for (var hint in listOf("permission denied", "permissão negada", "are you root", "você é root",
                 "must be root", "precisa ser root", "operation not permitted", "operação não permitida")) {
@@ -514,6 +528,14 @@ test "corrige sudo e nome errado" {
     assert(fixLine(m, "gti status", 127, "", known) == "git status", "typo")
     assert(fixLine(m, "sudo cta x", 127, "", known) == "sudo cat x", "typo com sudo")
     assert(fixLine(m, "ls", 0, "permission denied", known) == "", "sem erro, sem correcao")
+}
+
+test "pacote que nao existe sugere procurar o nome" {
+    var m = Model()
+    var known = listOf("ls")
+    var out = "e: não é possível encontrar o pacote claude"
+    assert(fixLine(m, "sudo apt update && sudo apt install -y claude", 100, out, known) == "apt search claude", "pt_BR")
+    assert(fixLine(m, "sudo apt install htopp", 100, "e: unable to locate package htopp", known) == "apt search htopp", "en")
 }
 
 test "mapa proprio aguenta 20 mil chaves (o Map nativo cai em ~3.650)" {

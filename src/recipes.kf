@@ -201,7 +201,9 @@ class RecipeBook {
         if (extra < 0) {
             extra = 0
         }
-        var score = hits * 100 / literals.size + filled * 10 + hits * 5 - extra * 15
+        // mais palavras da receita encontradas pesa mais que preencher lacuna: "entrar na pasta
+        // root" escolhe a receita do root, nao "entrar na pasta {pasta}" com pasta = root
+        var score = hits * 100 / literals.size + hits * 15 + filled * 5 - extra * 15
         if (score < 1) {
             score = 1
         }
@@ -231,16 +233,39 @@ List<String> recipeWords(String s) {
     if (cur.length() > 0) {
         out.add(trimDots(cur))
     }
-    return out
+    var canon = listOf<String>()
+    for (var w in out) {
+        canon.add(recipeSynonym(w))
+    }
+    return canon
 }
 
-// "htop." no fim da frase vira "htop"
+// "htop." no fim da frase vira "htop"; "@acessar" (tecla escapada) vira "acessar"
 String trimDots(String w) {
     var t = w
     while (t.length() > 1 && t.endsWith(".")) {
         t = t.substring(0, t.length() - 1)
     }
+    while (t.length() > 1 && t.startsWith("@")) {
+        t = t.substring(1, t.length())
+    }
     return t
+}
+
+// Palavras diferentes que pedem a mesma coisa viram uma so (vale para receitas e pedidos).
+class RecipeSyn {
+    static String PAIRS = " acessar=entrar deletar=apagar excluir=apagar achar=procurar encontrar=procurar buscar=procurar localizar=procurar mostrar=ver exibir=ver olhar=ver diretorio=pasta aplicativo=programa app=programa software=programa maquina=computador pc=computador administrador=root admin=root superusuario=root "
+}
+
+String recipeSynonym(String w) {
+    var key = " " + w + "="
+    var at = RecipeSyn.PAIRS.indexOf(key)
+    if (at < 0) {
+        return w
+    }
+    var start = at + key.length()
+    var end = RecipeSyn.PAIRS.indexOf(" ", start)
+    return RecipeSyn.PAIRS.substring(start, end)
 }
 
 String recipeFold(String c) {
@@ -269,6 +294,10 @@ Boolean recipeSame(String a, String b) {
     }
     if (a.length() < 5 || b.length() < 5) {
         return false
+    }
+    // verbo conjugado: "instalo", "instala" e "instalar" tem o mesmo comeco
+    if (a.length() >= 6 && b.length() >= 6 && a.substring(0, 6) == b.substring(0, 6)) {
+        return true
     }
     // prefixo: "arquivos" acha "arquivo", "pastas" acha "pasta"
     if (a.startsWith(b) || b.startsWith(a)) {
@@ -393,6 +422,31 @@ test "o pedido nunca leva caracteres do shell para o comando" {
 test "pedido sem relacao nao inventa nada" {
     var r = sampleBook().search("fazer um bolo de chocolate", 3)
     assert(r.size == 0, "nenhuma receita")
+}
+
+test "sinonimos, verbo conjugado e @ grudado" {
+    var b = RecipeBook()
+    b.load(listOf(
+        "# virar root",
+        "? acessar root",
+        "? entrar na pasta root",
+        "$ sudo -i",
+        "> Abre um terminal de root.",
+        "# entrar numa pasta",
+        "? entrar na pasta {pasta}",
+        "$ cd {pasta}",
+        "> Muda de pasta."
+    ))
+    var r = b.search("@acessar root", 3)
+    assert(r.size >= 1 && r.get(0).command == "sudo -i", "@ e acessar=entrar")
+    var p = b.search("acessar a pasta root", 3)
+    assert(p.get(0).command == "sudo -i", "receita especifica vence a generica")
+    var c = b.search("acessar a pasta fotos", 3)
+    assert(c.get(0).command == "cd fotos", "generica com lacuna")
+    var s = sampleBook().search("instalo o htop", 3)
+    assert(s.size >= 1 && s.get(0).recipe.name == "instalar programa", "verbo conjugado")
+    var f = sampleBook().search("encontrar arquivo relatorio", 3)
+    assert(f.size >= 1 && f.get(0).command == "find . -iname \"*relatorio*\"", "encontrar=procurar")
 }
 
 test "a receita certa vence as parecidas" {

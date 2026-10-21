@@ -39,6 +39,8 @@ $ sudo apt update && sudo apt upgrade
 ? procurar programa {nome}
 ? existe programa para {nome}
 ? buscar pacote {nome}
+? qual o nome do pacote {nome}
+? pacote nao encontrado {nome}
 $ apt search {nome}
 > Procura pacotes cujo nome ou descrição tenha {nome}.
 
@@ -202,6 +204,24 @@ $ ls -l {arquivo}
 ? tomar posse de {arquivo}
 $ sudo chown $USER:$USER {arquivo}
 > Passa {arquivo} para o seu usuário.
+
+# virar administrador (root)
+? acessar root
+? entrar como root
+? virar root
+? logar como root
+? acessar como administrador
+? entrar na pasta root
+? acessar a pasta do root
+$ sudo -i
+> Abre um terminal como root, o administrador. Como root nada pede confirmação: cuidado. Digite exit para voltar ao seu usuário.
+
+# ver a pasta do root
+? ver pasta do root
+? listar pasta root
+? ver arquivos do root
+$ sudo ls -la /root
+> Lista a pasta pessoal do root (/root), que só o administrador pode ler.
 
 # repetir com sudo
 ? repetir ultimo comando com sudo
