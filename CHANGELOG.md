@@ -2,6 +2,24 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.0] - 21/10/2026
+
+Phases 6 and 7: KofTerm draws its own screen, index column on the right, human mode.
+
+### Added
+- `vt.kf`: terminal emulator in KOF (xterm/ECMA-48 subset) with 12 unit tests
+- Index **column on the right** (F2, remembered): explains the current line live; Bash and full-screen programs get a narrower window and never write over it
+- Human mode: `? what you want` suggests a command from `recipes/pt_BR.txt` (61 recipes, 152 ways of asking); TAB or Enter puts it on the line, Enter again runs it; the column shows the recipe, its explanation and alternatives
+- `recipes.kf` with 7 unit tests (66 in total); CI runs them
+
+### Changed
+- KofTerm uses the outer terminal's alternate screen, like `tmux`; the previous screen comes back on exit
+- The bottom panel and the cursor-position query (Phase 3) were replaced by the emulator
+- `kofterm install`/`uninstall` handle `recipes/`
+
+### Performance
+- With `top` redrawing 5 times a second and the column on: 7.9 MB steady for 6 minutes, 0.2% CPU (the first version grew 27 MB per minute)
+
 ## [0.5.0] - 21/10/2026
 
 Phase 5: anonymized contribution, installer and first release.

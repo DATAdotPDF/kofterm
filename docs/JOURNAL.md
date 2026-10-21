@@ -113,6 +113,27 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - v0.5.0 published: CI green on `main` and on the signed tag (47 tests on GitHub's Ubuntu 24.04); release tarball (119 KB) and `SHA256SUMS`; tested as an end user from a clean `HOME` with no KOF installed.
 - The four KOF findings were reported to the KOF central repository after checking for duplicates (issues and `known-bugs.md`), re-running each reproduction on 0.6.6 and following its bug template, in Portuguese like its recent issues: [Kof4j#931](https://github.com/KofLang/Kof4j/issues/931) (`extern` named like a builtin), [#932](https://github.com/KofLang/Kof4j/issues/932) (user function shadowed by a builtin), [#933](https://github.com/KofLang/Kof4j/issues/933) (native `Map` crash), [#934](https://github.com/KofLang/Kof4j/issues/934) (`extern` and file order). Kof4j's bot triaged the labels.
 
+### First human test (Pedro, QTerminal on Kali)
+- Clone + `./install.sh` from GitHub worked; KofTerm opened in the right prompt. An `@sS@sS` on the screen turned out to be a typo, confirmed by recording the session with `script -I/-O`: QTerminal answers the cursor-position query (`ESC[8;5R`) like tmux and KofTerm handled it.
+- Feedback that changed the plan: the index has to sit **beside** the terminal without interfering with it. And a request for a human mode ("I want to do X" → command), with community contributions.
+
+### Phase 6: KofTerm draws its own screen (night)
+- Decision: instead of a graphical terminal (KOF's `kof.ui` only draws on the JS target), KofTerm became a terminal inside the terminal, like `tmux`. That keeps "works in any Linux terminal" and frees the right side of the screen.
+- `vt.kf` (pure, 12 tests): an emulator written from the public xterm/ECMA-48 behavior — text, UTF-8, autowrap, scroll regions, insert/delete lines and characters, colors (16/256/RGB), alternate screen, DEC line drawing, cursor save/restore, DSR/DA replies, title; DECCKM, keypad, bracketed paste and mouse modes are mirrored to the real terminal.
+- Session rewritten: Bash's output goes into the emulator, KofTerm draws only changed rows, the typed line and grey suggestion are drawn on top of the emulator's cells, and the index column (F2) sits at the right. Bash gets a narrower window (`TIOCSWINSZ`), so programs never write over it. The cursor-position query and the bottom panel are gone: the emulator knows where everything is.
+- Verified in tmux (110×30): the column stays put while `seq 1 200` scrolls; Bash sees `30 73`; `vim` edits a file in the left area and returns cleanly; `top` fits 73 columns and adapts to a resize to 130×34; Ctrl-C → 130; exit returns the outer terminal intact.
+- Memory, measured with `top -d 0.2` (5 redraws per second) for 1–10 minutes, per fix:
+  1. First version: 8 → 35 MB in a minute, 15% CPU. A probe showed KOF 0.6.6 native reclaims only part of temporary strings.
+  2. Screen built in a C buffer with `stpcpy`, CSI parameters read as numbers into a reused array, color attributes cached, rows reused on scroll: ~+5 MB/min, CPU down ~18×.
+  3. Command output kept as raw bytes in a 2 KB ring (turned into a String once per command), prompt scanner without a new list per ESC: ~+1 MB/min.
+  4. A probe showed that **every evaluation of a string literal allocates a new String** (2 million `" "` → +14 MB; a field → nothing). Hot-path constants moved to fields: **7.9 MB flat for 6 minutes, 0.2% CPU.** Finding #5 in `KOF_FINDINGS.md`.
+
+### Phase 7: human mode (night)
+- `recipes.kf` (pure, 7 tests) and `recipes/pt_BR.txt` (61 recipes, 152 ways of asking). Matching ignores accents, case, punctuation and filler words, tolerates one-letter typos and prefixes, and fills `{gaps}` with the leftover words. The tokenizer drops shell characters and gaps never take options (`-rf`), so a request cannot smuggle another command in; dangerous results are filtered out.
+- The first integration lagged: a search per key re-normalized every recipe and rebuilt a 60-word stopword list. Fixed by preparing the recipes once at load, a single stopword string, and drawing once per batch of keys.
+- Verified in tmux: `? quero instalar o htop` → `sudo apt update && sudo apt install -y htop`; `? quanto espaço sobrou no disco` → `df -h`; `? procurar arquivo chamado relatorio` → `find . -iname "*relatorio*"`; `? compactr pasta fotos` (typo) → `tar -czvf fotos.tar.gz fotos`; `? apagar pasta lixo` → `rm -ri lixo`; `? fazer um bolo de chocolate` → no recipe. TAB puts the command on the line and the column explains it (`apt install`, `-y`).
+- 66 unit tests pass.
+
 ### Still to verify by hand
-- `vim`, `htop` and resizing with a real window, running `kofterm` in the VM.
+- Everything above in a real QTerminal window, by Pedro (script in `docs/TESTE_HUMANO.md`).
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).

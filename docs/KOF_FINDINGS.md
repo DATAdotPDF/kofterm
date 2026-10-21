@@ -81,6 +81,27 @@ main() {
 Renomear `libc.kf` para `00_libc.kf` (compila antes) faz `brain.kf` funcionar. **Contorno:**
 `src/00_libc.kf`. **Sugestão:** resolver os `extern` antes de gerar código de qualquer arquivo.
 
+## 5. Literal de String avaliado num laço cria uma String nova a cada vez (ainda não reportado)
+
+```kof
+main() {
+    var l = listOf<String>()
+    l.add("x")
+    var i = 0
+    while (i < 2000000) {
+        l.set(0, " ")     // cada avaliação de " " aloca
+        i = i + 1
+    }
+}
+```
+
+Medido com `/proc/self/statm`: +3.584 páginas residentes (14 MB) depois de 2 milhões de
+avaliações. O mesmo laço usando um campo `String space = " "` não aumentou nada. Junto com o
+coletor do native, que recupera só parte das Strings temporárias (200 mil Strings por rodada
+deixaram ~2 MB a mais a cada rodada), isso fazia o emulador de terminal do KofTerm crescer
+~27 MB por minuto com o `top` aberto. **Contorno:** constantes do caminho quente em campos;
+tela montada num buffer C com `stpcpy`. **Sugestão:** internar literais (um objeto por literal).
+
 ---
 
 ## Outras observações (não são bugs, mas valem para a documentação)

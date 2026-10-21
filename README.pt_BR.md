@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Feito_com-KOF_0.6.6-f59e0b?style=flat-square" alt="Feito com KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Plataforma-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Rede-nenhuma-22c55e?style=flat-square" alt="Sem rede">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.5.0-8b5cf6?style=flat-square" alt="Release v0.5.0"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.0-8b5cf6?style=flat-square" alt="Release v0.6.0"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
@@ -32,7 +32,7 @@
   O KofTerm é um terminal para Linux <b>feito para quem está estudando Bash</b>. Ele traz para o shell o autocomplete no estilo VS Code / Gemini: enquanto você digita, o resto da linha aparece em cinza, e o <b>TAB</b> aceita.<br><br>
   A sugestão não é só uma busca no histórico. Ela lê o contexto da sessão: o que você já escreveu, o comando anterior, se ele falhou, as pastas que você visitou. Quanto mais você digita, mais ele aprende com você. Digite <code>sudo apt update</code> e a próxima linha sugere <code>sudo apt upgrade</code>. Um comando que falha com <i>Permission denied</i> é oferecido de novo com <code>sudo</code>. Um erro de digitação como <code>gti</code> vira <code>git</code>.<br><br>
   Tudo roda <b>localmente e offline</b>. O modelo é treinado só com comandos Linux, na sua própria máquina, e o binário nunca abre um socket de rede. Se você quiser ajudar, pode devolver ao projeto, pelo Git, o que o seu modelo aprendeu, anonimizado e revisado por você antes, para que cada versão nova traga um modelo mais inteligente. Nada pessoal sai da sua máquina.<br><br>
-  Uma aba de índice (<code>F1</code>) e um painel ao vivo embaixo da tela (<code>F2</code>) cobrem as formas mais conhecidas de usar o terminal. Esqueceu o que <code>ls -ld</code> faz? Cada opção é explicada separadamente, com exemplo e indicações de leitura online, sem precisar garimpar o <code>--help</code>.<br><br>
+  Uma coluna de índice à direita da tela (<code>F2</code>) explica, ao vivo, o comando que você está digitando, sem nunca cobrir o seu terminal; uma busca no índice em tela cheia fica a uma tecla (<code>F1</code>). E dá para pedir do seu jeito: <code>? instalar o htop</code> sugere <code>sudo apt update &amp;&amp; sudo apt install -y htop</code>. Esqueceu o que <code>ls -ld</code> faz? Cada opção é explicada separadamente, com exemplo e indicações de leitura online, sem precisar garimpar o <code>--help</code>.<br><br>
   É também o meu primeiro projeto em <a href="https://koflang.github.io">KOF</a>, uma linguagem de programação brasileira. KOF é o coração do projeto: o terminal, a IA, o treino, o instalador e os testes são todos em KOF. Quando faltar algo na linguagem, a resposta é uma nova biblioteca KOF, não outra linguagem.
 </p>
 
@@ -48,7 +48,9 @@
 - **Fase 3 (índice offline e painel): concluída.** **F1** ou **Ctrl+T** abre uma aba em tela cheia com o índice e busca; **F2** divide a tela e mantém embaixo uma explicação ao vivo do que você está digitando. `ls -ld` mostra `-l` e `-d` explicados um a um, com exemplos e links de leitura.
 - **Fase 4 (o modelo que entende contexto): concluída.** A sugestão em cinza agora vem de um modelo local que aprende com cada comando que você roda: usa o que você digitou, o comando anterior, o tipo de pasta em que você está e quão recente é cada comando. Na linha vazia ele prevê o próximo comando, oferece `sudo` depois de "Permissão negada" e corrige o nome depois de "comando não encontrado". Também completa arquivos, pastas e opções, e nunca sugere comandos perigosos.
 - **Fase 5 (contribuição, instalador, primeira release): concluída.** `kofterm contribute` exporta o que o seu modelo aprendeu, anonimizado na sua máquina, para você revisar e enviar por pull request; o CI valida cada contribuição e a próxima versão aprende com ela. Instalação com um comando, pela release ou pelo código. **Primeira release: v0.5.0.**
-- **Próximos passos:** mais entradas no índice (importar tldr e o `man` local), índice em inglês, lista de candidatos ao completar arquivos, modelo neural opcional em KOF puro (`kof-nn`).
+- **Fase 6 (o KofTerm desenha a própria tela): concluída.** Um emulador de terminal escrito em KOF (`vt.kf`) interpreta tudo o que o Bash e os programas escrevem, então o índice fica numa **coluna à direita** que os programas nunca tocam: o Bash, o `vim`, o `top` e o `less` enxergam só a área da esquerda. Funciona dentro de qualquer terminal Linux.
+- **Fase 7 (modo humanizado): concluída.** Digite `?` e o que você quer fazer, do seu jeito. O KofTerm acha a mais parecida entre 61 receitas escritas por pessoas (152 jeitos de pedir), preenche as lacunas e mostra o comando em cinza; o TAB coloca na linha, nada roda sozinho, e a coluna lateral explica cada parte.
+- **Próximos passos:** o seu retorno como primeiro testador humano, mais receitas e entradas no índice, índice em inglês, lista de candidatos ao completar arquivos, modelo neural opcional em KOF puro (`kof-nn`).
 
 ###
 
@@ -97,7 +99,9 @@
 | Completa arquivos, pastas (`/etc/hostn` → `ame`) e opções (`ls --a` → `ll`) | ✅ Fase 4 |
 | Comandos perigosos (`rm -rf /`, `mkfs`, `dd of=/dev/sd…`, fork bomb) em vermelho e nunca sugeridos | ✅ Fase 4 |
 | Aba do índice em tela cheia com busca (**F1** / **Ctrl+T**), 53 entradas em português | ✅ Fase 3 |
-| Tela dividida com explicação ao vivo da linha atual (**F2**, lembrado) | ✅ Fase 3 |
+| **Coluna do índice à direita** com explicação ao vivo da linha atual (**F2**, lembrado) | ✅ Fase 6 |
+| Emulador de terminal próprio: o Bash e os programas de tela cheia nunca escrevem por cima do índice | ✅ Fase 6 |
+| Modo humanizado: `? o que você quer` → comando real de 61 receitas revisadas | ✅ Fase 7 |
 | Cada opção explicada separadamente (`-ld` → `-l` + `-d`), com exemplos e links de leitura | ✅ Fase 3 |
 | Contribuição opcional e anonimizada do aprendizado de volta ao projeto via Git | ✅ Fase 5 |
 | Modelo neural pequeno opcional, treinado e executado em KOF puro (`kof-nn`) | Fase 6 |
@@ -138,6 +142,8 @@ kofterm/
 │   ├── sessions.txt         Sequências iniciais de comandos, para as sugestões funcionarem no primeiro dia
 │   └── commands.txt         Lista pública de nomes de comandos (só eles passam pelo anonimizador)
 ├── datasets/contrib/        Contribuições anonimizadas da comunidade (.kofdata)
+├── recipes/
+│   └── pt_BR.txt            Receitas do modo humanizado: jeitos de pedir → comando (veja abaixo)
 ├── index/
 │   └── pt_BR.txt            O índice offline de comandos, escrito pelo projeto (veja abaixo)
 ├── spikes/                  Fase 0: uma pasta por prova, cada uma com main.kf
@@ -151,6 +157,8 @@ kofterm/
 │   ├── editor.kf            A linha sendo digitada e o cursor, com testes
 │   ├── history.kf           Histórico e sugestões, com testes
 │   ├── prompt.kf            Acha o marcador invisível de prompt na saída do Bash, com testes
+│   ├── vt.kf                Emulador de terminal (subconjunto do xterm), com testes (futura kof-ansi)
+│   ├── recipes.kf           Modo humanizado: liga o pedido a uma receita, com testes
 │   ├── index.kf             Formato do índice, busca e separação de opções (-ld → -l, -d), com testes
 │   ├── model.kf             O modelo que aprende, regras de segurança, correção de typo, mapa próprio, com testes
 │   ├── brain.kf             Liga o modelo à pasta, aos arquivos, às opções e aos seus eventos
@@ -176,13 +184,13 @@ kofterm/
 
 **Requisitos:** Linux x86_64 com glibc 2.34 ou mais nova (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). O binário depende só da `libc` do sistema.
 
-**Opção A: release pronta (sem precisar do KOF).** Baixe `kofterm-0.5.0-linux-x86_64.tar.gz` e `SHA256SUMS` da [página de releases](https://github.com/DATAdotPDF/kofterm/releases) e rode:
+**Opção A: release pronta (sem precisar do KOF).** Baixe `kofterm-0.6.0-linux-x86_64.tar.gz` e `SHA256SUMS` da [página de releases](https://github.com/DATAdotPDF/kofterm/releases) e rode:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-tar -xzf kofterm-0.5.0-linux-x86_64.tar.gz && ./kofterm-0.5.0-linux-x86_64/kofterm install
+tar -xzf kofterm-0.6.0-linux-x86_64.tar.gz && ./kofterm-0.6.0-linux-x86_64/kofterm install
 ```
 
 **Opção B: a partir do código.** O `install.sh` compila o KofTerm com o KOF 0.6.6. Se o KOF faltar, ele pergunta antes de baixar a release oficial (cerca de 370 MB) e confere o SHA-256, que está fixado no script.
@@ -219,17 +227,18 @@ Para abrir o KofTerm sozinho em todo terminal novo, coloque no fim do `~/.bashrc
 | **TAB** ou **→** | Aceita a sugestão em cinza |
 | **Ctrl+→** | Aceita uma palavra da sugestão |
 | **↑ / ↓** | Comando anterior / próximo |
-| **F1** ou **Ctrl+T** | Abre a aba do índice, direto no comando que você está digitando. Digite para buscar, Enter abre, Esc volta |
-| **F2** | Divide a tela: explicação ao vivo da linha atual embaixo (lembrado na próxima vez) |
+| **F2** | Mostra ou esconde a coluna do índice à direita, explicando a linha atual ao vivo (lembrado na próxima vez) |
+| **F1** ou **Ctrl+T** | Abre a busca no índice em tela cheia, direto no comando que você está digitando. Digite para buscar, Enter abre, Esc volta |
+| **?** + o que você quer | Modo humanizado: `? quanto espaço sobrou` sugere `df -h`. **TAB** ou **Enter** coloca o comando na linha; Enter de novo roda |
 | **Ctrl-L** | Limpa a tela e mantém o que você estava digitando |
 
-**Para quem desenvolve.** Compile e rode a partir do repositório sem instalar, e rode os testes unitários (47 testes, um arquivo por vez):
+**Para quem desenvolve.** Compile e rode a partir do repositório sem instalar, e rode os testes unitários (66 testes, um arquivo por vez):
 
 ```bash
 kof build src --target native --output build/kofterm && ./build/kofterm/Default/Main
 ```
 ```bash
-for f in keys editor history prompt index model anon; do kof test src/$f.kf --target native; done
+for f in keys editor history prompt index model anon vt recipes; do kof test src/$f.kf --target native; done
 ```
 
 Opcional, os spikes da Fase 0 (numa janela de terminal de verdade, não por pipe):
@@ -258,7 +267,9 @@ O spike 01 mostra cada tecla que você aperta (`q` sai). O spike 03 abre um Bash
 | 3 | Índice offline, aba do índice, painel ao vivo, explicação por opção, links de leitura | ✅ concluída (21/10/2026) |
 | 4 | Modelo n-gram com aprendizado contínuo local, contexto, gramática, regras de segurança | ✅ concluída (21/10/2026) |
 | 5 | `kofterm contribute` (anonimizado, opcional), instalador, CI com checagem de "sem rede", primeira release | ✅ concluída (21/10/2026), v0.5.0 |
-| 6 | Modelo neural opcional em KOF puro (`kof-nn`) | planejada |
+| 6 | Emulador de terminal próprio, coluna do índice à direita | ✅ concluída (21/10/2026) |
+| 7 | Modo humanizado com receitas | ✅ concluída (21/10/2026), v0.6.0 |
+| 8 | Modelo neural opcional em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais | planejada |
 
 Bibliotecas KOF paralelas que serão extraídas no caminho: `kof-tty` (terminal e PTY), `kof-ansi` (teclas e tela), `kof-nn` (tensores e um transformer pequeno).
 
@@ -290,6 +301,10 @@ Bibliotecas KOF paralelas que serão extraídas no caminho: `kof-tty` (terminal 
 
 **11. Fase 5: o aprendizado que volta, e a primeira release.** `kofterm contribute` transforma o seu arquivo de eventos em padrões agregados e anonimizados: só passam como estão nomes de comandos de uma lista pública, opções e operadores do shell; caminhos, arquivos, hosts, IPs, usuários, números e textos entre aspas viram marcadores; um programa desconhecido vira `<CMD>`; e qualquer linha com cara de segredo é descartada inteira. Só ficam padrões vistos pelo menos 3 vezes, sem datas nem ordem da sessão. Testado com um histórico falso cheio de nomes de cliente, domínio interno, IP privado, token do GitHub, senha do MySQL e cabeçalho Bearer: nada disso sobreviveu. As mesmas regras validam cada `.kofdata` no CI, e o KofTerm carrega `datasets/contrib/` ao iniciar, então cada versão aprende com a comunidade. O instalador é um bootstrap curto em Bash; todo o resto (`install`, `uninstall`, `doctor`) é o próprio KofTerm, em KOF.
 
+**12. Fase 6: o KofTerm desenha a própria tela.** O primeiro teste humano deixou uma coisa clara: um índice que empurra o terminal atrapalha. Então o KofTerm passou a funcionar como o `tmux`: um emulador de terminal escrito em KOF a partir do comportamento público do xterm/ECMA-48 (texto, UTF-8, cores até RGB, regiões de rolagem, tela alternativa, desenho de linhas) guarda a tela na memória, e o KofTerm a desenha com o índice numa coluna à direita. O Bash e todos os programas recebem uma janela mais estreita e nunca tocam a coluna. A primeira versão vazava memória com o `top` aberto (8 → 35 MB em um minuto), porque o coletor do KOF 0.6.6 native recupera só parte das Strings temporárias; agora o desenho vai direto para um buffer em C com `stpcpy`, o interpretador lê números em vez de montar Strings e as linhas são reaproveitadas ao rolar: o uso de CPU caiu cerca de 18 vezes e o crescimento virou um fio.
+
+**13. Fase 7: modo humanizado.** `? instalar o htop` procura entre 61 receitas escritas por pessoas (152 jeitos de pedir), tolera acentos e uma letra errada, e preenche as lacunas com as palavras do pedido. É recuperação, não geração: o KofTerm nunca inventa comando, as palavras do pedido nunca levam caracteres do shell para o comando, resultados perigosos são descartados e o comando só roda depois que a pessoa lê e aperta Enter de novo.
+
 O registro completo e datado está em [docs/JOURNAL.md](docs/JOURNAL.md); os achados sobre o KOF estão em [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md).
 
 <h3 align="left">CONTRIBUA COM O SEU APRENDIZADO:</h3>
@@ -313,10 +328,28 @@ Se você concordar, `kofterm contribute` grava `kofterm-contrib.kofdata`. Copie 
 <h3 align="left">LIMITAÇÕES CONHECIDAS:</h3>
 
 - O **TAB** aceita a sugestão. Completar arquivos e pastas faz parte da sugestão: quando vários nomes combinam, ele completa o começo comum, mas ainda não mostra uma lista de candidatos.
-- A tela dividida é em cima/embaixo. Um painel à direita exigiria que o KofTerm emulasse um terminal inteiro.
-- O painel ao vivo precisa de um terminal que responda à pergunta de posição do cursor (todos os comuns respondem). Se não responder em 300 ms, o KofTerm segue funcionando sem o painel.
+- O KofTerm usa a tela alternativa do seu terminal, como o `tmux`: a rodinha do mouse ainda não rola a saída antiga dentro do KofTerm, e ao sair a tela de antes volta.
+- A coluna do índice precisa que sobrem pelo menos 40 colunas para o Bash; numa janela estreita o F2 apita e a mantém escondida.
+- Caracteres de largura dupla (CJK, alguns emoji) contam como uma coluna; emoji acima de U+FFFF aparecem como `�`.
+- Desempenho é medido, não suposto: com o `top` redesenhando 5 vezes por segundo e a coluna do índice ligada, o KofTerm ficou em 7,9 MB por 6 minutos e usou 0,2% de CPU. Chegar nisso exigiu contornar como o KOF 0.6.6 native lida com Strings temporárias (veja [docs/JOURNAL.md](docs/JOURNAL.md)).
 - Por enquanto o índice está só em português, com 53 entradas.
 - Caracteres de largura dupla (CJK, alguns emoji) contam como uma coluna.
+
+###
+
+<h3 align="left">CONTRIBUA COM RECEITAS:</h3>
+
+Ensine ao KofTerm um "quero fazer X" novo em [recipes/pt_BR.txt](recipes/pt_BR.txt):
+
+```text
+# compactar pasta
+? compactar pasta {pasta}
+? zipar pasta {pasta}
+$ tar -czvf {pasta}.tar.gz {pasta}
+> Junta e compacta {pasta} em {pasta}.tar.gz.
+```
+
+`#` dá nome à receita, cada `?` é um jeito como as pessoas pedem (com as palavras delas), `{nome}` é uma lacuna preenchida com as palavras do pedido, `$` é o comando e `>` a explicação para quem está aprendendo. Comandos que apagam precisam perguntar antes (`rm -i`). As palavras do pedido nunca levam caracteres do shell (`;`, `|`, `$`…) para o comando.
 
 ###
 
