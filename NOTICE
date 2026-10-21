@@ -1,0 +1,38 @@
+KofTerm
+Copyright (C) 2026 Pedro D. Ferreira (@DATAdotPDF)
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file.
+
+------------------------------------------------------------------------------
+KOF programming language
+------------------------------------------------------------------------------
+KofTerm is written in KOF and is built with the KOF compiler and runtime.
+
+  Creator:     Mel Santos (Melissa Monfre dos Santos)
+               https://github.com/melmonfre
+               https://www.linkedin.com/in/aminadojava/
+  Repository:  https://github.com/KofLang/Kof4j  (central KOF repository)
+  Site:        https://koflang.github.io
+  License:     GNU General Public License v3.0
+
+The KOF logo referenced in README.md is loaded from the KofLang/Kof4j
+repository and belongs to the KOF project.
+
+------------------------------------------------------------------------------
+Third-party content
+------------------------------------------------------------------------------
+tldr-pages  https://github.com/tldr-pages/tldr
+  License: CC BY 4.0  https://creativecommons.org/licenses/by/4.0/
+  Planned use: corpus/tldr/ (offline index and training corpus). Not yet
+  included in this repository.
+
+SS64  https://ss64.com/bash/
+  SS64 content is copyrighted and is NOT included in this repository.
+  KofTerm stores only command names and a link to each SS64 page.
+  Permission to bundle SS64 content will be requested from its maintainer.
+
+koffuster  https://github.com/lunalully/koffuster
+  Used only as a structural reference. No code was copied.

@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use or reference KofTerm, please cite it as below."
+title: "KofTerm: offline AI autocomplete terminal for Linux, written in KOF"
+type: software
+authors:
+  - family-names: "Ferreira"
+    given-names: "Pedro D."
+    alias: "DATAdotPDF"
+    email: "data.pedutraferreira@gmail.com"
+repository-code: "https://github.com/DATAdotPDF/kofterm"
+license: GPL-3.0-or-later
+version: "0.0.1"
+date-released: "2026-10-21"
+keywords:
+  - kof
+  - terminal
+  - linux
+  - bash
+  - autocomplete
+  - offline
+  - pty
+references:
+  - type: software
+    title: "KOF programming language (Kof4j)"
+    authors:
+      - family-names: "Santos"
+        given-names: "Mel"
+        alias: "melmonfre"
+    repository-code: "https://github.com/KofLang/Kof4j"
+    url: "https://koflang.github.io"
+    license: GPL-3.0

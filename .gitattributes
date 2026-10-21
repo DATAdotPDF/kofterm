@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.kf text eol=lf
+*.ks text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
+*.png binary

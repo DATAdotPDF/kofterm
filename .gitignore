@@ -1,0 +1,7 @@
+build/
+out/
+*.class
+*.o
+*.kofw
+model.bin
+index.db
