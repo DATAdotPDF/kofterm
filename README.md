@@ -11,7 +11,8 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <img src="https://img.shields.io/badge/Status-Phase_4_done-8b5cf6?style=flat-square" alt="Phase 4 done">
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.5.0-8b5cf6?style=flat-square" alt="Release v0.5.0"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
 <p align="center">
@@ -31,7 +32,7 @@
   KofTerm is a terminal for Linux <b>made for people learning Bash</b>. It brings the VS Code / Gemini style of autocomplete to the shell: while you type, the rest of the line appears in grey, and <b>TAB</b> accepts it.<br><br>
   The suggestion is not just a history lookup. It reads the context of the session: what you already typed, the previous command, whether it failed, the folders you visited. The more you type, the more it learns from you. Type <code>sudo apt update</code> and the next line suggests <code>sudo apt upgrade</code>. A command that fails with <i>Permission denied</i> is offered again with <code>sudo</code>. A typo like <code>gti</code> is offered as <code>git</code>.<br><br>
   Everything runs <b>locally and offline</b>. The model is trained only on Linux commands, on your own machine, and the binary never opens a network socket. If you want to help, you can send what your model learned back to the project through Git, anonymized and reviewed by you first, so every new release ships a smarter model. Nothing personal leaves your machine.<br><br>
-  A side panel (<code>F1</code> / <code>Ctrl+K</code>) opens an offline index of the most common ways to use the terminal. Forgot what <code>ls -ld</code> does? Each option is explained on its own, with an example and links for further reading online, without digging through <code>--help</code>.<br><br>
+  An index tab (<code>F1</code>) and a live panel at the bottom of the screen (<code>F2</code>) cover the most common ways to use the terminal. Forgot what <code>ls -ld</code> does? Each option is explained on its own, with an example and links for further reading online, without digging through <code>--help</code>.<br><br>
   It is also my first project in <a href="https://koflang.github.io">KOF</a>, a Brazilian programming language. KOF is the heart of the project: the terminal, the AI, the training, the installer and the tests are all KOF. When the language lacks something, the answer is a new KOF library, not another language.
 </p>
 
@@ -46,7 +47,8 @@
 - **Phase 2 (line editor and ghost text): done.** At the prompt, KofTerm edits the line itself and shows the rest of a matching command from your history in grey. **TAB** or **→** accepts it, **Ctrl+→** accepts one word, and ↑/↓ browse the history.
 - **Phase 3 (offline command index and panel): done.** **F1** or **Ctrl+T** opens a full-screen index tab with search; **F2** splits the screen and keeps a live explanation of what you are typing at the bottom. `ls -ld` shows `-l` and `-d` explained one by one, with examples and reading links.
 - **Phase 4 (the context-aware model): done.** The grey suggestion now comes from a local model that learns from every command you run: it uses what you typed, the previous command, the kind of folder you are in and how recent each command is. On an empty line it predicts your next command, offers `sudo` after "Permission denied" and fixes typos after "command not found". It also completes files, folders and options, and never suggests dangerous commands.
-- **Phase 5 (contribution, installer, first release): next.**
+- **Phase 5 (contribution, installer, first release): done.** `kofterm contribute` exports what your model learned, anonymized on your machine, for you to review and send by pull request; CI validates every contribution and the next release learns from it. One-command install from the release or from the source. **First release: v0.5.0.**
+- **Next:** more index entries (tldr and local `man` import), English index, candidate list for file completion, optional neural model in pure KOF (`kof-nn`).
 
 ###
 
@@ -97,9 +99,9 @@
 | Full-screen index tab with search (**F1** / **Ctrl+T**), 53 entries in Portuguese | ✅ Phase 3 |
 | Split screen with a live explanation of the current line (**F2**, remembered) | ✅ Phase 3 |
 | Each option explained on its own (`-ld` → `-l` + `-d`), with examples and reading links | ✅ Phase 3 |
-| Opt-in, anonymized contribution of your learning back to the project via Git | Phase 5 |
+| Opt-in, anonymized contribution of your learning back to the project via Git | ✅ Phase 5 |
 | Optional tiny neural model, trained and run in pure KOF (`kof-nn`) | Phase 6 |
-| One-command install from GitHub | Phase 5 |
+| One-command install from the release or the source; `doctor` and `uninstall` | ✅ Phase 5 |
 
 ###
 
@@ -131,8 +133,11 @@ kofterm/
 │   ├── PLAN.md              Full plan: architecture, modules, AI, index, phases
 │   ├── JOURNAL.md           Dated development journal (authorship record)
 │   └── images/              Banner and screenshots
+├── .github/workflows/ci.yml Tests, native build, "no network" check, contribution validation
 ├── corpus/
-│   └── sessions.txt         Starter sequences of commands, so suggestions work on day one
+│   ├── sessions.txt         Starter sequences of commands, so suggestions work on day one
+│   └── commands.txt         Public list of command names (the anonymizer keeps only these)
+├── datasets/contrib/        Anonymized contributions from the community (.kofdata)
 ├── index/
 │   └── pt_BR.txt            The offline command index, written by the project (see below)
 ├── spikes/                  Phase 0: one folder per proof, each with main.kf
@@ -149,6 +154,8 @@ kofterm/
 │   ├── index.kf             Index format, search and option splitting (-ld → -l, -d), with tests
 │   ├── model.kf             The learning model, safety rules, typo fix, own hash map, with tests
 │   ├── brain.kf             Connects the model to the folder, files, options and your events
+│   ├── anon.kf              Anonymizer and validator for contributions, with tests
+│   ├── cli.kf               Subcommands: contribute, check, install, uninstall, doctor
 │   ├── tab.kf               The full-screen index tab (F1 / Ctrl+T)
 │   ├── storage.kf           Private files, UTF-8 conversions, KofTerm's bashrc
 │   ├── 00_libc.kf           Every libc extern and Linux constant; named to compile first (see journal)
@@ -159,40 +166,53 @@ kofterm/
 ├── CHANGELOG.md             Versioned changes
 ├── CITATION.cff             How to cite this project
 ├── LICENSE                  GNU GPL v3
-└── NOTICE                   Third-party credits and licenses
+├── NOTICE                   Third-party credits and licenses
+└── install.sh               Bootstrap: gets KOF if missing (SHA-256 pinned), builds, runs kofterm install
 ```
 
 ###
 
 <h3 align="left">GETTING STARTED:</h3>
 
-**Requirements:** Linux x86_64 with glibc 2.34 or newer (for `forkpty` in `libc.so.6`) and KOF 0.6.6.
+**Requirements:** Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). The binary depends only on the system's `libc`.
 
-**1. Install KOF.** Download `kof-0.6.6-linux-x86_64.tar.gz` and `SHA256SUMS` from the [KOF releases](https://github.com/KofLang/Kof4j/releases), check the hash and extract:
+**Option A: ready-made release (no KOF needed).** Download `kofterm-0.5.0-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-mkdir -p ~/.local/share ~/.local/bin && tar -xzf kof-0.6.6-linux-x86_64.tar.gz -C ~/.local/share && mv ~/.local/share/kof-0.6.6-linux-x86_64 ~/.local/share/kof && ln -sf ~/.local/share/kof/bin/kof ~/.local/bin/kof
+tar -xzf kofterm-0.5.0-linux-x86_64.tar.gz && ./kofterm-0.5.0-linux-x86_64/kofterm install
 ```
 
-**2. Clone this repository.**
+**Option B: from the source.** `install.sh` compiles KofTerm with KOF 0.6.6. If KOF is missing, it asks before downloading the official release (about 370 MB) and checks its SHA-256, which is pinned in the script.
 
 ```bash
-git clone https://github.com/DATAdotPDF/kofterm.git && cd kofterm
+git clone https://github.com/DATAdotPDF/kofterm.git && cd kofterm && ./install.sh
 ```
 
-**3. Build and run KofTerm** (Phase 1, passthrough):
+Both install to `~/.local/share/kofterm` and create the `kofterm` command in `~/.local/bin`. Then open it:
 
 ```bash
-kof build src --target native --output build/kofterm
-```
-```bash
-./build/kofterm/Default/Main
+kofterm
 ```
 
 You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to come back; KofTerm exits with the same code as Bash.
+
+| Command | What it does |
+| --- | --- |
+| `kofterm` | Opens the terminal |
+| `kofterm contribute --preview` | Shows what would be shared with the project. Nothing is written |
+| `kofterm contribute` | Writes `kofterm-contrib.kofdata` in the current folder, for you to review and send |
+| `kofterm check FILE...` | Validates `.kofdata` files (used by CI) |
+| `kofterm doctor` | Checks the installation and shows where your data is |
+| `kofterm uninstall` | Removes the program and keeps your history; `--purge` removes everything |
+
+To open KofTerm automatically in every new terminal, add this to the end of `~/.bashrc` (the `KOFTERM` check stops KofTerm from opening inside itself):
+
+```bash
+[ -z "$KOFTERM" ] && command -v kofterm >/dev/null && exec kofterm
+```
 
 | Key | What it does |
 | --- | --- |
@@ -203,13 +223,16 @@ You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to co
 | **F2** | Splits the screen: a live explanation of the current line at the bottom (remembered next time) |
 | **Ctrl-L** | Clears the screen and keeps what you were typing |
 
-Run the unit tests (39 tests, one file at a time):
+**For developers.** Build and run from the repository without installing, and run the unit tests (47 tests, one file at a time):
 
 ```bash
-for f in keys editor history prompt index model; do kof test src/$f.kf --target native; done
+kof build src --target native --output build/kofterm && ./build/kofterm/Default/Main
+```
+```bash
+for f in keys editor history prompt index model anon; do kof test src/$f.kf --target native; done
 ```
 
-**4. Optional: run the Phase 0 spikes** (in a real terminal window, not through a pipe):
+Optional, the Phase 0 spikes (in a real terminal window, not through a pipe):
 
 ```bash
 cd spikes/02_winsize && kof run main.kf --target=native
@@ -234,7 +257,7 @@ Spike 01 prints every key you press (`q` quits). Spike 03 opens a Bash inside Ko
 | 2 | Line editor and ghost text from history | ✅ done (21/10/2026) |
 | 3 | Offline command index, index tab, live panel, per-option explanations, reading links | ✅ done (21/10/2026) |
 | 4 | n-gram model with local continuous learning, context, grammar, safety rules | ✅ done (21/10/2026) |
-| 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | next |
+| 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | ✅ done (21/10/2026), v0.5.0 |
 | 6 | Optional neural model in pure KOF (`kof-nn`) | planned |
 
 Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal and PTY), `kof-ansi` (keys and screen), `kof-nn` (tensors and a tiny transformer).
@@ -265,9 +288,25 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **10. Phase 4: the model.** A counting model written in KOF learns from every command when its exit code comes back: how often each line is used, which line usually follows which, in what kind of folder (`git`, `node`, `python`…, never the folder name) and which word usually follows two others. Typos (exit 127) never become suggestions. A starter corpus written by the project gives sensible suggestions on day one. Three new obstacles: KOF's native `Map` crashes at about 3,650 keys (the project now has its own hash map in KOF), an `extern` declared in a file compiled later passes strings wrongly to C (the declarations file is now `00_libc.kf`), and Kali's bashrc rewrites `PROMPT_COMMAND` on the first prompt (KofTerm's hook now reinstalls itself). All KOF findings are written up in [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md) for the KOF maintainers.
 
-**11. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
+**11. Phase 5: learning that comes back, and the first release.** `kofterm contribute` turns your event file into aggregated, anonymized patterns: only command names from a public list, options and shell operators pass as they are; paths, files, hosts, IPs, users, numbers and quoted text become placeholders; an unknown program name becomes `<CMD>`; and any line that looks like a secret is dropped whole. Only patterns seen at least 3 times are kept, with no dates or session order. Tested against a fake history full of client names, an internal domain, a private IP, a GitHub token, a MySQL password and a Bearer header: none of it survived. The same rules validate every `.kofdata` in CI, and KofTerm loads `datasets/contrib/` at startup, so each release learns from the community. The installer is a short Bash bootstrap; everything else (`install`, `uninstall`, `doctor`) is KofTerm itself, in KOF.
 
-The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
+The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md); KOF findings are in [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md).
+
+<h3 align="left">CONTRIBUTE YOUR LEARNING:</h3>
+
+```bash
+kofterm contribute --preview
+```
+
+Shows exactly what would be shared, for example:
+
+```text
+L 4 git push origin main
+T 4 git status => git add .
+L 4 scp <FILE> <USER>@<IP>:<PATH>
+```
+
+If you agree, `kofterm contribute` writes `kofterm-contrib.kofdata`. Copy it to `datasets/contrib/<a-nickname>.kofdata` in your fork and open a pull request. Details in [datasets/contrib/README.md](datasets/contrib/README.md).
 
 ###
 
@@ -300,8 +339,9 @@ $ ls -la | Tudo, inclusive ocultos, em formato longo.
 
 <h3 align="left">SECURITY AND PRIVACY:</h3>
 
-- No network code: the source never imports `kof.web`, `kof.net` or `http`, and CI will fail if it does
-- A `kofterm doctor` check will confirm zero network syscalls with `strace`
+- No network code: the source never imports `kof.web`, `kof.net` or `http` nor declares socket functions, and CI fails if it does
+- `kofterm doctor` shows how to confirm it yourself with `strace -f -e trace=network kofterm`
+- The installer pins KOF's SHA-256; the release ships `SHA256SUMS`; every commit and tag is signed
 - Suggestions never execute anything: only Enter runs a command
 - History, the event file the model learns from (exit code, kind of folder, command) and your settings stay in `~/.local/share/kofterm`, readable only by you
 - Lines starting with a space are not saved, like in Bash; dangerous commands are not learned

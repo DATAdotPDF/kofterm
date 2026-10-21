@@ -2,6 +2,21 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.5.0] - 21/10/2026
+
+Phase 5: anonymized contribution, installer and first release.
+
+### Added
+- `kofterm contribute [--preview]`: exports aggregated, anonymized patterns (seen at least 3 times) for an opt-in pull request; never sends anything
+- `kofterm check FILE...`: validates `.kofdata` files with the same rules (used by CI)
+- `kofterm install`, `uninstall [--purge]`, `doctor`, `version`, `help`
+- `install.sh`: bootstrap that gets KOF 0.6.6 if missing (asks first, SHA-256 pinned), builds and installs
+- Community contributions in `datasets/contrib/*.kofdata` loaded at startup
+- `corpus/commands.txt`: public list of command names used by the anonymizer and the typo fixer
+- `anon.kf` with 8 unit tests (47 in total)
+- GitHub Actions CI: unit tests, native build, "no network code" check, contribution validation, smoke test
+- Release tarball with a ready-made binary (needs only glibc 2.34+)
+
 ## [0.4.0] - 21/10/2026
 
 Phase 4: context-aware model and local learning.

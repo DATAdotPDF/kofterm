@@ -99,6 +99,16 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Verified in tmux in a git repo: corpus completes `sudo apt up` → `date`; after `git status` the empty line suggests the next git step; `grpe root /etc/hostname` → `grep root /etc/hostname`; `cat /etc/shadow` → `sudo cat /etc/shadow`; `/etc/hostn` → `ame`, `/us` → `r/`, `.gi` → `t/`; `ls --a` → `ll`; `git commit ` → `-m ""`; after two repetitions of a pair of commands the empty line predicts the second one; `rm -rf /` shows in red with no suggestion; events file is `0600` with features like `git`, never folder names.
 - 39 unit tests pass. All KOF findings collected in `docs/KOF_FINDINGS.md`.
 
+### Phase 5: anonymized contribution, installer and first release (night)
+- `anon.kf` (pure, 8 tests): a quote-aware tokenizer; only command names from a public list (`corpus/commands.txt`, plus index and corpus words), options and shell operators pass; everything else becomes `<PATH>`, `<FILE>`, `<URL>`, `<IP>`, `<HOST>`, `<USER>`, `<NUM>`, `<STR>`, `<ARG>`, `<VAL>`, and an unknown program becomes `<CMD>`. Secret-looking lines (password, token, `export X=`, `curl -u user:pass`, `mysql -p…`, long letter+digit strings) are dropped whole. `ContribBuilder` keeps only patterns seen at least 3 times, without dates or order. The same rules validate files (`kofterm check`).
+- Subcommands in `cli.kf`; arguments come from `/proc/self/cmdline` (KOF has no documented argv).
+- Privacy test: a fake history of 48 events with a client name ("Acme"), an internal domain, a private IP, a GitHub token, a MySQL password, a Bearer header and a company deploy script. The preview had 17 lines like `scp <FILE> <USER>@<IP>:<PATH>` and `<PATH> <ARG>`; a search for acme, pedro, the IP, ghp_, senha, bearer, cliente returned nothing. The generated file passed `kofterm check`; a tampered copy failed on 3 lines (raw path, unknown program, invented feature).
+- Contributions in `datasets/contrib/*.kofdata` are loaded at startup (weight capped at 5); the ghost stops before the first placeholder (`sc` → `scp `).
+- `install.sh` (only Bash file, pins KOF's SHA-256, asks before downloading) builds and runs `kofterm install`, which copies the binary, index and corpus to `~/.local/share/kofterm` and links `~/.local/bin/kofterm`. Tested from a clean `HOME`: install, `doctor` from the installed binary, terminal with F1, `uninstall` keeping history and events, `uninstall --purge` removing everything.
+- The binary only needs `libc.so.6` (GLIBC 2.34+).
+- CI (`.github/workflows/ci.yml`): official KOF with pinned SHA-256, "no network code" grep over `src/`, the 47 unit tests, native build, contribution validation, smoke test.
+- 47 unit tests pass.
+
 ### Still to verify by hand
-- `vim`, `htop` and resizing with a real window, running `build/kofterm/Default/Main` in the VM.
+- `vim`, `htop` and resizing with a real window, running `kofterm` in the VM.
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).
