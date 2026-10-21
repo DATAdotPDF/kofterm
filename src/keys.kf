@@ -27,6 +27,8 @@ class K {
     static Int CTRL_T = 22
     static Int PAGE_UP = 23
     static Int PAGE_DOWN = 24
+    static Int F2 = 25
+    static Int CPR = 26   // resposta do terminal a ESC [ 6 n: code = linha * 10000 + coluna
 }
 
 // `code` e o codepoint Unicode quando kind == K.CHAR.
@@ -160,8 +162,28 @@ class KeyDecoder {
         if (c == 72) { return Key(K.HOME, 0) }
         if (c == 70) { return Key(K.END, 0) }
         if (c == 80 && params.length() == 0) { return Key(K.F1, 0) } // ESC O P
+        if (c == 81 && params.length() == 0) { return Key(K.F2, 0) } // ESC O Q
+        if (c == 82 && params.contains(";")) { // ESC [ linha ; coluna R
+            var row = 0
+            var col = 0
+            var second = false
+            var i = 0
+            while (i < params.length()) {
+                var ch = params.substring(i, i + 1)
+                if (ch == ";") {
+                    second = true
+                } else if (second) {
+                    col = col * 10 + digit(ch)
+                } else {
+                    row = row * 10 + digit(ch)
+                }
+                i = i + 1
+            }
+            return Key(K.CPR, row * 10000 + col)
+        }
         if (c == 126) { // ~
             if (params == "11") { return Key(K.F1, 0) }
+            if (params == "12") { return Key(K.F2, 0) }
             if (params == "5") { return Key(K.PAGE_UP, 0) }
             if (params == "6") { return Key(K.PAGE_DOWN, 0) }
             if (params == "3") { return Key(K.DELETE, 0) }
@@ -169,6 +191,18 @@ class KeyDecoder {
             if (params == "4" || params == "8") { return Key(K.END, 0) }
         }
         return Key(K.IGNORE, c)
+    }
+
+    Int digit(String ch) {
+        var digits = "0123456789"
+        var d = 0
+        while (d < 10) {
+            if (digits.substring(d, d + 1) == ch) {
+                return d
+            }
+            d = d + 1
+        }
+        return 0
     }
 
     // UTF-8 de 2 a 4 bytes -> um codepoint. Retorna bytes usados, 0 se incompleto.
@@ -240,6 +274,14 @@ test "esc sozinho, F1 e ctrl-t" {
     assert(d.decode(listOf(27, 91, 49, 49, 126)).get(0).kind == K.F1, "F1 vt")
     assert(d.decode(listOf(20)).get(0).kind == K.CTRL_T, "ctrl-t")
     assert(d.decode(listOf(27, 91, 54, 126)).get(0).kind == K.PAGE_DOWN, "page down")
+}
+
+test "F2 e posicao do cursor" {
+    var d = KeyDecoder()
+    assert(d.decode(listOf(27, 79, 81)).get(0).kind == K.F2, "F2")
+    // ESC [ 12 ; 34 R
+    var k = d.decode(listOf(27, 91, 49, 50, 59, 51, 52, 82)).get(0)
+    assert(k.kind == K.CPR && k.code == 120034, "linha 12 coluna 34")
 }
 
 test "utf8 de dois bytes" {

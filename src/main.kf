@@ -47,6 +47,8 @@ main() {
     session.master = child.master
     session.histPath = dir + "/history"
     session.loadHistory()
+    session.panelPath = dir + "/panel"
+    session.loadPanelSetting()
     session.tab.index.load(loadLines(findIndex(dir)))
     session.onResize(winRows(ws), winCols(ws))
     var keys = KeyDecoder()
@@ -60,6 +62,10 @@ main() {
     var buf = malloc(Loop.CHUNK)
     var out = malloc(Loop.CHUNK * 2L)
     var info = malloc(Sys.SIGINFO_SIZE)
+    // espera maxima pela resposta do terminal sobre a posicao do cursor: 300 ms
+    var cprWait = malloc(16L)
+    buffer.poke64(cprWait, 0L)
+    buffer.poke64(cprWait + 8L, 300000000L)
     try {
         buffer.poke32(fds, Sys.STDIN)
         buffer.poke32(fds + 8L, child.master)
@@ -69,8 +75,16 @@ main() {
             buffer.poke32(fds + 4L, Sys.POLLIN) // events=POLLIN, revents=0
             buffer.poke32(fds + 12L, Sys.POLLIN)
             buffer.poke32(fds + 20L, Sys.POLLIN)
-            // timeout NULL: dorme ate ter tecla, saida do bash ou sinal
-            var ready = ppoll(fds, 3L, 0L, 0L)
+            // sem timeout: dorme ate ter tecla, saida do bash ou sinal;
+            // so acorda sozinho se estiver esperando a posicao do cursor
+            var tmo = 0L
+            if (session.awaitingCpr) {
+                tmo = cprWait
+            }
+            var ready = ppoll(fds, 3L, tmo, 0L)
+            if (ready == 0) {
+                session.onPositionTimeout()
+            }
             if (ready > 0) {
                 // saida do bash primeiro, para nao atrasar a tela
                 if (buffer.peek8(fds + 14L) != 0) {
@@ -123,7 +137,7 @@ main() {
                     var sig = sigRead(sfd, info)
                     if (sig == Sys.SIGWINCH) {
                         if (winsizeGet(Sys.STDOUT, ws)) {
-                            winsizeSet(child.master, ws)
+                            // a sessao repassa ao bash o tamanho da area dele (sem o painel)
                             session.onResize(winRows(ws), winCols(ws))
                         }
                     } else if (sig == Sys.SIGHUP || sig == Sys.SIGTERM) {
@@ -138,8 +152,10 @@ main() {
             }
         }
     } finally {
+        session.shutdown()
         ttyRestore(Sys.STDIN, saved)
     }
+    free(cprWait)
 
     var childCode = ptyWait(child.pid)
     if (exitCode < 0) {
