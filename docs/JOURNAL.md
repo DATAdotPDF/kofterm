@@ -45,5 +45,24 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 ### Repository
 - Project folder created at `D:\VSCODE_PROJECTS\kofterm`, Git initialized, README in English and Portuguese, authorship and credit files added.
 
+- Repository published at github.com/DATAdotPDF/kofterm. Commit signing set up with Pedro's SSH key through the Windows ssh-agent; the first 4 commits were re-signed with their original dates and the history was force-pushed (approved by Pedro). All commits and the `v0.0.1` tag show "Verified".
+
+### Phase 1: passthrough terminal (evening)
+- Checked first: KOF native builds several `.kf` files in one folder together (default package), and `sigemptyset`, `sigaddset`, `sigprocmask`, `signalfd`, `kill`, `close` do not collide with KOF built-ins. A small program blocked `SIGTERM`, sent it to itself and read it from a `signalfd` (`ssi_signo=15`), and kept running.
+- 16:37: `src/` built on the first try (68 KB): `libc.kf` (every extern), `tty.kf`, `pty.kf`, `sig.kf` (future `kof-tty`), `main.kf` (event loop over stdin, the PTY master and the signalfd).
+- Child process clears the inherited signal mask before `exec`, otherwise Bash would start with Ctrl-C blocked. It also gets `KOFTERM=1` in its environment.
+- Tests on Kali, driven over `ssh -tt`:
+  - Normal session: `KOFTERM=1`, Ctrl-C → 130, `exit 7` → KofTerm exits 7, terminal restored.
+  - Resize: `stty size` went from `30 100` to `50 150` on `SIGWINCH`.
+  - `SIGTERM` from outside: exit 143, terminal restored, no orphan Bash.
+  - `SIGHUP` (window closed): exit 129, terminal restored, no orphan Bash.
+- A test mistake worth remembering: `pkill -f <path>` also matched the test's own shell command line. Use `pkill -x Main`.
+
+### Vision update from Pedro
+- Audience: people learning Bash.
+- The model learns continuously from the user, locally; folder context enters as features, never as paths.
+- Opt-in contribution: `kofterm contribute` exports an anonymized, aggregated file that the user reviews and sends by pull request with their own Git. CI re-validates it and retrains the base model, so each release ships a smarter model. KofTerm keeps zero network code.
+- Side panel explains each option separately (`-ld` → `-l` + `-d`) and shows reading links (ss64, man7.org, GNU Bash Manual, tldr) that KofTerm never opens itself.
+
 ### Still to verify by hand
-- `vim`, `htop` and window resizing inside spike 03, in the VM window.
+- `vim`, `htop` and resizing with a real window, running `build/kofterm/Default/Main` in the VM.

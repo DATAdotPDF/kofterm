@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <img src="https://img.shields.io/badge/Status-Phase_0_done-8b5cf6?style=flat-square" alt="Phase 0 done">
+  <img src="https://img.shields.io/badge/Status-Phase_1_done-8b5cf6?style=flat-square" alt="Phase 1 done">
 </p>
 
 <p align="center">
@@ -28,9 +28,10 @@
 ###
 
 <p align="left">
-  KofTerm is a terminal for Linux that brings the VS Code / Gemini style of autocomplete to Bash: while you type, the rest of the line appears in grey, and <b>TAB</b> accepts it.<br><br>
-  The suggestion is not just a history lookup. It reads the context of the session: the previous command, whether it failed, the current folder. Type <code>sudo apt update</code> and the next line suggests <code>sudo apt upgrade</code>. A command that fails with <i>Permission denied</i> is offered again with <code>sudo</code>. A typo like <code>gti</code> is offered as <code>git</code>.<br><br>
-  Everything runs <b>locally and offline</b>. The model is trained only on Linux commands, on your own machine, and the binary never opens a network socket. A side panel (<code>F1</code> / <code>Ctrl+K</code>) opens an offline index of commands with explanations and examples, so a forgotten command is one keystroke away.<br><br>
+  KofTerm is a terminal for Linux <b>made for people learning Bash</b>. It brings the VS Code / Gemini style of autocomplete to the shell: while you type, the rest of the line appears in grey, and <b>TAB</b> accepts it.<br><br>
+  The suggestion is not just a history lookup. It reads the context of the session: what you already typed, the previous command, whether it failed, the folders you visited. The more you type, the more it learns from you. Type <code>sudo apt update</code> and the next line suggests <code>sudo apt upgrade</code>. A command that fails with <i>Permission denied</i> is offered again with <code>sudo</code>. A typo like <code>gti</code> is offered as <code>git</code>.<br><br>
+  Everything runs <b>locally and offline</b>. The model is trained only on Linux commands, on your own machine, and the binary never opens a network socket. If you want to help, you can send what your model learned back to the project through Git, anonymized and reviewed by you first, so every new release ships a smarter model. Nothing personal leaves your machine.<br><br>
+  A side panel (<code>F1</code> / <code>Ctrl+K</code>) opens an offline index of the most common ways to use the terminal. Forgot what <code>ls -ld</code> does? Each option is explained on its own, with an example and links for further reading online, without digging through <code>--help</code>.<br><br>
   It is also my first project in <a href="https://koflang.github.io">KOF</a>, a Brazilian programming language. KOF is the heart of the project: the terminal, the AI, the training, the installer and the tests are all KOF. When the language lacks something, the answer is a new KOF library, not another language.
 </p>
 
@@ -41,8 +42,9 @@
 ###
 
 - **Phase 0 (FFI spikes): done.** Raw keyboard mode, window size and Bash running inside a pseudo-terminal are proven in KOF native on Kali Linux. See [spikes/README.md](spikes/README.md).
-- **Phase 1 (passthrough terminal): next.**
-- Not usable as a daily terminal yet.
+- **Phase 1 (passthrough terminal): done.** `kofterm` runs Bash in a pseudo-terminal, passes Bash's exit code through, follows window resizes and restores your terminal even when killed by `SIGTERM` or `SIGHUP`.
+- **Phase 2 (line editor and ghost text): next.**
+- It works as a plain terminal today; the suggestions arrive in Phase 2.
 
 ###
 
@@ -79,13 +81,16 @@
 
 | Feature | Status |
 | --- | --- |
-| Runs Bash inside a pseudo-terminal (colors, `vim`, `htop`, Ctrl-C, resize) | ✅ proven in spike 03, polishing in Phase 1 |
+| Runs Bash inside a pseudo-terminal (colors, Ctrl-C, resize, exit code) | ✅ Phase 1 |
+| Terminal restored even if KofTerm is killed (`SIGTERM`, `SIGHUP`) | ✅ Phase 1 |
 | Ghost-text suggestion, **TAB** accepts the line, **Ctrl+→** accepts one word | Phase 2 |
-| Context-aware suggestions (previous command, exit code, folder) | Phase 4 |
+| Context-aware suggestions (what you typed, previous command, exit code, folders) | Phase 4 |
+| Learns from you as you type, locally | Phase 4 |
 | "Refactor" suggestions: `sudo` retry, typo fix, `cat f \| grep x` → `grep x f` | Phase 4 |
 | Dangerous commands (`rm -rf /`, `mkfs`, fork bomb) flagged in red and never suggested | Phase 4 |
 | Side panel / split screen with an offline command index | Phase 3 |
-| Local n-gram model trained only on Linux commands | Phase 4 |
+| Each option explained on its own (`-ld` → `-l` + `-d`), with reading links | Phase 3 |
+| Opt-in, anonymized contribution of your learning back to the project via Git | Phase 5 |
 | Optional tiny neural model, trained and run in pure KOF (`kof-nn`) | Phase 6 |
 | One-command install from GitHub | Phase 5 |
 
@@ -123,7 +128,12 @@ kofterm/
 │   ├── 01_raw_keys/         Raw mode, byte-by-byte keyboard input
 │   ├── 02_winsize/          Window size via ioctl(TIOCGWINSZ)
 │   └── 03_pty_bash/         Bash inside a PTY with forkpty + ppoll
-├── src/                     (Phase 1+) the terminal itself, all .kf
+├── src/                     The terminal itself, all .kf
+│   ├── main.kf              Event loop: keyboard, Bash output and signals
+│   ├── libc.kf              Every libc extern and Linux constant, in one place
+│   ├── tty.kf               Raw mode, restore, window size (future kof-tty)
+│   ├── pty.kf               Bash in a pseudo-terminal, exit status (future kof-tty)
+│   └── sig.kf               Signals read as data through signalfd (future kof-tty)
 ├── AUTHORS.md               Author and credits
 ├── CHANGELOG.md             Versioned changes
 ├── CITATION.cff             How to cite this project
@@ -152,7 +162,18 @@ mkdir -p ~/.local/share ~/.local/bin && tar -xzf kof-0.6.6-linux-x86_64.tar.gz -
 git clone https://github.com/DATAdotPDF/kofterm.git && cd kofterm
 ```
 
-**3. Run the Phase 0 spikes** (in a real terminal window, not through a pipe):
+**3. Build and run KofTerm** (Phase 1, passthrough):
+
+```bash
+kof build src --target native --output build/kofterm
+```
+```bash
+./build/kofterm/Default/Main
+```
+
+You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to come back; KofTerm exits with the same code as Bash.
+
+**4. Optional: run the Phase 0 spikes** (in a real terminal window, not through a pipe):
 
 ```bash
 cd spikes/02_winsize && kof run main.kf --target=native
@@ -173,11 +194,11 @@ Spike 01 prints every key you press (`q` quits). Spike 03 opens a Bash inside Ko
 | Phase | Goal | Status |
 | --- | --- | --- |
 | 0 | FFI spikes: raw mode, window size, PTY | ✅ done (21/10/2026) |
-| 1 | Passthrough terminal, signal-safe restore (`signalfd`) | next |
-| 2 | Line editor and ghost text from history | planned |
-| 3 | Offline command index and side panel | planned |
-| 4 | n-gram model, context, grammar, safety rules | planned |
-| 5 | Installer, CI with "no network" check, first release | planned |
+| 1 | Passthrough terminal, signal-safe restore (`signalfd`) | ✅ done (21/10/2026) |
+| 2 | Line editor and ghost text from history | next |
+| 3 | Offline command index, side panel, per-option explanations, reading links | planned |
+| 4 | n-gram model with local continuous learning, context, grammar, safety rules | planned |
+| 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | planned |
 | 6 | Optional neural model in pure KOF (`kof-nn`) | planned |
 
 Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal and PTY), `kof-ansi` (keys and screen), `kof-nn` (tensors and a tiny transformer).
@@ -200,6 +221,10 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **6. Phase 0 findings.** All three spikes passed after fixing what the docs did not say. KOF has no file-level constants (they live as `static` fields in a class). `Buffer(U8)` cannot be a function parameter, so memory is handled as raw `Long` pointers from `malloc`. An `extern` named `poll` is silently routed to KOF's own concurrency `poll`, so the terminal uses `ppoll`. Details in [spikes/README.md](spikes/README.md).
 
+**7. Phase 1: a real terminal.** The spike became `src/`, split into modules that will later form the `kof-tty` library. Signals are blocked and read as data through `signalfd` in the same `ppoll` loop, because KOF cannot keep a signal callback. That gives resize on `SIGWINCH` and a restored terminal on `SIGTERM` and `SIGHUP`. Verified on Kali: Bash's exit code passes through (`exit 7` → 7), and no orphan Bash is left behind.
+
+**8. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
+
 The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 
 ###
@@ -210,6 +235,8 @@ The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 - A `kofterm doctor` check will confirm zero network syscalls with `strace`
 - Suggestions never execute anything: only Enter runs a command
 - History and the trained model stay in `~/.local/share/kofterm`, readable only by you
+- Contribution is opt-in, shown to you in full before sending, anonymized twice (on your machine and again in CI), and sent by your own Git, never by KofTerm
+- Reading links in the side panel are only displayed; KofTerm never opens them
 - Dependencies are limited to the KOF standard library and this project's own KOF libraries, with pinned versions
 
 ###

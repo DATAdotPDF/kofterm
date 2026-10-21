@@ -1,10 +1,14 @@
 # KofTerm — terminal com autocomplete inteligente, 100% offline, em KOF
 
+## Visão (palavras do autor)
+Um novo terminal Linux **para quem está estudando Bash**. Ghost autocomplete no estilo VS Code, levando em conta o que já foi escrito, as pastas acessadas e o contexto, usando uma IA treinada localmente, sem internet. Quanto mais a pessoa digita, mais a IA aprende com ela. Se a pessoa quiser, pode **devolver o aprendizado ao projeto pelo Git**, sem nada pessoal, para que cada versão nova seja mais inteligente que a anterior. Uma aba lateral com um índice das formas mais conhecidas de usar o terminal: esqueceu o que `-ld` faz? Lê na aba, sem abrir `--help`, e ainda recebe indicações de leitura online sobre o assunto.
+
 ## Contexto
 Primeiro projeto em KOF (https://koflang.github.io, v0.6.6). Objetivo: um comando `kofterm`, instalável a partir do GitHub, que roda dentro de qualquer terminal Linux e oferece:
-- sugestão em *ghost text* estilo VS Code/Gemini: aceita com **TAB**, considerando o contexto das linhas anteriores (ex.: `apt update` → sugere `sudo apt upgrade`);
-- um "cérebro" local treinado só com comandos Linux, sem rede;
-- painel lateral / aba dividida com um índice offline dos comandos e o que cada um faz.
+- sugestão em *ghost text* estilo VS Code/Gemini: aceita com **TAB**, considerando o contexto das linhas anteriores (ex.: `apt update` → sugere `sudo apt upgrade`) e as pastas acessadas;
+- um "cérebro" local treinado só com comandos Linux, sem rede, que **aprende continuamente** com o usuário;
+- **contribuição opcional e anonimizada** do aprendizado de volta ao projeto, via Git (§ "Aprendizado contínuo e contribuição");
+- painel lateral / aba dividida com um índice offline dos comandos, o que cada opção faz e links de leitura.
 
 **Princípio central: KOF é o coração do projeto.** Todo código do produto (terminal, IA, treino, instalador, testes) é escrito em KOF. Quando faltar algo na linguagem ou na stdlib, a solução é criar uma **biblioteca KOF paralela** (repo próprio, reutilizável pela comunidade) e consumi-la via `kof deps`. Nada de Python, C ou llama.cpp no caminho. A única fronteira externa é o próprio sistema operacional (chamadas da libc/kernel via `extern`), que qualquer terminal precisa usar.
 
@@ -74,6 +78,19 @@ Modelo de interação: o kofterm é dono da linha que está sendo editada (como 
 - Inferência em uma thread `spawn`. O n-gram continua como fallback instantâneo e o modelo neural só refina quando o usuário pausa a digitação por mais de 300 ms.
 - Se o desempenho do KOF native não alcançar a meta, otimizar dentro de `kof-nn` (quantização int8, cache de KV), sem trocar de linguagem.
 
+## Aprendizado contínuo e contribuição (opt-in, sem dados pessoais)
+**Aprender com o usuário (sempre local):**
+- A cada comando executado (Enter + código de saída vindo do marcador de prompt), o modelo n-gram local é atualizado na hora em `~/.local/share/kofterm/model.bin`. Não existe treino em lote; quanto mais a pessoa digita, melhor fica.
+- O contexto de pasta entra como **características**, nunca como caminho: "tem `.git`", "tem `package.json`", "tem `Makefile`", "é a home", "veio de um `cd`". O nome das pastas não é guardado no modelo.
+
+**Devolver ao projeto (só se o usuário quiser):**
+1. `kofterm contribute --preview` gera e **mostra inteiro** o arquivo `contrib-<versão>.kofdata`, para a pessoa ler antes.
+2. O anonimizador troca tudo o que não é comando, subcomando ou opção conhecida por marcadores: `<PATH>`, `<FILE>`, `<URL>`, `<IP>`, `<HOST>`, `<USER>`, `<NUM>`, `<STR>`. Ex.: `scp notas.txt pedro@10.0.0.5:/home/pedro` → `scp <FILE> <USER>@<IP>:<PATH>`.
+3. Linhas com cara de segredo são **descartadas inteiras**, não mascaradas: `export X=…`, `password`, `token`, `Authorization`, `--key`, chaves longas em base64/hex, `mysql -p…`, `sshpass`.
+4. Só vão sequências agregadas que apareceram pelo menos 3 vezes. Sem horários, sem ordem real da sessão, sem nome de máquina.
+5. A pessoa envia o arquivo por Pull Request para `datasets/contrib/` (com instruções do `kofterm contribute`). **O kofterm não tem código de rede:** quem envia é o Git do usuário, quando ele decidir.
+6. No repositório, o CI valida o arquivo com o mesmo anonimizador (rejeita se achar algo fora dos marcadores), retreina o modelo base em KOF (`kofterm train`) e o publica junto da próxima versão. Cada release traz um `model.bin` mais inteligente.
+
 ## Índice de comandos (painel lateral) e a questão do ss64
 Atribuir crédito **não** dá direito de redistribuir: o ss64 é protegido por copyright e o projeto ser sem fins lucrativos não muda isso. Para ter o índice offline e completo sem risco para o repositório:
 1. **Embutido no repo (pode ser distribuído):**
@@ -83,6 +100,10 @@ Atribuir crédito **não** dá direito de redistribuir: o ss64 é protegido por 
 2. **Gerado na máquina do usuário na instalação (nada sai dela):** extração de `man -P cat`, `help <builtin>` e `<cmd> --help` dos comandos instalados → `index.db`.
 3. **Conteúdo do ss64 em si:** abrir um issue/e-mail para o mantenedor do ss64 pedindo permissão para embutir. Se ele permitir, entra como pacote opcional `kofterm docs --with-ss64` com a licença dele. Até lá, só links.
 4. Outras fontes abertas para avaliar: GNU Bash Reference Manual (GFDL), páginas da man-pages project (licenças permissivas por página; checar uma a uma), Arch Wiki (GFDL).
+
+Explicação por opção, pensada para quem está estudando: opções curtas combinadas são separadas e explicadas uma a uma (`ls -ld` → `-l` formato longo, `-d` lista a pasta e não o conteúdo), com um exemplo e o que muda na saída.
+
+Leitura online: cada entrada traz links de referência (página do ss64, `man7.org`, GNU Bash Manual, tldr). O kofterm **só mostra** os links, para a pessoa abrir no navegador se quiser; ele nunca acessa a internet.
 
 UI: `F1` ou `Ctrl+K` abre o painel à direita (ou embaixo se a largura for <100 colunas) mostrando a doc do comando sob o cursor. Dentro do painel, `/` faz busca fuzzy, Enter insere um exemplo na linha (sem executar) e `Esc` fecha. `Ctrl+T` abre a "aba" em tela cheia (tela alternativa).
 
@@ -116,11 +137,11 @@ git clone https://github.com/DATAdotPDF/kofterm && cd kofterm && ./install.sh
 
 ## Fases de entrega
 0. ✅ **Spike de FFI (concluído 21/10/2026; achados em `spikes/README.md`):** na VM Linux, instalar o KOF 0.6.6, ler `Kof4j/training` para pegar a sintaxe do `extern` e provar 3 coisas em arquivos de ~50 linhas: (a) `tcsetattr` em modo raw lendo teclas byte a byte, (b) `forkpty`+`execvp("bash")` repassando I/O com `poll`, (c) `ioctl TIOCGWINSZ`. Se o FFI não conseguir lidar com a struct `termios`, o plano B é usar `Buffer(U8)` de 60 bytes com offsets fixos. Se ainda faltar algo, o plano C é implementar a peça na própria linguagem ou no compilador: abrir um issue/PR no `KofLang/Kof4j` e, enquanto isso, usar o que der em KOF.
-1. **Passthrough:** `kofterm` abre o bash no PTY, tudo funciona como um terminal normal (incluindo `vim`, `htop`, Ctrl-C, redimensionamento).
-2. **Editor de linha + ghost text:** sugestões só do histórico, TAB aceita.
-3. **Índice + painel lateral:** importação de tldr/man → SQLite, split screen.
-4. **n-gram + contexto + gramática + safety:** a "IA" v1, mais as regras de refatoração.
-5. **Empacotamento:** `install.sh`, README, CI (GitHub Actions: `kof test` + build native + checagem de "sem rede"), primeira release.
+1. ✅ **Passthrough (concluído 21/10/2026):** `src/` com `kofterm` abrindo o bash no PTY; Ctrl-C, código de saída repassado, resize por `SIGWINCH` via `signalfd`, restauração do terminal em `SIGTERM`/`SIGHUP`. Falta o teste manual de `vim`/`htop`.
+2. **Editor de linha + ghost text:** marcador de prompt (OSC) com `cwd` e código de saída; sugestões do histórico, TAB aceita.
+3. **Índice + painel lateral:** importação de tldr/man → SQLite, split screen, explicação por opção e links de leitura.
+4. **n-gram + contexto + gramática + safety:** a "IA" v1 com aprendizado contínuo local, contexto de pasta por características e regras de refatoração.
+5. **Contribuição + empacotamento:** `kofterm contribute` com anonimizador, validação no CI, `install.sh`, README, CI (`kof test` + build native + checagem de "sem rede"), primeira release com `model.bin`.
 6. **(Opcional) modelo neural v2**: criar `kof-nn` e integrar.
 
 ## Verificação

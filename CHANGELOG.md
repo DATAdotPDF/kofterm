@@ -2,6 +2,20 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.1.0] - 21/10/2026
+
+Phase 1: passthrough terminal.
+
+### Added
+- `src/`: KofTerm runs Bash in a pseudo-terminal (`libc.kf`, `tty.kf`, `pty.kf`, `sig.kf`, `main.kf`)
+- Signals read as data through `signalfd`: resize on `SIGWINCH`; terminal restored and Bash closed on `SIGTERM`/`SIGHUP`; external `SIGINT`/`SIGQUIT` forwarded to Bash
+- KofTerm exits with Bash's exit code (128 + N when Bash dies from signal N)
+- `KOFTERM=1` in Bash's environment
+- Plan updated with Pedro's vision: audience of Bash learners, continuous local learning, opt-in anonymized contribution through Git, per-option explanations and reading links
+
+### Verified
+- On Kali Linux with KOF 0.6.6: normal session, Ctrl-C, `exit 7` → 7, resize 30×100 → 50×150, `SIGTERM` → 143, `SIGHUP` → 129, terminal restored and no orphan Bash in every case
+
 ## [0.0.1] - 21/10/2026
 
 Phase 0: FFI spikes.
