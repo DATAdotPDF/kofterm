@@ -15,10 +15,21 @@ class Feed {
 
 class PromptScanner {
     List<Int> prefix = listOf(27, 93, 55, 55, 55, 48, 59) // ESC ] 7 7 7 0 ;
-    List<Int> held = listOf<Int>()
     List<Int> payload = listOf<Int>()
     Int matched = 0
     Boolean inPayload = false
+
+    // Os bytes guardados num falso alarme sao sempre o comeco do prefixo, entao basta saber
+    // quantos foram: nao e preciso criar uma lista a cada ESC (o top manda centenas por quadro).
+    Int heldCount() {
+        return heldN
+    }
+
+    Int heldAt(Int i) {
+        return prefix.get(i)
+    }
+
+    Int heldN = 0
 
     Int feed(Int b) {
         if (inPayload) {
@@ -32,11 +43,11 @@ class PromptScanner {
         }
         if (b == prefix.get(matched)) {
             matched = matched + 1
-            held.add(b)
+            heldN = matched
             if (matched == prefix.size) {
                 inPayload = true
                 payload = listOf<Int>()
-                held = listOf<Int>()
+                heldN = 0
             }
             return Feed.HOLD
         }
@@ -47,10 +58,9 @@ class PromptScanner {
         return Feed.FLUSH
     }
 
-    List<Int> takeHeld() {
-        var h = held
-        held = listOf<Int>()
-        return h
+    // Depois de um FLUSH: os bytes guardados ja foram repassados.
+    clearHeld() {
+        heldN = 0
     }
 
     // Codigo de saida do comando anterior (antes do primeiro ';' do payload).
@@ -97,9 +107,12 @@ List<Int> scanAll(PromptScanner s, List<Int> bytes, List<Int> marks) {
             marks.add(s.status())
             i = i + 1
         } else if (r == Feed.FLUSH) {
-            for (var h in s.takeHeld()) {
-                out.add(h)
+            var k = 0
+            while (k < s.heldCount()) {
+                out.add(s.heldAt(k))
+                k = k + 1
             }
+            s.clearHeld()
         } else {
             i = i + 1
         }

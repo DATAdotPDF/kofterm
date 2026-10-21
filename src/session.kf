@@ -1,17 +1,17 @@
-// Sessao: liga o editor de linha, o historico, o indice e o bash.
+// Sessao: liga o emulador de terminal, o editor de linha, o modelo, o indice e o bash.
+//
+// Desde a Fase 6 o KofTerm desenha a tela inteira ele mesmo (como o tmux): tudo o que o bash
+// e os programas escrevem passa pelo emulador (vt.kf), que guarda a tela na memoria. A tela
+// real fica dividida em duas colunas: a area do bash a esquerda e, com F2, o indice a direita.
+// O bash e os programas recebem so o tamanho da area da esquerda (TIOCSWINSZ), entao nunca
+// escrevem por cima do indice.
 //
 // Dois estados:
-// - editing = true: o bash mostrou o prompt (marcador recebido). O kofterm e dono da linha:
-//   desenha o texto e o ghost text, e so manda a linha para o bash no Enter.
+// - editing = true: o bash mostrou o prompt (marcador recebido). O KofTerm e dono da linha:
+//   desenha o texto e a sugestao em cinza por cima da tela do emulador e so manda a linha
+//   para o bash no Enter.
 // - editing = false: um comando esta rodando (vim, sudo pedindo senha, read...).
-//   Cada byte do teclado vai direto para o bash, como na Fase 1.
-//
-// Posicao: a cada prompt o kofterm pergunta ao terminal onde o cursor esta (ESC [ 6 n) e
-// desenha por coordenadas absolutas. Se o terminal nao responder, volta ao modo da Fase 2
-// (salvar/restaurar cursor com ESC 7 / ESC 8), sem painel.
-//
-// Painel (F2): as ultimas linhas da tela mostram a explicacao do comando digitado. O bash
-// recebe uma tela menor (TIOCSWINSZ) e uma regiao de rolagem (DECSTBM) protege o painel.
+//   Cada byte do teclado vai direto para o bash.
 
 class Session {
     Int master = -1
@@ -21,24 +21,52 @@ class Session {
     History hist = History()
     IndexTab tab = IndexTab()
     Brain brain = Brain()
+    Vt vt = Vt()
+    RecipeBook recipes = RecipeBook()
+    List<RecipeMatch> recipeHits = listOf<RecipeMatch>()
     Boolean editing = false
     String ghost = ""
     String draftAfterClear = ""
     Int lastStatus = 0
     String cwd = ""
     String feats = ""
+
+    // tela real
     Int rows = 24
     Int cols = 80
-
-    // posicao da linha (1-based), valida quando cprOk
-    Boolean cprOk = false
-    Boolean awaitingCpr = false
-    List<Key> queued = listOf<Key>()
-    Int startRow = 1
-    Int startCol = 1
-    Int lastRow = 1
-
     Boolean panelOn = false
+    List<String> lastRows = listOf<String>()
+    List<String> lastPanel = listOf<String>()
+    List<String> panelContent = listOf<String>()
+    Boolean cursorShown = true
+
+    // onde a linha digitada comeca (coordenadas do emulador, a partir de 0)
+    Int startRow = 0
+    Int startCol = 0
+    // linhas cobertas pela linha digitada: primeira linha e quantidade (agora e no desenho anterior)
+    Int ovStart = 0
+    Int ovCount = 0
+    Int prevOvStart = 0
+    Int prevOvCount = 0
+    List<List<String>> ovCh = listOf<List<String>>()
+    List<List<String>> ovAt = listOf<List<String>>()
+    List<String> colMoves = listOf<String>()
+
+    // a tela e montada num buffer cru (malloc) com stpcpy e sai num write so: desenhar
+    // nao cria Strings (o coletor do KOF native recupera so parte delas)
+    Long rbuf = 0L
+    Long rcap = 0L
+    Long wp = 0L
+    List<String> cupRows = listOf<String>()
+    List<String> cupPanel = listOf<String>()
+    String sgrReset = "\u001b[0m"
+    String sgrOpen = "\u001b[0;"
+    String sgrEnd = "m"
+    String sep = "\u001b[0;90m│\u001b[0m"
+    String eraseEol = "\u001b[K"
+    // literais avaliados a cada quadro criariam Strings novas (KOF 0.6.6 native): ficam em campos
+    String NONE = "\u0000"
+    String NOTEXT = ""
 
     String esc() {
         return "\u001b"
@@ -60,147 +88,180 @@ class Session {
         panelOn = lines.size > 0 && lines.get(0) == "on"
     }
 
-    // ---------- tamanho da tela e painel ----------
+    // ---------- tamanho e colunas ----------
 
-    Int panelHeight() {
-        if (!panelOn || !cprOk || rows < 14) {
-            return 0
+    Int panelWidth() {
+        var w = cols / 3
+        if (w < 28) {
+            w = 28
         }
-        var h = rows / 3
-        if (h < 6) {
-            h = 6
+        if (w > 48) {
+            w = 48
         }
-        if (h > 10) {
-            h = 10
-        }
-        return h
+        return w
     }
 
-    // ultima linha da area do bash
-    Int bottom() {
-        return rows - panelHeight()
+    // O indice so cabe se a area do bash continuar com pelo menos 40 colunas.
+    Boolean panelFits() {
+        return cols - panelWidth() - 1 >= 40
     }
 
-    // Diz ao bash o tamanho da area dele (a tela menos o painel).
+    Boolean panelVisible() {
+        return panelOn && panelFits()
+    }
+
+    // largura da area do bash
+    Int leftWidth() {
+        if (panelVisible()) {
+            return cols - panelWidth() - 1
+        }
+        return cols
+    }
+
+    // Diz ao bash o tamanho da area dele.
     applyPtySize() {
         var ws = malloc(8L)
         buffer.poke64(ws, 0L)
-        var r = bottom()
-        buffer.poke8(ws, r % 256)
-        buffer.poke8(ws + 1L, r / 256)
-        buffer.poke8(ws + 2L, cols % 256)
-        buffer.poke8(ws + 3L, cols / 256)
+        buffer.poke8(ws, rows % 256)
+        buffer.poke8(ws + 1L, rows / 256)
+        var w = leftWidth()
+        buffer.poke8(ws + 2L, w % 256)
+        buffer.poke8(ws + 3L, w / 256)
         winsizeSet(master, ws)
         free(ws)
+    }
+
+    // Inicio: tela alternativa do terminal real (ao sair, a tela de antes volta) e emulador.
+    start(Int r, Int c) {
+        rows = r
+        cols = c
+        vt.init(rows, leftWidth())
+        print(esc() + "[?1049h" + esc() + "[H" + esc() + "[2J")
+        resetCaches()
+        applyPtySize()
+    }
+
+    resetCaches() {
+        lastRows = listOf<String>()
+        lastPanel = listOf<String>()
+        // um valor que nenhuma linha desenhada tem: forca o primeiro desenho de tudo,
+        // inclusive das linhas vazias da coluna do indice (que precisam do separador)
+        cupRows = listOf<String>()
+        cupPanel = listOf<String>()
+        colMoves = listOf<String>()
+        var c = 0
+        while (c < cols) {
+            colMoves.add(esc() + "[" + (c + 1) + "G") // vai para a coluna c+1 na linha atual
+            c = c + 1
+        }
+        var i = 0
+        while (i < rows) {
+            lastRows.add("\u0000")
+            lastPanel.add("\u0000")
+            cupRows.add(cup(i + 1, 1))
+            cupPanel.add(cup(i + 1, leftWidth() + 1))
+            i = i + 1
+        }
+        vt.markAll()
+        // espaco para a tela inteira com cores em toda celula, mais a coluna do indice
+        var need = (rows * cols * 48 + 65536) as Long
+        if (rcap < need) {
+            if (rbuf != 0L) {
+                free(rbuf)
+            }
+            rbuf = malloc(need)
+            rcap = need
+        }
+    }
+
+    emit(String s) {
+        wp = stpcpy(wp, s)
+    }
+
+    emitRow(List<String> ch, List<String> at, Int n) {
+        var cur = NONE
+        var j = 0
+        while (j < n && j < ch.size) {
+            var a = at.get(j)
+            if (a != cur) {
+                if (a.length() == 0) {
+                    emit(sgrReset)
+                } else {
+                    emit(sgrOpen)
+                    emit(a)
+                    emit(sgrEnd)
+                }
+                cur = a
+            }
+            emit(ch.get(j))
+            j = j + 1
+        }
+        emit(sgrReset)
     }
 
     onResize(Int r, Int c) {
         rows = r
         cols = c
+        vt.resizeKeepCursor(rows, leftWidth())
+        if (editing) {
+            startRow = vt.cy
+            startCol = vt.cx
+        }
         applyPtySize()
         tab.resize(r, c)
-        if (editing && !tab.open && cprOk) {
-            // o terminal pode ter refeito as linhas: pergunta a posicao de novo
-            requestPosition()
+        print(esc() + "[2J")
+        resetCaches()
+        if (tab.open) {
+            tab.draw()
+        } else {
+            render()
         }
-    }
-
-    // Garante que a linha cabe acima do painel, fixa a regiao de rolagem e desenha o painel.
-    preparePanel() {
-        var h = panelHeight()
-        if (h == 0) {
-            return
-        }
-        var b = rows - h
-        var out = ""
-        if (startRow > b) {
-            // a linha esta onde o painel vai ficar: rola a tela inteira para cima
-            var n = startRow - b
-            out = out + esc() + "[r" + cup(rows, 1)
-            var i = 0
-            while (i < n) {
-                out = out + "\n"
-                i = i + 1
-            }
-            startRow = startRow - n
-        }
-        out = out + esc() + "[1;" + b + "r" // regiao de rolagem (move o cursor para o topo)
-        print(out)
-        lastRow = startRow
     }
 
     togglePanel() {
-        if (!cprOk) {
-            return // sem posicao do cursor nao da para dividir a tela
+        if (!panelFits()) {
+            print("\u0007") // tela estreita demais para o indice
+            return
         }
-        var oldH = panelHeight()
         panelOn = !panelOn
         if (panelOn) {
             saveFile(panelPath, "on\n")
-            preparePanel()
         } else {
             saveFile(panelPath, "off\n")
-            var out = esc() + "[r"
-            var r = rows - oldH + 1
-            while (r <= rows) {
-                out = out + cup(r, 1) + esc() + "[2K"
-                r = r + 1
-            }
-            print(out)
+        }
+        vt.resizeKeepCursor(rows, leftWidth())
+        if (editing) {
+            startRow = vt.cy
+            startCol = vt.cx
         }
         applyPtySize()
+        print(esc() + "[2J")
+        resetCaches()
     }
 
-    String panelText() {
-        var h = panelHeight()
-        if (h == 0) {
-            return ""
+    // ---------- saida do bash ----------
+
+    // Um pedaco da saida do bash ja passou pelo emulador: responde perguntas do programa,
+    // repassa modos ao terminal real e redesenha.
+    afterOutput() {
+        var reply = vt.takeReply()
+        if (reply.length() > 0) {
+            sendText(reply)
         }
-        var top = rows - h + 1
-        var lines = listOf<String>()
-        if (isDangerous(ed.line)) {
-            lines.add(esc() + "[1;31m⚠ Cuidado: este comando pode apagar ou estragar o sistema ou seus dados. Confira antes de apertar Enter." + esc() + "[0m")
+        var host = vt.takeToHost()
+        if (host.length() > 0) {
+            print(host)
         }
-        var e = tab.index.forLine(ed.line)
-        if (e != null) {
-            var entry = must(e)
-            lines.add(esc() + "[1m" + clip(entry.name, 20) + esc() + "[0m — " + clip(entry.summary, cols - entry.name.length() - 4))
-            for (var o in tab.index.optionsInLine(entry, ed.line)) {
-                lines.add("  " + esc() + "[33m" + pad(clip(o.names, 10), 10) + esc() + "[0m " + clip(o.text, cols - 14))
-            }
-            for (var x in entry.examples) {
-                lines.add("  " + esc() + "[90m$ " + esc() + "[0m" + clip(x.cmd, 30) + esc() + "[90m  " + clip(x.text, cols - 36) + esc() + "[0m")
-            }
-        } else if (ed.line.trim().length() == 0) {
-            lines.add(esc() + "[90mComece a digitar um comando: aqui aparece o que ele faz e o que cada opção significa." + esc() + "[0m")
-        } else {
-            var words = commandWords(ed.line)
-            var w = ""
-            if (words.size > 0) {
-                w = words.get(0)
-            }
-            lines.add(esc() + "[90mO índice ainda não tem \"" + clip(w, 20) + "\". F1 abre a busca; man " + clip(w, 20) + " abre o manual." + esc() + "[0m")
+        if (vt.titleChanged) {
+            vt.titleChanged = false
+            print(esc() + "]0;" + vt.title + "\u0007")
         }
-        var out = cup(top, 1) + esc() + "[2K" + esc() + "[7m" + pad(clip(" Explicação · F2 esconde · F1 índice completo", cols), cols) + esc() + "[0m"
-        var i = 0
-        while (i < h - 1) {
-            out = out + cup(top + 1 + i, 1) + esc() + "[2K"
-            if (i < lines.size) {
-                out = out + lines.get(i)
-            }
-            i = i + 1
+        if (!tab.open) {
+            render()
         }
-        return out
     }
 
-    // ---------- prompt e posicao ----------
-
-    requestPosition() {
-        awaitingCpr = true
-        print(esc() + "[6n")
-    }
-
-    // O bash acabou de imprimir o prompt; o cursor esta onde a linha comeca.
+    // O bash acabou de imprimir o prompt; o cursor do emulador esta onde a linha comeca.
     onPrompt(Int status, String dir) {
         lastStatus = status
         cwd = dir
@@ -209,134 +270,352 @@ class Session {
         editing = true
         ed.set(draftAfterClear)
         draftAfterClear = ""
-        queued = listOf<Key>()
-        requestPosition()
+        startRow = vt.cy
+        startCol = vt.cx
     }
 
-    // Resposta do terminal: onde a linha comeca.
-    onPosition(Int code) {
-        awaitingCpr = false
-        cprOk = true
-        startRow = code / 10000
-        startCol = code % 10000
-        lastRow = startRow
-        if (panelOn) {
-            applyPtySize()
-            preparePanel()
-        }
-        render()
-        flushQueued()
-    }
+    // ---------- desenho ----------
 
-    // O terminal nao respondeu a tempo: modo da Fase 2, sem painel.
-    onPositionTimeout() {
-        if (!awaitingCpr) {
-            return
-        }
-        awaitingCpr = false
-        cprOk = false
-        print(esc() + "7")
-        render()
-        flushQueued()
-    }
 
-    flushQueued() {
-        var keys = queued
-        queued = listOf<Key>()
-        for (var k in keys) {
-            onKey(k)
-        }
-    }
-
-    // ---------- desenho da linha ----------
-
-    // Redesenha a linha com o ghost em cinza (e o painel, se ligado).
+    // Redesenha so as linhas que mudaram. Enquanto o usuario digita, a linha e a sugestao
+    // viram celulas por cima da tela do emulador; se a linha passar do fim, a tela rola.
     render() {
-        ghost = ""
-        if (ed.atEnd()) {
-            ghost = brain.suggest(ed.line, cwd, feats)
-        }
-        var shown = ed.line
-        if (isDangerous(ed.line)) {
-            shown = esc() + "[1;31m" + ed.line + esc() + "[0m" // perigoso: em vermelho
-        }
-        if (ghost.length() > 0) {
-            shown = shown + esc() + "[90m" + ghost + esc() + "[0m"
-        }
-        if (!cprOk) {
-            var out = esc() + "8" + esc() + "[J" + shown
-            var back = ghost.length() + ed.line.length() - ed.cursor
-            if (back > 0) {
-                out = out + esc() + "[" + back + "D"
+        var w = leftWidth()
+        prevOvStart = ovStart
+        prevOvCount = ovCount
+        ovCount = 0
+        var curRow = vt.cy
+        var curCol = vt.cx
+        if (editing) {
+            ghost = ""
+            recipeHits = listOf<RecipeMatch>()
+            if (recipeMode()) {
+                // "? instalar o htop": o cinza mostra o comando da receita mais parecida
+                for (var m in recipes.search(recipeQuery(), 4)) {
+                    if (!isDangerous(m.command)) {
+                        recipeHits.add(m)
+                    }
+                }
+                if (recipeHits.size > 0) {
+                    ghost = "  → " + recipeHits.get(0).command
+                } else if (recipeQuery().trim().length() > 0) {
+                    ghost = "  (nenhuma receita ainda · F1 busca no índice)"
+                } else {
+                    ghost = "  diga o que quer fazer, ex.: instalar o htop"
+                }
+            } else if (ed.atEnd()) {
+                ghost = brain.suggest(ed.line, cwd, feats)
             }
-            print(out)
-            return
+            var lineAttr = ""
+            if (isDangerous(ed.line)) {
+                lineAttr = "1;31" // perigoso: em vermelho
+            }
+            var total = startCol + ed.line.length() + ghost.length()
+            var endRow = startRow
+            if (total > 0) {
+                endRow = startRow + (total - 1) / w
+            }
+            if (endRow > rows - 1) {
+                // a linha nao cabe: rola a tela do emulador para cima
+                var k = endRow - (rows - 1)
+                var oldTop = vt.top
+                var oldBottom = vt.bottom
+                vt.top = 0
+                vt.bottom = rows - 1
+                vt.scrollUp(k)
+                vt.top = oldTop
+                vt.bottom = oldBottom
+                startRow = startRow - k
+                vt.cy = startRow
+                endRow = rows - 1
+            }
+            // so enquanto o usuario digita: copias das linhas cobertas
+            ovCh = listOf<List<String>>()
+            ovAt = listOf<List<String>>()
+            ovStart = startRow
+            ovCount = endRow - startRow + 1
+            var r = startRow
+            while (r <= endRow) {
+                var rowCh = listOf<String>()
+                var rowAt = listOf<String>()
+                var src = vt.screen().get(r)
+                var j = 0
+                while (j < w) {
+                    rowCh.add(src.ch.get(j))
+                    rowAt.add(src.at.get(j))
+                    j = j + 1
+                }
+                ovCh.add(rowCh)
+                ovAt.add(rowAt)
+                r = r + 1
+            }
+            // as linhas sobrepostas sao copias da tela do emulador; o texto e a sugestao vao por cima
+            var i = 0
+            var all = ed.line + ghost
+            while (i < all.length()) {
+                var at = startCol + i
+                var idx = at / w
+                if (idx < ovCh.size) {
+                    ovCh.get(idx).set(at % w, all.substring(i, i + 1))
+                    if (i < ed.line.length()) {
+                        ovAt.get(idx).set(at % w, lineAttr)
+                    } else {
+                        ovAt.get(idx).set(at % w, "90")
+                    }
+                }
+                i = i + 1
+            }
+            var pos = startCol + ed.cursor
+            curRow = startRow + pos / w
+            curCol = pos % w
         }
-        var b = bottom()
-        var total = startCol - 1 + ed.line.length() + ghost.length()
-        var endRow = startRow
-        if (total > 0) {
-            endRow = startRow + (total - 1) / cols
-        }
-        // escreve a partir de onde a linha esta; se passar do fim da area, o proprio terminal
-        // rola para cima enquanto escreve, e so DEPOIS as coordenadas sobem junto
-        var out = cup(startRow, startCol) + shown
-        if (endRow > b) {
-            startRow = startRow - (endRow - b)
-            endRow = b
-        }
-        if (total % cols != 0) {
-            out = out + esc() + "[K"
-        }
-        var r = endRow + 1
-        while (r <= lastRow && r <= b) {
-            out = out + cup(r, 1) + esc() + "[K" // sobra do desenho anterior
+        wp = rbuf
+        var r = 0
+        while (r < rows) {
+            var idx = -1
+            if (r >= ovStart && r < ovStart + ovCount) {
+                idx = r - ovStart
+            }
+            var wasOverlay = r >= prevOvStart && r < prevOvStart + prevOvCount
+            if (idx >= 0 || wasOverlay || vt.dirty.get(r)) {
+                emit(cupRows.get(r))
+                if (idx >= 0) {
+                    emitRow(ovCh.get(idx), ovAt.get(idx), w)
+                } else {
+                    var src = vt.screen().get(r)
+                    emitRow(src.ch, src.at, w)
+                }
+                vt.dirty.set(r, false)
+            }
             r = r + 1
         }
-        lastRow = endRow
-        out = out + panelText()
-        var pos = startCol - 1 + ed.cursor
-        out = out + cup(startRow + pos / cols, pos % cols + 1)
-        print(out)
+        if (panelVisible()) {
+            panelDraw()
+        }
+        // cursor: linha e coluna com Strings prontas (sem criar nenhuma a cada quadro)
+        emit(cupRows.get(clampInt(curRow, 0, rows - 1)))
+        emit(colMoves.get(clampInt(curCol, 0, colMoves.size - 1)))
+        var show = editing || vt.cursorVisible
+        if (show != cursorShown) {
+            cursorShown = show
+            if (show) {
+                emit(esc() + "[?25h")
+            } else {
+                emit(esc() + "[?25l")
+            }
+        }
+        writeAll(Sys.STDOUT, rbuf, wp - rbuf)
     }
 
-    // Apaga o desenho (linha + ghost), deixando o cursor no inicio da linha.
-    erase() {
-        if (!cprOk) {
-            print(esc() + "8" + esc() + "[J")
-            return
+    // ---------- modo humanizado (receitas) ----------
+
+    Boolean recipeMode() {
+        return ed.line.startsWith("?")
+    }
+
+    String recipeQuery() {
+        return ed.line.substring(1, ed.line.length())
+    }
+
+    // TAB, seta ou Enter no modo humanizado: o comando vai para a linha, para o usuario ler
+    // (e explicar com F2) antes de rodar. Nada roda sozinho.
+    Boolean acceptRecipe() {
+        if (recipeHits.size == 0) {
+            print("\u0007")
+            return false
         }
-        var out = cup(startRow, startCol) + esc() + "[K"
-        var r = startRow + 1
-        while (r <= lastRow) {
-            out = out + cup(r, 1) + esc() + "[K"
+        ed.set(recipeHits.get(0).command)
+        hist.resetBrowse()
+        return true
+    }
+
+    List<String> recipePanel(Int w) {
+        var out = listOf<String>()
+        out.add(esc() + "[7m" + pad(clip(" Receitas · TAB usa · F2 fecha", w), w) + esc() + "[0m")
+        out.add("")
+        if (recipeHits.size == 0) {
+            for (var t in wrapText("Escreva depois do ? o que você quer fazer, do seu jeito. Exemplos:", w - 1)) {
+                out.add(" " + t)
+            }
+            for (var ex in listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? compactar pasta fotos", "? qual meu ip")) {
+                out.add(" " + esc() + "[33m" + clip(ex, w - 1) + esc() + "[0m")
+            }
+            return out
+        }
+        var best = recipeHits.get(0)
+        out.add(" " + esc() + "[1;32mRECEITA" + esc() + "[0m " + clip(best.recipe.name, w - 9))
+        out.add("")
+        for (var t in wrapText(best.command, w - 1)) {
+            out.add(" " + esc() + "[33m" + t + esc() + "[0m")
+        }
+        out.add("")
+        for (var t in wrapText(best.explain, w - 1)) {
+            out.add(" " + t)
+        }
+        if (best.command.contains("<")) {
+            out.add("")
+            for (var t in wrapText("Troque o que está entre < > depois de apertar TAB.", w - 1)) {
+                out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+            }
+        }
+        if (recipeHits.size > 1) {
+            out.add("")
+            out.add(" " + esc() + "[1;36mOUTRAS RECEITAS" + esc() + "[0m")
+            var i = 1
+            while (i < recipeHits.size) {
+                var m = recipeHits.get(i)
+                out.add(" " + clip(m.recipe.name, w - 1))
+                out.add("   " + esc() + "[90m" + clip(m.command, w - 3) + esc() + "[0m")
+                i = i + 1
+            }
+        }
+        out.add("")
+        for (var t in wrapText("TAB coloca o comando na linha; Enter de novo roda. Depois, esta coluna explica cada parte.", w - 1)) {
+            out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+        }
+        return out
+    }
+
+    // ---------- indice na lateral ----------
+
+    // A coluna do indice so muda quando a linha digitada muda; com um programa rodando ela
+    // fica parada e nada e redesenhado.
+    panelDraw() {
+        if (editing) {
+            panelContent = panelLines(panelWidth() - 1)
+        }
+        var r = 0
+        while (r < rows) {
+            var text = NOTEXT
+            if (r < panelContent.size) {
+                text = panelContent.get(r)
+            }
+            if (text != lastPanel.get(r)) {
+                emit(cupPanel.get(r))
+                emit(sep)
+                emit(text)
+                emit(sgrReset)
+                emit(eraseEol)
+                lastPanel.set(r, text)
+            }
             r = r + 1
         }
-        out = out + cup(startRow, startCol)
-        lastRow = startRow
-        print(out)
     }
 
-    // ---------- aba do indice ----------
+    // Linhas do indice para a linha digitada, cada uma com no maximo `w` colunas visiveis.
+    List<String> panelLines(Int w) {
+        if (recipeMode()) {
+            return recipePanel(w)
+        }
+        var out = listOf<String>()
+        out.add(esc() + "[7m" + pad(clip(" Índice · F2 fecha · F1 busca", w), w) + esc() + "[0m")
+        if (isDangerous(ed.line)) {
+            out.add("")
+            for (var t in wrapText("⚠ Cuidado: este comando pode apagar ou estragar o sistema ou seus dados.", w - 1)) {
+                out.add(" " + esc() + "[1;31m" + t + esc() + "[0m")
+            }
+        }
+        var e = tab.index.forLine(ed.line)
+        if (e == null) {
+            out.add("")
+            if (ed.line.trim().length() == 0) {
+                for (var t in wrapText("Comece a digitar um comando: aqui aparece o que ele faz e o que cada opção significa.", w - 1)) {
+                    out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+                }
+                out.add("")
+                out.add(" " + esc() + "[33mTAB" + esc() + "[0m  aceita a sugestão")
+                out.add(" " + esc() + "[33mF1" + esc() + "[0m   busca no índice")
+                out.add(" " + esc() + "[33mF2" + esc() + "[0m   esconde esta coluna")
+            } else {
+                var words = commandWords(ed.line)
+                var name = ""
+                if (words.size > 0) {
+                    name = words.get(0)
+                }
+                for (var t in wrapText("O índice ainda não tem \"" + name + "\". F1 abre a busca; man " + name + " abre o manual.", w - 1)) {
+                    out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+                }
+            }
+            return out
+        }
+        var entry = must(e)
+        out.add("")
+        out.add(" " + esc() + "[1m" + clip(entry.name, w - 1) + esc() + "[0m")
+        for (var t in wrapText(entry.summary, w - 1)) {
+            out.add(" " + t)
+        }
+        var used = tab.index.optionsInLine(entry, ed.line)
+        if (used.size > 0) {
+            out.add("")
+            out.add(" " + esc() + "[1;32mNA SUA LINHA" + esc() + "[0m")
+            panelOptions(out, used, w)
+        }
+        var others = listOf<Opt>()
+        for (var o in entry.options) {
+            var isUsed = false
+            for (var u in used) {
+                if (u.names == o.names) {
+                    isUsed = true
+                }
+            }
+            if (!isUsed) {
+                others.add(o)
+            }
+        }
+        if (others.size > 0) {
+            out.add("")
+            out.add(" " + esc() + "[1;36mOPÇÕES" + esc() + "[0m")
+            panelOptions(out, others, w)
+        }
+        if (entry.examples.size > 0) {
+            out.add("")
+            out.add(" " + esc() + "[1;36mEXEMPLOS" + esc() + "[0m")
+            for (var x in entry.examples) {
+                out.add(" " + esc() + "[33m" + clip(x.cmd, w - 1) + esc() + "[0m")
+                for (var t in wrapText(x.text, w - 3)) {
+                    out.add("   " + t)
+                }
+            }
+        }
+        if (entry.links.size > 0) {
+            out.add("")
+            out.add(" " + esc() + "[1;36mLEIA MAIS" + esc() + "[0m")
+            for (var l in entry.links) {
+                out.add(" " + esc() + "[90m" + clip(l, w - 1) + esc() + "[0m")
+            }
+        }
+        return out
+    }
 
-    // F1 / Ctrl+T: abre a aba do indice na tela alternativa.
+    panelOptions(List<String> out, List<Opt> opts, Int w) {
+        var nameW = 8
+        for (var o in opts) {
+            var first = true
+            if (o.names.length() > nameW) {
+                // nome longo (-a, --all): numa linha propria, explicacao embaixo
+                out.add(" " + esc() + "[33m" + clip(o.names, w - 1) + esc() + "[0m")
+                first = false
+            }
+            for (var t in wrapText(o.text, w - nameW - 3)) {
+                if (first) {
+                    out.add(" " + esc() + "[33m" + pad(o.names, nameW) + esc() + "[0m " + t)
+                    first = false
+                } else {
+                    out.add(" " + pad("", nameW) + " " + t)
+                }
+            }
+        }
+    }
+
+    // ---------- aba do indice (F1) ----------
+
     openTab() {
-        var out = ""
-        if (cprOk) {
-            out = cup(startRow, startCol)
-        } else {
-            out = esc() + "8" // a troca de tela salva o cursor no mesmo lugar que o ESC 7
-        }
-        out = out + esc() + "[?1049h" + esc() + "[r" // a aba usa a tela inteira
-        print(out)
         tab.show(ed.line, rows, cols)
     }
 
     closeTab() {
-        print(esc() + "[?1049l")
-        if (panelOn && cprOk) {
-            print(esc() + "[1;" + bottom() + "r")
-        }
+        print(esc() + "[2J")
+        resetCaches()
         render()
     }
 
@@ -355,11 +634,10 @@ class Session {
         free(p)
     }
 
-    // Enter: a linha vai para o bash. O eco do terminal do bash a mostra de novo,
-    // por isso o desenho do kofterm e apagado antes.
+    // Enter: a linha vai para o bash. O eco do terminal do bash a escreve no emulador,
+    // na mesma posicao em que ela estava desenhada.
     submit() {
         var line = ed.line
-        erase()
         editing = false
         ed.clear()
         if (hist.add(line)) {
@@ -367,6 +645,7 @@ class Session {
         }
         hist.resetBrowse()
         brain.commandSent(line, feats)
+        render()
         sendText(line + "\r")
     }
 
@@ -374,34 +653,20 @@ class Session {
         ed.insert(ghost)
     }
 
-    // Ao sair do kofterm: devolve a tela inteira e apaga o painel.
+    // Ao sair: devolve a tela de antes e desliga os modos que os programas ligaram.
     shutdown() {
-        if (panelOn && cprOk) {
-            var out = esc() + "[r"
-            var r = bottom() + 1
-            while (r <= rows) {
-                out = out + cup(r, 1) + esc() + "[2K"
-                r = r + 1
-            }
-            print(out + cup(bottom(), 1))
-        }
+        print(esc() + "[0m" + esc() + "[?25h" + esc() + "[?1l" + esc() + ">" + esc() + "[?2004l" +
+            esc() + "[?1000l" + esc() + "[?1002l" + esc() + "[?1003l" + esc() + "[?1006l" + esc() + "[?1049l")
     }
 
     // ---------- teclas ----------
 
     onKey(Key k) {
         if (k.kind == K.CPR) {
-            if (awaitingCpr) {
-                onPosition(k.code)
-            }
-            return
+            return // resposta antiga de posicao do cursor: o emulador ja sabe onde esta
         }
         if (!editing) {
             forwardKey(k)
-            return
-        }
-        if (awaitingCpr) {
-            queued.add(k)
             return
         }
         if (tab.open) {
@@ -419,6 +684,8 @@ class Session {
         } else if (kind == K.CHAR) {
             ed.insert(codepointToString(k.code))
             hist.resetBrowse()
+        } else if (recipeMode() && (kind == K.ENTER || kind == K.TAB || kind == K.RIGHT && ed.atEnd())) {
+            acceptRecipe()
         } else if (kind == K.ENTER) {
             submit()
             return
@@ -433,7 +700,7 @@ class Session {
                 ed.right()
             }
         } else if (kind == K.WORD_RIGHT) {
-            if (ed.atEnd() && ghost.length() > 0) {
+            if (ed.atEnd() && ghost.length() > 0 && !recipeMode()) {
                 ed.insert(firstWord(ghost))
             } else {
                 ed.wordRight()
@@ -462,44 +729,47 @@ class Session {
         } else if (kind == K.DOWN) {
             ed.set(hist.next(ed.line))
         } else if (kind == K.CTRL_C) {
-            // mostra o que foi cancelado (sem ghost) e deixa o bash tratar o ^C
+            // o que foi cancelado fica na tela (sem sugestao) e o bash trata o ^C
             var line = ed.line
-            erase()
-            print(line)
             editing = false
             ed.clear()
             hist.resetBrowse()
+            vt.putText(line)
+            render()
             sendByte(3)
             return
         } else if (kind == K.CTRL_D) {
             if (ed.line.length() == 0) {
-                erase()
                 editing = false
+                render()
                 sendByte(4)
                 return
             }
             ed.deleteForward()
         } else if (kind == K.CTRL_L) {
-            // limpa a area do bash e pede um prompt novo com uma linha vazia,
-            // que nao muda o $?. O rascunho volta quando o prompt chegar.
+            // limpa a tela e pede um prompt novo com uma linha vazia (nao muda o $?).
+            // O rascunho volta quando o prompt chegar.
             draftAfterClear = ed.line
-            if (cprOk && panelOn) {
-                var out = ""
-                var r = 1
-                while (r <= bottom()) {
-                    out = out + cup(r, 1) + esc() + "[2K"
-                    r = r + 1
-                }
-                print(out + cup(1, 1))
-            } else {
-                print(esc() + "[H" + esc() + "[2J")
-            }
             editing = false
             ed.clear()
+            vt.clearScreen()
+            vt.cx = 0
+            vt.cy = 0
+            render()
             sendText("\r")
             return
         }
-        render()
+        // desenha uma vez depois de todas as teclas que chegaram juntas (flushRender)
+        needRender = true
+    }
+
+    Boolean needRender = false
+
+    flushRender() {
+        if (needRender && editing && !tab.open) {
+            render()
+        }
+        needRender = false
     }
 
     // Fora do prompt (ou depois de um Enter no meio de um colar): a tecla vira bytes de novo.

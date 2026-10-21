@@ -32,6 +32,9 @@ extern "libc.so.6" symlink(String target, String linkpath): Int
 extern "libc.so.6" unlink(String path): Int
 extern "libc.so.6" rmdir(String path): Int
 extern "libc.so.6" isatty(Int fd): Int
+// copia uma String do KOF (o C recebe o texto direto, sem copia no lado do KOF) para um
+// buffer cru e devolve o ponteiro para o fim: e assim que a tela e montada sem criar Strings
+extern "libc.so.6" stpcpy(Long dst, String src): Long
 
 extern "libc.so.6" read(Int fd, Long buf, Long n): Long
 extern "libc.so.6" write(Int fd, Long buf, Long n): Long

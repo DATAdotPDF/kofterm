@@ -54,7 +54,7 @@ main() {
     session.panelPath = dir + "/panel"
     session.loadPanelSetting()
     session.tab.index.load(loadLines(findShared(dir, "index/pt_BR.txt")))
-    session.onResize(winRows(ws), winCols(ws))
+    session.recipes.load(loadLines(findShared(dir, "recipes/pt_BR.txt")))
 
     // o "cerebro": indice compartilhado com a aba, corpus do projeto e o que o usuario ja fez
     var brain = session.brain
@@ -80,17 +80,19 @@ main() {
     var scanner = PromptScanner()
 
     ttyRaw(Sys.STDIN)
+    session.start(winRows(ws), winCols(ws))
     var exitCode = -1
 
     // struct pollfd { int fd; short events; short revents; } x3: stdin, master, signalfd
     var fds = malloc(24L)
     var buf = malloc(Loop.CHUNK)
-    var out = malloc(Loop.CHUNK * 2L)
     var info = malloc(Sys.SIGINFO_SIZE)
-    // espera maxima pela resposta do terminal sobre a posicao do cursor: 300 ms
-    var cprWait = malloc(16L)
-    buffer.poke64(cprWait, 0L)
-    buffer.poke64(cprWait + 8L, 300000000L)
+    // o fim da saida do comando (ate 2 KB, em bytes crus) ajuda a sugerir "sudo ..." depois
+    // de "Permissao negada"; vira String uma vez por comando, quando o prompt volta
+    var tailSize = 2048L
+    var tail = malloc(tailSize)
+    var tailPos = 0L
+    var tailLen = 0L
     try {
         buffer.poke32(fds, Sys.STDIN)
         buffer.poke32(fds + 8L, child.master)
@@ -100,16 +102,8 @@ main() {
             buffer.poke32(fds + 4L, Sys.POLLIN) // events=POLLIN, revents=0
             buffer.poke32(fds + 12L, Sys.POLLIN)
             buffer.poke32(fds + 20L, Sys.POLLIN)
-            // sem timeout: dorme ate ter tecla, saida do bash ou sinal;
-            // so acorda sozinho se estiver esperando a posicao do cursor
-            var tmo = 0L
-            if (session.awaitingCpr) {
-                tmo = cprWait
-            }
-            var ready = ppoll(fds, 3L, tmo, 0L)
-            if (ready == 0) {
-                session.onPositionTimeout()
-            }
+            // sem timeout: dorme ate ter tecla, saida do bash ou sinal
+            var ready = ppoll(fds, 3L, 0L, 0L)
             if (ready > 0) {
                 // saida do bash primeiro, para nao atrasar a tela
                 if (buffer.peek8(fds + 14L) != 0) {
@@ -117,35 +111,40 @@ main() {
                     if (n <= 0L) {
                         running = false // bash saiu (EIO no master)
                     } else {
-                        if (!session.editing) {
-                            // o fim da saida do comando ajuda a sugerir "sudo ..." depois de um erro
-                            session.brain.noteOutput(strndup(buf, n))
-                        }
-                        // separa o marcador de prompt do resto da saida
-                        var o = 0L
+                        // separa o marcador de prompt; o resto vai para o emulador, na ordem
+                        var vt = session.vt
                         var i = 0L
                         while (i < n) {
                             var b = buffer.peek8(buf + i)
                             var r = scanner.feed(b)
                             if (r == Feed.EMIT) {
-                                buffer.poke8(out + o, b)
-                                o = o + 1L
+                                vt.feed(b)
+                                if (!session.editing) {
+                                    buffer.poke8(tail + tailPos, b)
+                                    tailPos = (tailPos + 1L) % tailSize
+                                    if (tailLen < tailSize) {
+                                        tailLen = tailLen + 1L
+                                    }
+                                }
                                 i = i + 1L
                             } else if (r == Feed.FLUSH) {
-                                for (var h in scanner.takeHeld()) {
-                                    buffer.poke8(out + o, h)
-                                    o = o + 1L
+                                var k = 0
+                                while (k < scanner.heldCount()) {
+                                    vt.feed(scanner.heldAt(k))
+                                    k = k + 1
                                 }
+                                scanner.clearHeld()
                             } else if (r == Feed.MARK) {
-                                writeAll(Sys.STDOUT, out, o)
-                                o = 0L
+                                session.brain.outputTail = ringToString(tail, tailSize, tailPos, tailLen).toLowerCase()
+                                tailPos = 0L
+                                tailLen = 0L
                                 session.onPrompt(scanner.status(), bytesToString(scanner.cwdBytes()))
                                 i = i + 1L
                             } else {
                                 i = i + 1L
                             }
                         }
-                        writeAll(Sys.STDOUT, out, o)
+                        session.afterOutput()
                     }
                 }
                 if (running && buffer.peek8(fds + 6L) != 0) {
@@ -158,6 +157,7 @@ main() {
                         for (var k in keys.decode(toList(buf, n))) {
                             session.onKey(k)
                         }
+                        session.flushRender()
                     } else {
                         writeAll(child.master, buf, n)
                     }
@@ -184,7 +184,6 @@ main() {
         session.shutdown()
         ttyRestore(Sys.STDIN, saved)
     }
-    free(cprWait)
 
     var childCode = ptyWait(child.pid)
     if (exitCode < 0) {
@@ -193,7 +192,6 @@ main() {
     close(child.master)
     close(sfd)
     free(info)
-    free(out)
     free(buf)
     free(fds)
     free(ws)

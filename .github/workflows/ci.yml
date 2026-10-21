@@ -32,7 +32,7 @@ jobs:
 
       - name: Testes unitários
         run: |
-          for f in keys editor history prompt index model anon; do
+          for f in keys editor history prompt index model anon vt recipes; do
             kof test "src/$f.kf" --target native
           done
 

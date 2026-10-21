@@ -1,0 +1,403 @@
+// Receitas: "quero fazer X" vira um comando de verdade (Fase 7, modo humanizado).
+// Busca em receitas escritas e revisadas por pessoas (uma RAG sem geracao): o KofTerm nunca
+// inventa comando, so recupera a receita mais parecida e preenche as lacunas.
+// Modulo puro (sem libc), testado com `kof test src/recipes.kf`.
+//
+// Formato (recipes/pt_BR.txt):
+//   # instalar programa              nome da receita
+//   ? instalar {pacote}              jeitos de pedir (varios); {nome} e uma lacuna
+//   $ sudo apt install -y {pacote}   o comando
+//   > Instala {pacote}.              explicacao para quem esta aprendendo
+
+class Recipe {
+    String name = ""
+    List<String> asks = listOf<String>()
+    List<Ask> parsed = listOf<Ask>()
+    String cmd = ""
+    String explain = ""
+}
+
+// Um jeito de pedir ja quebrado em palavras (feito uma vez, ao carregar).
+class Ask {
+    List<String> literals = listOf<String>()
+    List<String> slots = listOf<String>()
+}
+
+class RecipeMatch(Recipe recipe, Int score, String command, String explain)
+
+class RecipeBook {
+    List<Recipe> recipes = listOf<Recipe>()
+
+    // Prepara cada jeito de pedir uma vez so: a busca roda a cada tecla.
+    prepare() {
+        for (var r in recipes) {
+            r.parsed = listOf<Ask>()
+            for (var ask in r.asks) {
+                var a = Ask()
+                for (var w in recipeWords(ask)) {
+                    if (w.startsWith("{") && w.endsWith("}")) {
+                        a.slots.add(w.substring(1, w.length() - 1))
+                    } else if (!recipeStop(w)) {
+                        a.literals.add(w)
+                    }
+                }
+                r.parsed.add(a)
+            }
+        }
+    }
+
+    load(List<String> lines) {
+        var cur = Recipe()
+        var has = false
+        for (var raw in lines) {
+            var line = raw.trim()
+            if (line.length() < 2 || line.startsWith(";")) {
+                continue
+            }
+            var tag = line.substring(0, 1)
+            var body = line.substring(1, line.length()).trim()
+            if (tag == "#") {
+                if (has) {
+                    recipes.add(cur)
+                }
+                cur = Recipe()
+                cur.name = body
+                has = true
+            } else if (tag == "?") {
+                cur.asks.add(body)
+            } else if (tag == "$") {
+                cur.cmd = body
+            } else if (tag == ">") {
+                cur.explain = body
+            }
+        }
+        if (has) {
+            recipes.add(cur)
+        }
+        prepare()
+    }
+
+    // As melhores receitas para o pedido, da mais parecida para a menos (no maximo `limit`).
+    List<RecipeMatch> search(String query, Int limit) {
+        var found = listOf<RecipeMatch>()
+        var qw = recipeWords(query)
+        if (qw.size == 0) {
+            return found
+        }
+        for (var r in recipes) {
+            var best = RecipeMatch(r, 0, "", "")
+            for (var ask in r.parsed) {
+                var m = matchAsk(r, ask, qw)
+                if (m.score > best.score) {
+                    best = m
+                }
+            }
+            if (best.score > 0) {
+                insertSorted(found, best)
+            }
+        }
+        var out = listOf<RecipeMatch>()
+        var i = 0
+        while (i < found.size && i < limit) {
+            out.add(found.get(i))
+            i = i + 1
+        }
+        return out
+    }
+
+    insertSorted(List<RecipeMatch> list, RecipeMatch m) {
+        var copy = listOf<RecipeMatch>()
+        var placed = false
+        for (var x in list) {
+            if (!placed && m.score > x.score) {
+                copy.add(m)
+                placed = true
+            }
+            copy.add(x)
+        }
+        if (!placed) {
+            copy.add(m)
+        }
+        list.clear()
+        for (var x in copy) {
+            list.add(x)
+        }
+    }
+
+    // Compara um jeito de pedir com as palavras do usuario.
+    RecipeMatch matchAsk(Recipe r, Ask ask, List<String> qw) {
+        var literals = ask.literals
+        var slots = ask.slots
+        if (literals.size == 0) {
+            return RecipeMatch(r, 0, "", "")
+        }
+        var used = listOf<Boolean>()
+        for (var q in qw) {
+            used.add(false)
+        }
+        var hits = 0
+        for (var l in literals) {
+            var i = 0
+            var done = false
+            while (i < qw.size && !done) {
+                if (!used.get(i) && recipeSame(l, qw.get(i))) {
+                    used.set(i, true)
+                    hits = hits + 1
+                    done = true
+                }
+                i = i + 1
+            }
+        }
+        // pelo menos 60% das palavras da receita precisam aparecer no pedido
+        if (hits * 10 < literals.size * 6) {
+            return RecipeMatch(r, 0, "", "")
+        }
+        // o que sobrou do pedido (sem palavras vazias) preenche as lacunas, em ordem
+        // opcoes digitadas no pedido ("-rf") nunca entram numa lacuna
+        var rest = listOf<String>()
+        var i = 0
+        while (i < qw.size) {
+            var w = qw.get(i)
+            if (!used.get(i) && !recipeStop(w) && !w.startsWith("-")) {
+                rest.add(w)
+            }
+            i = i + 1
+        }
+        var command = r.cmd
+        var explain = r.explain
+        var filled = 0
+        var s = 0
+        while (s < slots.size) {
+            var value = ""
+            if (s < rest.size) {
+                if (s == slots.size - 1) {
+                    // a ultima lacuna leva o resto, no maximo 3 palavras
+                    var k = s
+                    while (k < rest.size && k < s + 3) {
+                        if (value.length() > 0) {
+                            value = value + " "
+                        }
+                        value = value + rest.get(k)
+                        k = k + 1
+                    }
+                } else {
+                    value = rest.get(s)
+                }
+            }
+            var name = slots.get(s)
+            if (value.length() > 0 && recipeSafeValue(value)) {
+                command = command.replace("{" + name + "}", value)
+                explain = explain.replace("{" + name + "}", value)
+                filled = filled + 1
+            } else {
+                // sem valor: a lacuna fica visivel para o usuario completar
+                command = command.replace("{" + name + "}", "<" + name + ">")
+                explain = explain.replace("{" + name + "}", "<" + name + ">")
+            }
+            s = s + 1
+        }
+        // extras sem lugar pesam contra (pedido fala de outra coisa)
+        var extra = rest.size - slots.size
+        if (extra < 0) {
+            extra = 0
+        }
+        var score = hits * 100 / literals.size + filled * 10 + hits * 5 - extra * 15
+        if (score < 1) {
+            score = 1
+        }
+        return RecipeMatch(r, score, command, explain)
+    }
+}
+
+// Palavras normalizadas: minusculas, sem acento e sem pontuacao; {lacunas} preservadas.
+List<String> recipeWords(String s) {
+    var out = listOf<String>()
+    var cur = ""
+    var low = s.toLowerCase()
+    var i = 0
+    while (i < low.length()) {
+        var c = recipeFold(low.substring(i, i + 1))
+        var keep = "abcdefghijklmnopqrstuvwxyz0123456789{}-_./~+:@"
+        if (keep.contains(c)) {
+            cur = cur + c
+        } else {
+            if (cur.length() > 0) {
+                out.add(trimDots(cur))
+            }
+            cur = ""
+        }
+        i = i + 1
+    }
+    if (cur.length() > 0) {
+        out.add(trimDots(cur))
+    }
+    return out
+}
+
+// "htop." no fim da frase vira "htop"
+String trimDots(String w) {
+    var t = w
+    while (t.length() > 1 && t.endsWith(".")) {
+        t = t.substring(0, t.length() - 1)
+    }
+    return t
+}
+
+String recipeFold(String c) {
+    if ("áàâãä".contains(c)) { return "a" }
+    if ("éèêë".contains(c)) { return "e" }
+    if ("íìîï".contains(c)) { return "i" }
+    if ("óòôõö".contains(c)) { return "o" }
+    if ("úùûü".contains(c)) { return "u" }
+    if (c == "ç") { return "c" }
+    return c
+}
+
+// Palavras que nao decidem nada no pedido, separadas por espaco (uma String so, criada uma vez).
+class RecipeStops {
+    static String WORDS = " o a os as um uma uns umas de do da dos das no na nos nas em para pra pro por pelo pela que e eu meu minha meus minhas me se com como quero queria gostaria preciso posso faco fazer favor esse essa este esta isso aqui todo toda todos todas qual quais onde agora ja so tem ter "
+}
+
+Boolean recipeStop(String w) {
+    return RecipeStops.WORDS.contains(" " + w + " ")
+}
+
+// Igual, ou com uma letra de diferenca em palavras de 5 letras ou mais (erro de digitacao).
+Boolean recipeSame(String a, String b) {
+    if (a == b) {
+        return true
+    }
+    if (a.length() < 5 || b.length() < 5) {
+        return false
+    }
+    // prefixo: "arquivos" acha "arquivo", "pastas" acha "pasta"
+    if (a.startsWith(b) || b.startsWith(a)) {
+        var d = a.length() - b.length()
+        if (d >= -2 && d <= 2) {
+            return true
+        }
+    }
+    return recipeLev1(a, b)
+}
+
+Boolean recipeLev1(String a, String b) {
+    var la = a.length()
+    var lb = b.length()
+    if (la - lb > 1 || lb - la > 1) {
+        return false
+    }
+    var i = 0
+    var j = 0
+    var edits = 0
+    while (i < la && j < lb) {
+        if (a.substring(i, i + 1) == b.substring(j, j + 1)) {
+            i = i + 1
+            j = j + 1
+        } else {
+            edits = edits + 1
+            if (edits > 1) {
+                return false
+            }
+            if (la > lb) {
+                i = i + 1
+            } else if (lb > la) {
+                j = j + 1
+            } else {
+                // troca de duas letras vizinhas conta como um erro
+                if (i + 1 < la && j + 1 < lb && a.substring(i, i + 1) == b.substring(j + 1, j + 2) && a.substring(i + 1, i + 2) == b.substring(j, j + 1)) {
+                    i = i + 2
+                    j = j + 2
+                } else {
+                    i = i + 1
+                    j = j + 1
+                }
+            }
+        }
+    }
+    return edits + (la - i) + (lb - j) <= 1
+}
+
+// Uma lacuna nunca recebe caracteres de controle do shell: o pedido nao pode virar outro comando.
+Boolean recipeSafeValue(String v) {
+    for (var bad in listOf(";", "|", "&", "$", "`", ">", "<", "(", ")", "*", "\"", "'", "!")) {
+        if (v.contains(bad)) {
+            return false
+        }
+    }
+    return true
+}
+
+List<String> sampleRecipes() {
+    return listOf(
+        "# instalar programa",
+        "? instalar {pacote}",
+        "? baixar o programa {pacote}",
+        "$ sudo apt update && sudo apt install -y {pacote}",
+        "> Atualiza a lista e instala {pacote}.",
+        "# espaco em disco",
+        "? ver espaco livre no disco",
+        "? quanto espaco sobrou",
+        "$ df -h",
+        "> Mostra o espaco livre de cada disco.",
+        "# achar arquivo pelo nome",
+        "? achar arquivo {nome}",
+        "? procurar arquivo chamado {nome}",
+        "$ find . -iname \"*{nome}*\"",
+        "> Procura {nome} a partir da pasta atual.",
+        "# ver ip",
+        "? qual meu ip",
+        "? ver endereco ip",
+        "$ ip a",
+        "> Mostra os enderecos de rede."
+    )
+}
+
+RecipeBook sampleBook() {
+    var b = RecipeBook()
+    b.load(sampleRecipes())
+    return b
+}
+
+test "pedido simples vira comando com a lacuna preenchida" {
+    var r = sampleBook().search("quero instalar o htop", 3)
+    assert(r.size >= 1, "achou")
+    assert(r.get(0).command == "sudo apt update && sudo apt install -y htop", "comando")
+    assert(r.get(0).explain == "Atualiza a lista e instala htop.", "explicacao")
+}
+
+test "acentos, maiusculas e pontuacao nao atrapalham" {
+    var r = sampleBook().search("Quanto ESPAÇO sobrou?", 3)
+    assert(r.size >= 1 && r.get(0).command == "df -h", "df")
+}
+
+test "erro de digitacao de uma letra" {
+    var r = sampleBook().search("instlar htop", 3)
+    assert(r.size >= 1 && r.get(0).recipe.name == "instalar programa", "instlar")
+}
+
+test "sem valor a lacuna fica visivel" {
+    var r = sampleBook().search("instalar", 3)
+    assert(r.size >= 1 && r.get(0).command.endsWith("install -y <pacote>"), "lacuna aparente")
+}
+
+test "o pedido nunca leva caracteres do shell para o comando" {
+    var r = sampleBook().search("instalar htop; rm -rf / && echo $(id) | sh", 3)
+    assert(r.size >= 1, "achou a receita")
+    var c = r.get(0).command
+    assert(!c.contains(";") && !c.contains("$") && !c.contains("|"), "sem ; $ |")
+    assert(c.startsWith("sudo apt update && sudo apt install -y "), "so o comando da receita")
+    assert(!c.contains("-rf"), "opcao digitada nao entra na lacuna")
+    assert(!recipeSafeValue("a;b") && !recipeSafeValue("$(id)") && recipeSafeValue("htop"), "segunda barreira")
+}
+
+test "pedido sem relacao nao inventa nada" {
+    var r = sampleBook().search("fazer um bolo de chocolate", 3)
+    assert(r.size == 0, "nenhuma receita")
+}
+
+test "a receita certa vence as parecidas" {
+    var r = sampleBook().search("qual e o meu endereco ip", 3)
+    assert(r.size >= 1 && r.get(0).command == "ip a", "ip")
+    var f = sampleBook().search("procurar arquivo chamado relatorio", 3)
+    assert(f.get(0).command == "find . -iname \"*relatorio*\"", "find com o nome")
+}

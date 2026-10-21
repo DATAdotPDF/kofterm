@@ -1,0 +1,424 @@
+; KofTerm — receitas do modo humanizado (português do Brasil)
+; Texto escrito pelo projeto KofTerm, licença GPLv3.
+;
+; Digite "?" e o que você quer fazer, por exemplo:  ? instalar o htop
+; O KofTerm procura a receita mais parecida e mostra o comando em cinza. TAB coloca o comando
+; na linha; nada roda sozinho. O índice (F2) explica cada parte.
+;
+; Formato:  # nome   ? jeito de pedir (vários)   $ comando   > explicação
+; {nome} é uma lacuna preenchida com as palavras do pedido. Comandos que apagam usam -i
+; (perguntam antes). Para contribuir: comandos que funcionam no Debian, Ubuntu e Kali.
+
+; ───────────── Programas ─────────────
+
+# instalar programa
+? instalar {pacote}
+? instalar o programa {pacote}
+? baixar o programa {pacote}
+? quero o {pacote}
+? como instalo {pacote}
+$ sudo apt update && sudo apt install -y {pacote}
+> Atualiza a lista de pacotes e instala {pacote}. Pede a sua senha (sudo).
+
+# remover programa
+? remover {pacote}
+? desinstalar {pacote}
+? tirar o programa {pacote}
+$ sudo apt remove {pacote}
+> Desinstala {pacote}. Mostra o que vai remover e pergunta antes.
+
+# atualizar o sistema
+? atualizar o sistema
+? atualizar tudo
+? atualizar os programas
+? fazer update e upgrade
+$ sudo apt update && sudo apt upgrade
+> Baixa a lista de versões novas e atualiza os programas instalados.
+
+# procurar programa para instalar
+? procurar programa {nome}
+? existe programa para {nome}
+? buscar pacote {nome}
+$ apt search {nome}
+> Procura pacotes cujo nome ou descrição tenha {nome}.
+
+# onde está o programa
+? onde esta o programa {nome}
+? qual o caminho do {nome}
+$ which {nome}
+> Mostra em que pasta está o programa {nome}.
+
+; ───────────── Pastas e arquivos ─────────────
+
+# ver em que pasta estou
+? em que pasta estou
+? qual pasta atual
+? onde eu estou
+$ pwd
+> Mostra o caminho completo da pasta atual.
+
+# listar arquivos com detalhes
+? listar arquivos
+? ver arquivos da pasta
+? mostrar tudo da pasta inclusive ocultos
+$ ls -la
+> Lista tudo, inclusive arquivos ocultos, com permissões, tamanho e data.
+
+# entrar numa pasta
+? entrar na pasta {pasta}
+? ir para pasta {pasta}
+? abrir pasta {pasta}
+$ cd {pasta}
+> Muda para a pasta {pasta}.
+
+# voltar para a pasta anterior
+? voltar para pasta anterior
+? voltar pasta
+$ cd -
+> Volta para a pasta em que você estava antes.
+
+# ir para a pasta pessoal
+? ir para minha pasta pessoal
+? voltar para home
+$ cd ~
+> Vai para a sua pasta pessoal (/home/seu-usuario).
+
+# criar pasta
+? criar pasta {pasta}
+? criar diretorio {pasta}
+? nova pasta {pasta}
+$ mkdir -p {pasta}
+> Cria a pasta {pasta} (e as pastas do caminho que faltarem).
+
+# criar arquivo vazio
+? criar arquivo {arquivo}
+? novo arquivo {arquivo}
+$ touch {arquivo}
+> Cria {arquivo} vazio, se ainda não existir.
+
+# copiar arquivo
+? copiar arquivo {origem} para {destino}
+? copiar {origem} para {destino}
+$ cp -i {origem} {destino}
+> Copia {origem} para {destino}. Pergunta antes de sobrescrever.
+
+# copiar pasta inteira
+? copiar pasta {origem} para {destino}
+$ cp -ri {origem} {destino}
+> Copia a pasta {origem} com tudo dentro. Pergunta antes de sobrescrever.
+
+# mover ou renomear
+? mover {origem} para {destino}
+? renomear {origem} para {destino}
+$ mv -i {origem} {destino}
+> Move ou renomeia {origem}. Pergunta antes de sobrescrever.
+
+# apagar arquivo
+? apagar arquivo {arquivo}
+? deletar arquivo {arquivo}
+? excluir {arquivo}
+$ rm -i {arquivo}
+> Apaga {arquivo}, perguntando antes. No terminal não existe lixeira.
+
+# apagar pasta
+? apagar pasta {pasta}
+? deletar pasta {pasta}
+? remover diretorio {pasta}
+$ rm -ri {pasta}
+> Apaga a pasta {pasta} e tudo dentro, perguntando item por item.
+
+# ver conteúdo de arquivo
+? ver conteudo do arquivo {arquivo}
+? mostrar arquivo {arquivo}
+? ler arquivo {arquivo}
+$ less {arquivo}
+> Abre {arquivo} para ler com rolagem. q sai, / procura.
+
+# editar arquivo
+? editar arquivo {arquivo}
+? abrir arquivo para editar {arquivo}
+$ nano {arquivo}
+> Abre {arquivo} no editor nano. Ctrl-O salva, Ctrl-X sai.
+
+# últimas linhas de um arquivo
+? ver final do arquivo {arquivo}
+? ultimas linhas do arquivo {arquivo}
+$ tail -n 20 {arquivo}
+> Mostra as últimas 20 linhas de {arquivo}.
+
+# acompanhar log ao vivo
+? acompanhar log {arquivo}
+? ver arquivo ao vivo {arquivo}
+$ tail -f {arquivo}
+> Mostra as linhas novas de {arquivo} assim que chegam. Ctrl-C para sair.
+
+# contar linhas
+? contar linhas do arquivo {arquivo}
+? quantas linhas tem {arquivo}
+$ wc -l {arquivo}
+> Conta as linhas de {arquivo}.
+
+; ───────────── Procurar ─────────────
+
+# achar arquivo pelo nome
+? achar arquivo {nome}
+? procurar arquivo chamado {nome}
+? encontrar arquivo {nome}
+? onde esta o arquivo {nome}
+$ find . -iname "*{nome}*"
+> Procura arquivos com {nome} no nome, a partir da pasta atual.
+
+# achar texto dentro de arquivos
+? procurar texto {texto}
+? achar texto {texto} nos arquivos
+? buscar palavra {texto}
+$ grep -rni "{texto}" .
+> Procura {texto} em todos os arquivos da pasta atual, mostrando arquivo e linha.
+
+# arquivos maiores
+? quais arquivos ocupam mais espaco
+? arquivos maiores da pasta
+? o que esta ocupando espaco
+$ du -sh * | sort -rh | head -n 10
+> Mostra os 10 itens que mais ocupam espaço na pasta atual.
+
+; ───────────── Permissões ─────────────
+
+# tornar executável
+? tornar executavel {arquivo}
+? dar permissao de execucao {arquivo}
+? permitir rodar script {arquivo}
+$ chmod +x {arquivo}
+> Permite rodar {arquivo} como programa (./{arquivo}).
+
+# ver permissões
+? ver permissoes do arquivo {arquivo}
+? quem pode mexer no arquivo {arquivo}
+$ ls -l {arquivo}
+> Mostra dono, grupo e permissões (r ler, w escrever, x executar) de {arquivo}.
+
+# virar dono do arquivo
+? mudar dono do arquivo {arquivo}
+? tomar posse de {arquivo}
+$ sudo chown $USER:$USER {arquivo}
+> Passa {arquivo} para o seu usuário.
+
+# repetir com sudo
+? repetir ultimo comando com sudo
+? deu permissao negada
+$ sudo !!
+> Repete o último comando como administrador.
+
+; ───────────── Sistema ─────────────
+
+# espaço em disco
+? ver espaco livre no disco
+? quanto espaco sobrou
+? disco cheio
+$ df -h
+> Mostra o espaço livre e usado de cada disco.
+
+# tamanho de uma pasta
+? tamanho da pasta {pasta}
+? quanto ocupa a pasta {pasta}
+$ du -sh {pasta}
+> Mostra quanto {pasta} ocupa no total.
+
+# memória livre
+? ver memoria livre
+? quanta memoria ram
+? memoria do computador
+$ free -h
+> Mostra a memória RAM total, usada e livre.
+
+# ver processos
+? ver processos rodando
+? o que esta rodando
+? programas abertos
+$ ps aux
+> Lista todos os processos, com uso de CPU e memória.
+
+# monitor ao vivo
+? monitor do sistema
+? ver uso de cpu
+? o que esta pesando
+$ top
+> Mostra os processos ao vivo, ordenados por uso de CPU. q sai.
+
+# encerrar programa pelo nome
+? fechar programa {nome}
+? matar processo {nome}
+? encerrar {nome}
+$ pkill {nome}
+> Pede para os processos chamados {nome} encerrarem.
+
+# versão do sistema
+? qual versao do linux
+? ver versao do sistema
+? qual distribuicao
+$ cat /etc/os-release
+> Mostra o nome e a versão da distribuição Linux.
+
+# versão do kernel
+? qual versao do kernel
+$ uname -r
+> Mostra a versão do kernel.
+
+# quem sou eu
+? qual meu usuario
+? quem sou eu
+$ whoami
+> Mostra o nome do seu usuário.
+
+# trocar senha
+? trocar minha senha
+? mudar senha
+$ passwd
+> Troca a sua senha. Pede a senha atual e a nova duas vezes.
+
+# reiniciar o computador
+? reiniciar o computador
+? reiniciar a maquina
+$ sudo reboot
+> Reinicia o computador. Salve seus arquivos antes.
+
+# desligar o computador
+? desligar o computador
+? desligar a maquina
+$ sudo shutdown now
+> Desliga o computador agora. Salve seus arquivos antes.
+
+# serviço: ver estado
+? status do servico {servico}
+? ver se o servico {servico} esta rodando
+$ systemctl status {servico}
+> Mostra se o serviço {servico} está ativo e as últimas mensagens dele. q sai.
+
+# serviço: reiniciar
+? reiniciar servico {servico}
+$ sudo systemctl restart {servico}
+> Reinicia o serviço {servico}.
+
+# ver mensagens do sistema
+? ver logs do sistema
+? ver erros do sistema
+$ journalctl -p err -b
+> Mostra os erros registrados desde o último boot. q sai.
+
+; ───────────── Rede ─────────────
+
+# ver meu ip
+? qual meu ip
+? ver endereco ip
+? ver meu endereco de rede
+$ ip a
+> Mostra os endereços de cada placa de rede.
+
+# testar internet
+? testar internet
+? testar conexao com {site}
+? o site {site} esta no ar
+$ ping -c 4 {site}
+> Envia 4 pacotes para {site} e mostra se respondeu.
+
+# portas abertas
+? ver portas abertas
+? que porta esta em uso
+? quem esta usando a porta
+$ sudo ss -tulpn
+> Mostra as portas abertas e qual programa usa cada uma.
+
+# baixar arquivo da internet
+? baixar arquivo {url}
+? download de {url}
+$ curl -LO {url}
+> Baixa o arquivo de {url} para a pasta atual.
+
+# acessar outro computador
+? acessar servidor {destino}
+? conectar no servidor {destino}
+$ ssh {destino}
+> Abre um terminal no computador {destino} (ex.: usuario@servidor).
+
+# copiar para outro computador
+? copiar {arquivo} para servidor {destino}
+? enviar arquivo {arquivo} para {destino}
+$ scp {arquivo} {destino}:
+> Copia {arquivo} para a pasta pessoal no computador {destino}.
+
+; ───────────── Compactar ─────────────
+
+# compactar pasta
+? compactar pasta {pasta}
+? zipar pasta {pasta}
+? fazer backup da pasta {pasta}
+$ tar -czvf {pasta}.tar.gz {pasta}
+> Junta e compacta {pasta} em {pasta}.tar.gz.
+
+# descompactar tar.gz
+? descompactar {arquivo}
+? extrair {arquivo}
+? abrir arquivo compactado {arquivo}
+$ tar -xzvf {arquivo}
+> Extrai {arquivo} (.tar.gz) na pasta atual.
+
+# descompactar zip
+? descompactar zip {arquivo}
+? extrair zip {arquivo}
+$ unzip {arquivo}
+> Extrai {arquivo} (.zip) na pasta atual.
+
+; ───────────── Git ─────────────
+
+# começar repositório git
+? criar repositorio git
+? iniciar git na pasta
+$ git init
+> Transforma a pasta atual num repositório Git.
+
+# baixar repositório
+? clonar repositorio {url}
+? baixar projeto do github {url}
+$ git clone {url}
+> Baixa o repositório {url} com todo o histórico.
+
+# salvar mudanças no git
+? salvar mudancas no git
+? fazer commit
+? commitar tudo
+$ git add . && git commit -m ""
+> Escolhe todas as mudanças e grava. Escreva a mensagem entre as aspas.
+
+# enviar para o github
+? enviar para o github
+? subir mudancas
+? fazer push
+$ git push
+> Envia os commits para o repositório remoto.
+
+# ver o que mudou
+? ver o que mudou no git
+? status do git
+$ git status
+> Mostra os arquivos novos, alterados e escolhidos para o próximo commit.
+
+; ───────────── Terminal ─────────────
+
+# histórico de comandos
+? ver comandos que ja usei
+? historico de comandos
+$ history
+> Lista os comandos que você já digitou, numerados.
+
+# limpar a tela
+? limpar a tela
+? limpar terminal
+$ clear
+> Limpa a tela. No KofTerm, Ctrl-L faz o mesmo e mantém o que você está digitando.
+
+# manual de um comando
+? manual do {comando}
+? como usar o {comando}
+? ajuda do {comando}
+$ man {comando}
+> Abre o manual de {comando}. q sai, / procura.

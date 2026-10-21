@@ -90,6 +90,23 @@ String bytesToString(List<Int> bytes) {
     return s
 }
 
+// Le um anel de bytes (`len` bytes terminando em `pos`) como String, em ordem.
+String ringToString(Long ring, Long size, Long pos, Long len) {
+    if (len <= 0L) {
+        return ""
+    }
+    var tmp = malloc(len + 1L)
+    var start = (pos - len + size) % size
+    var i = 0L
+    while (i < len) {
+        buffer.poke8(tmp + i, buffer.peek8(ring + (start + i) % size))
+        i = i + 1L
+    }
+    var s = strndup(tmp, len)
+    free(tmp)
+    return s
+}
+
 // Codepoint Unicode -> String (UTF-8 de 1 a 4 bytes).
 String codepointToString(Int cp) {
     var b = listOf<Int>()

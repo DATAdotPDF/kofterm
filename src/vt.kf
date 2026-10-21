@@ -1,0 +1,1123 @@
+// Emulador de terminal (subconjunto do xterm / ECMA-48 / VT100), feito a partir das
+// especificacoes publicas. O KofTerm passa a interpretar tudo o que o bash e os programas
+// escrevem, guardar a tela na memoria e desenha-la ele mesmo. E isso que permite o indice
+// numa coluna a direita sem que o bash ou o vim percebam: para eles, a tela e so a esquerda.
+// Modulo puro (sem libc), testado com `kof test src/vt.kf`. Futuro kof-ansi.
+//
+// Memoria: o coletor do KOF 0.6.6 native so recupera parte das Strings temporarias, entao o
+// caminho quente (cada byte que um programa como o top escreve) quase nao cria Strings:
+// caracteres ASCII e numeros vem de tabelas prontas, os parametros CSI sao lidos como numeros
+// num vetor reaproveitado, atributos de cor sao guardados num cache e as linhas sao
+// reaproveitadas ao rolar.
+//
+// Limitacoes conhecidas: caracteres de largura dupla (CJK, emoji) ocupam uma coluna; emoji
+// acima de U+FFFF aparece como U+FFFD; sem modo de insercao (IRM) nem mouse proprio.
+
+class VtRow {
+    List<String> ch = listOf<String>()
+    List<String> at = listOf<String>()
+}
+
+class Vt {
+    Int rows = 24
+    Int cols = 80
+    List<VtRow> main = listOf<VtRow>()
+    List<VtRow> alt = listOf<VtRow>()
+    Boolean altOn = false
+    List<Boolean> dirty = listOf<Boolean>()
+
+    Int cx = 0
+    Int cy = 0
+    Boolean wrapPending = false
+    Int top = 0
+    Int bottom = 23
+    Boolean autowrap = true
+    Boolean cursorVisible = true
+    Boolean decGraphics = false
+
+    // atributos atuais (parametros SGR normalizados)
+    Int flags = 0          // 1 negrito, 2 fraco, 4 italico, 8 sublinhado, 16 piscando, 32 invertido, 64 oculto, 128 riscado
+    String fg = ""
+    String bg = ""
+    String attr = ""
+
+    // cursor salvo (ESC 7 / CSI s)
+    Int scx = 0
+    Int scy = 0
+
+    // parser
+    Int state = 0          // 0 texto, 1 ESC, 2 CSI, 3 OSC, 4 OSC+ESC, 5 designa charset, 6 DCS (ignorado)
+    List<Int> csiArgs = listOf<Int>()
+    Int csiCount = 0
+    Int csiCur = -1
+    Int csiPrefix = 0      // 63 '?', 62 '>', 60 '<', 61 '='
+    Boolean csiInter = false
+    String oscText = ""
+    Int utfNeed = 0
+    Int utfCp = 0
+
+    // tabelas prontas (criadas uma vez)
+    Boolean tablesReady = false
+    List<String> ascii = listOf<String>()
+    List<String> numStr = listOf<String>()
+    List<Int> cacheFlags = listOf<Int>()
+    List<String> cacheFg = listOf<String>()
+    List<String> cacheBg = listOf<String>()
+    List<String> cacheVal = listOf<String>()
+
+    // respostas para o programa (DSR, DA) e sequencias a repetir no terminal real
+    String reply = ""
+    String toHost = ""
+    String title = ""
+    Boolean titleChanged = false
+
+    // guardados antes de redimensionar (o init zera o cursor)
+    Int cyBefore = 0
+    Int cxBefore = 0
+
+    // No KOF 0.6.6 native cada literal avaliado cria uma String nova: 2 milhoes de `" "`
+    // deixaram 14 MB para tras. As constantes do caminho quente ficam em campos.
+    String SPACE = " "
+    String EMPTY = ""
+
+    String esc() {
+        return "\u001b"
+    }
+
+    buildTables() {
+        if (tablesReady) {
+            return
+        }
+        var i = 0
+        while (i < 128) {
+            if (i >= 32 && i < 127) {
+                ascii.add("" + (i as Char))
+            } else {
+                ascii.add(" ")
+            }
+            i = i + 1
+        }
+        i = 0
+        while (i < 256) {
+            numStr.add("" + i)
+            i = i + 1
+        }
+        i = 0
+        while (i < 32) {
+            csiArgs.add(-1)
+            i = i + 1
+        }
+        tablesReady = true
+    }
+
+    VtRow blankRow() {
+        var r = VtRow()
+        var i = 0
+        while (i < cols) {
+            r.ch.add(" ")
+            r.at.add("")
+            i = i + 1
+        }
+        return r
+    }
+
+    init(Int r, Int c) {
+        buildTables()
+        rows = r
+        cols = c
+        main = listOf<VtRow>()
+        alt = listOf<VtRow>()
+        dirty = listOf<Boolean>()
+        var i = 0
+        while (i < rows) {
+            main.add(blankRow())
+            alt.add(blankRow())
+            dirty.add(true)
+            i = i + 1
+        }
+        top = 0
+        bottom = rows - 1
+        cx = 0
+        cy = 0
+        wrapPending = false
+    }
+
+    List<VtRow> screen() {
+        if (altOn) {
+            return alt
+        }
+        return main
+    }
+
+    markDirty(Int r) {
+        if (r >= 0 && r < rows) {
+            dirty.set(r, true)
+        }
+    }
+
+    markAll() {
+        var i = 0
+        while (i < rows) {
+            dirty.set(i, true)
+            i = i + 1
+        }
+    }
+
+    // Novo tamanho: mantem o conteudo e deixa a linha do cursor visivel.
+    resizeKeepCursor(Int r, Int c) {
+        cyBefore = cy
+        cxBefore = cx
+        var oldMain = main
+        var oldAlt = alt
+        var oldRows = rows
+        var shift = 0
+        if (cy >= r) {
+            shift = cy - r + 1
+        }
+        init(r, c)
+        var i = 0
+        while (i < r && i + shift < oldRows) {
+            copyRow(oldMain.get(i + shift), main.get(i))
+            copyRow(oldAlt.get(i + shift), alt.get(i))
+            i = i + 1
+        }
+        cy = clampInt(cyBefore - shift, 0, r - 1)
+        cx = clampInt(cxBefore, 0, c - 1)
+    }
+
+    copyRow(VtRow from, VtRow to) {
+        var j = 0
+        while (j < to.ch.size && j < from.ch.size) {
+            to.ch.set(j, from.ch.get(j))
+            to.at.set(j, from.at.get(j))
+            j = j + 1
+        }
+    }
+
+    // ---------- entrada ----------
+
+    feedAll(List<Int> bytes) {
+        for (var b in bytes) {
+            feed(b)
+        }
+    }
+
+    feed(Int b) {
+        if (state == 0) {
+            if (utfNeed > 0) {
+                if (b >= 128 && b < 192) {
+                    utfCp = utfCp * 64 + (b - 128)
+                    utfNeed = utfNeed - 1
+                    if (utfNeed == 0) {
+                        putCodepoint(utfCp)
+                    }
+                    return
+                }
+                utfNeed = 0 // sequencia quebrada: descarta e trata o byte normalmente
+            }
+            if (b >= 32 && b < 127) {
+                putCodepoint(b)
+            } else if (b == 27) {
+                state = 1
+            } else if (b < 32 || b == 127) {
+                control(b)
+            } else if (b >= 240) {
+                utfNeed = 3
+                utfCp = b - 240
+            } else if (b >= 224) {
+                utfNeed = 2
+                utfCp = b - 224
+            } else if (b >= 192) {
+                utfNeed = 1
+                utfCp = b - 192
+            }
+            return
+        }
+        if (state == 2) {
+            if (b >= 48 && b <= 57) {
+                if (csiCur < 0) {
+                    csiCur = 0
+                }
+                csiCur = csiCur * 10 + (b - 48)
+            } else if (b == 59 || b == 58) {
+                pushArg()
+            } else if (b >= 60 && b <= 63) {
+                csiPrefix = b
+            } else if (b >= 32 && b <= 47) {
+                csiInter = true
+            } else if (b >= 64 && b <= 126) {
+                pushArg()
+                state = 0
+                csi(b)
+            } else if (b == 27) {
+                state = 1
+            } else if (b < 32) {
+                control(b) // controle no meio de um CSI e executado
+            }
+            return
+        }
+        if (state == 1) {
+            escape(b)
+            return
+        }
+        if (state == 3) {
+            if (b == 7) {
+                state = 0
+                osc()
+            } else if (b == 27) {
+                state = 4
+            } else if (oscText.length() < 512) {
+                oscText = oscText + vtChar(b)
+            }
+            return
+        }
+        if (state == 4) {
+            state = 0
+            if (b == 92) { // ESC \ (ST)
+                osc()
+            }
+            return
+        }
+        if (state == 5) {
+            decGraphics = b == 48 // ESC ( 0 = desenho de linhas DEC; ESC ( B = normal
+            state = 0
+            return
+        }
+        if (state == 6) {
+            if (b == 27) {
+                state = 4 // o ESC \ que encerra o DCS
+                oscText = ""
+            }
+            return
+        }
+    }
+
+    pushArg() {
+        if (csiCount < 32) {
+            csiArgs.set(csiCount, csiCur)
+            csiCount = csiCount + 1
+        }
+        csiCur = -1
+    }
+
+    control(Int b) {
+        if (b == 8) {
+            if (cx > 0) {
+                cx = cx - 1
+            }
+            wrapPending = false
+        } else if (b == 9) {
+            var next = (cx / 8 + 1) * 8
+            cx = clampInt(next, 0, cols - 1)
+            wrapPending = false
+        } else if (b == 10 || b == 11 || b == 12) {
+            lineFeed()
+        } else if (b == 13) {
+            cx = 0
+            wrapPending = false
+        }
+    }
+
+    escape(Int b) {
+        state = 0
+        if (b == 91) { // [
+            state = 2
+            csiCount = 0
+            csiCur = -1
+            csiPrefix = 0
+            csiInter = false
+        } else if (b == 93) { // ]
+            state = 3
+            oscText = ""
+        } else if (b == 80) { // P (DCS)
+            state = 6
+        } else if (b == 40 || b == 41 || b == 42 || b == 43) { // ( ) * + designa charset
+            state = 5
+        } else if (b == 55) { // 7
+            saveCursor()
+        } else if (b == 56) { // 8
+            restoreCursor()
+        } else if (b == 68) { // D
+            lineFeed()
+        } else if (b == 69) { // E
+            cx = 0
+            lineFeed()
+        } else if (b == 77) { // M
+            reverseIndex()
+        } else if (b == 99) { // c
+            fullReset()
+        } else if (b == 61) { // = teclado numerico em modo aplicacao
+            toHost = toHost + esc() + "="
+        } else if (b == 62) { // >
+            toHost = toHost + esc() + ">"
+        }
+    }
+
+    osc() {
+        // 0 e 2: titulo da janela (repassado ao terminal real); o resto e ignorado
+        if (oscText.startsWith("0;") || oscText.startsWith("2;")) {
+            title = oscText.substring(2, oscText.length())
+            titleChanged = true
+        }
+        oscText = ""
+    }
+
+    // ---------- texto ----------
+
+    putCodepoint(Int cp) {
+        if (cp < 128 && !decGraphics) {
+            put(ascii.get(cp))
+        } else if (decGraphics && cp >= 96 && cp <= 126) {
+            put(decChar(cp))
+        } else if (cp < 128) {
+            put(ascii.get(cp))
+        } else if (cp > 65535) {
+            put("�")
+        } else {
+            put("" + (cp as Char))
+        }
+    }
+
+    put(String s) {
+        if (wrapPending) {
+            wrapPending = false
+            if (autowrap) {
+                cx = 0
+                lineFeed()
+            }
+        }
+        var row = screen().get(cy)
+        row.ch.set(cx, s)
+        row.at.set(cx, attr)
+        dirty.set(cy, true)
+        if (cx >= cols - 1) {
+            wrapPending = true
+        } else {
+            cx = cx + 1
+        }
+    }
+
+    // Escreve texto ja decodificado (usado pelo KofTerm para deixar na tela a linha cancelada).
+    putText(String s) {
+        var i = 0
+        while (i < s.length()) {
+            put(s.substring(i, i + 1))
+            i = i + 1
+        }
+    }
+
+    lineFeed() {
+        wrapPending = false
+        if (cy == bottom) {
+            scrollUp(1)
+        } else if (cy < rows - 1) {
+            cy = cy + 1
+        }
+    }
+
+    reverseIndex() {
+        wrapPending = false
+        if (cy == top) {
+            scrollDown(1)
+        } else if (cy > 0) {
+            cy = cy - 1
+        }
+    }
+
+    clearRow(VtRow row) {
+        var j = 0
+        var b = bgOnly()
+        while (j < row.ch.size) {
+            row.ch.set(j, SPACE)
+            row.at.set(j, b)
+            j = j + 1
+        }
+    }
+
+    // Rola a regiao [top, bottom] n linhas para cima (o conteudo sobe). A linha que sai
+    // pelo topo e limpa e reaproveitada embaixo: rolar nao cria objetos novos.
+    scrollUp(Int n) {
+        var scr = screen()
+        var k = 0
+        while (k < n) {
+            var first = scr.get(top)
+            var i = top
+            while (i < bottom) {
+                scr.set(i, scr.get(i + 1))
+                i = i + 1
+            }
+            clearRow(first)
+            scr.set(bottom, first)
+            k = k + 1
+        }
+        var r = top
+        while (r <= bottom) {
+            dirty.set(r, true)
+            r = r + 1
+        }
+    }
+
+    scrollDown(Int n) {
+        var scr = screen()
+        var k = 0
+        while (k < n) {
+            var last = scr.get(bottom)
+            var i = bottom
+            while (i > top) {
+                scr.set(i, scr.get(i - 1))
+                i = i - 1
+            }
+            clearRow(last)
+            scr.set(top, last)
+            k = k + 1
+        }
+        var r = top
+        while (r <= bottom) {
+            dirty.set(r, true)
+            r = r + 1
+        }
+    }
+
+    eraseCells(Int r, Int from, Int to) {
+        var row = screen().get(r)
+        var j = clampInt(from, 0, cols)
+        var end = clampInt(to, 0, cols)
+        var b = bgOnly()
+        while (j < end) {
+            row.ch.set(j, SPACE)
+            row.at.set(j, b)
+            j = j + 1
+        }
+        dirty.set(r, true)
+    }
+
+    // ao apagar, o fundo atual vale (comportamento do xterm)
+    String bgOnly() {
+        return bg
+    }
+
+    saveCursor() {
+        scx = cx
+        scy = cy
+    }
+
+    restoreCursor() {
+        cx = clampInt(scx, 0, cols - 1)
+        cy = clampInt(scy, 0, rows - 1)
+        wrapPending = false
+    }
+
+    fullReset() {
+        altOn = false
+        flags = 0
+        fg = EMPTY
+        bg = EMPTY
+        attr = EMPTY
+        init(rows, cols)
+        autowrap = true
+        cursorVisible = true
+        decGraphics = false
+    }
+
+    clearScreen() {
+        var r = 0
+        while (r < rows) {
+            eraseCells(r, 0, cols)
+            r = r + 1
+        }
+    }
+
+    // ---------- CSI ----------
+
+    // parametro i, ou -1 se ausente
+    Int raw(Int i) {
+        if (i >= csiCount) {
+            return -1
+        }
+        return csiArgs.get(i)
+    }
+
+    // parametro i com valor padrao quando ausente ou 0 (CUU 0 = CUU 1)
+    Int arg(Int i, Int def) {
+        var v = raw(i)
+        if (v <= 0) {
+            return def
+        }
+        return v
+    }
+
+    csi(Int f) {
+        var priv = csiPrefix == 63
+        var gt = csiPrefix == 62
+        if (csiInter) {
+            return // CSI com intermediario (DECSCUSR etc.): ignorado
+        }
+        if (f == 109) { // m
+            if (csiPrefix == 0) {
+                sgr()
+            }
+        } else if (f == 72 || f == 102) { // H f
+            cy = clampInt(arg(0, 1) - 1, 0, rows - 1)
+            cx = clampInt(arg(1, 1) - 1, 0, cols - 1)
+            wrapPending = false
+        } else if (f == 65) { // A
+            cy = clampInt(cy - arg(0, 1), minRow(), rows - 1)
+            wrapPending = false
+        } else if (f == 66 || f == 101) { // B e
+            cy = clampInt(cy + arg(0, 1), 0, maxRow())
+            wrapPending = false
+        } else if (f == 67 || f == 97) { // C a
+            cx = clampInt(cx + arg(0, 1), 0, cols - 1)
+            wrapPending = false
+        } else if (f == 68) { // D
+            cx = clampInt(cx - arg(0, 1), 0, cols - 1)
+            wrapPending = false
+        } else if (f == 69) { // E
+            cy = clampInt(cy + arg(0, 1), 0, maxRow())
+            cx = 0
+            wrapPending = false
+        } else if (f == 70) { // F
+            cy = clampInt(cy - arg(0, 1), minRow(), rows - 1)
+            cx = 0
+            wrapPending = false
+        } else if (f == 71 || f == 96) { // G `
+            cx = clampInt(arg(0, 1) - 1, 0, cols - 1)
+            wrapPending = false
+        } else if (f == 100) { // d
+            cy = clampInt(arg(0, 1) - 1, 0, rows - 1)
+            wrapPending = false
+        } else if (f == 74) { // J
+            var mode = raw(0)
+            if (mode <= 0) {
+                eraseCells(cy, cx, cols)
+                var r = cy + 1
+                while (r < rows) {
+                    eraseCells(r, 0, cols)
+                    r = r + 1
+                }
+            } else if (mode == 1) {
+                var r = 0
+                while (r < cy) {
+                    eraseCells(r, 0, cols)
+                    r = r + 1
+                }
+                eraseCells(cy, 0, cx + 1)
+            } else {
+                clearScreen()
+            }
+        } else if (f == 75) { // K
+            var mode = raw(0)
+            if (mode <= 0) {
+                eraseCells(cy, cx, cols)
+            } else if (mode == 1) {
+                eraseCells(cy, 0, cx + 1)
+            } else {
+                eraseCells(cy, 0, cols)
+            }
+        } else if (f == 88) { // X
+            eraseCells(cy, cx, cx + arg(0, 1))
+        } else if (f == 64) { // @ insere espacos
+            shiftRight(cy, cx, arg(0, 1))
+        } else if (f == 80) { // P apaga caracteres
+            shiftLeft(cy, cx, arg(0, 1))
+        } else if (f == 76) { // L insere linhas
+            if (cy >= top && cy <= bottom) {
+                var oldTop = top
+                top = cy
+                scrollDown(arg(0, 1))
+                top = oldTop
+                cx = 0
+            }
+        } else if (f == 77) { // M apaga linhas
+            if (cy >= top && cy <= bottom) {
+                var oldTop = top
+                top = cy
+                scrollUp(arg(0, 1))
+                top = oldTop
+                cx = 0
+            }
+        } else if (f == 83) { // S
+            scrollUp(arg(0, 1))
+        } else if (f == 84 && csiCount <= 1) { // T
+            scrollDown(arg(0, 1))
+        } else if (f == 98) { // b repete o ultimo caractere
+            var k = arg(0, 1)
+            var last = " "
+            if (cx > 0) {
+                last = screen().get(cy).ch.get(cx - 1)
+            }
+            while (k > 0) {
+                put(last)
+                k = k - 1
+            }
+        } else if (f == 114) { // r regiao de rolagem
+            var t = arg(0, 1) - 1
+            var b = arg(1, rows) - 1
+            if (t < b && b < rows) {
+                top = t
+                bottom = b
+            } else {
+                top = 0
+                bottom = rows - 1
+            }
+            cx = 0
+            cy = 0
+            wrapPending = false
+        } else if (f == 115 && !priv) { // s
+            saveCursor()
+        } else if (f == 117 && !priv) { // u
+            restoreCursor()
+        } else if (f == 110) { // n DSR
+            var q = raw(0)
+            if (q == 6) {
+                reply = reply + esc() + "[" + (cy + 1) + ";" + (cx + 1) + "R"
+            } else if (q == 5) {
+                reply = reply + esc() + "[0n"
+            }
+        } else if (f == 99) { // c DA
+            if (gt) {
+                reply = reply + esc() + "[>0;0;0c"
+            } else {
+                reply = reply + esc() + "[?1;2c"
+            }
+        } else if (f == 104 || f == 108) { // h l
+            setModes(priv, f == 104)
+        } else if (f == 73) { // I tab para frente
+            var k = arg(0, 1)
+            while (k > 0) {
+                control(9)
+                k = k - 1
+            }
+        } else if (f == 90) { // Z tab para tras
+            var k = arg(0, 1)
+            while (k > 0 && cx > 0) {
+                cx = ((cx - 1) / 8) * 8
+                k = k - 1
+            }
+        }
+    }
+
+    Int minRow() {
+        if (cy >= top) {
+            return top
+        }
+        return 0
+    }
+
+    Int maxRow() {
+        if (cy <= bottom) {
+            return bottom
+        }
+        return rows - 1
+    }
+
+    shiftRight(Int r, Int from, Int n) {
+        var row = screen().get(r)
+        var j = cols - 1
+        while (j >= from + n) {
+            row.ch.set(j, row.ch.get(j - n))
+            row.at.set(j, row.at.get(j - n))
+            j = j - 1
+        }
+        eraseCells(r, from, from + n)
+    }
+
+    shiftLeft(Int r, Int from, Int n) {
+        var row = screen().get(r)
+        var b = bgOnly()
+        var j = from
+        while (j < cols) {
+            if (j + n < cols) {
+                row.ch.set(j, row.ch.get(j + n))
+                row.at.set(j, row.at.get(j + n))
+            } else {
+                row.ch.set(j, SPACE)
+                row.at.set(j, b)
+            }
+            j = j + 1
+        }
+        dirty.set(r, true)
+    }
+
+    setModes(Boolean priv, Boolean on) {
+        if (!priv) {
+            return
+        }
+        var i = 0
+        while (i < csiCount) {
+            var m = csiArgs.get(i)
+            if (m == 25) {
+                cursorVisible = on
+            } else if (m == 7) {
+                autowrap = on
+            } else if (m == 1049 || m == 1047 || m == 47) {
+                if (on && !altOn) {
+                    if (m == 1049) {
+                        saveCursor()
+                    }
+                    altOn = true
+                    if (m != 47) {
+                        clearScreen()
+                    }
+                    markAll()
+                } else if (!on && altOn) {
+                    altOn = false
+                    if (m == 1049) {
+                        restoreCursor()
+                    }
+                    markAll()
+                }
+            } else if (m == 1 || m == 2004 || m == 1000 || m == 1002 || m == 1003 || m == 1006 || m == 1015) {
+                // teclas de cursor em modo aplicacao, colar entre marcadores e mouse: o terminal
+                // real precisa saber, porque e ele que gera essas teclas
+                var flag = "l"
+                if (on) {
+                    flag = "h"
+                }
+                toHost = toHost + esc() + "[?" + m + flag
+            }
+            i = i + 1
+        }
+    }
+
+    // ---------- cores e estilos ----------
+
+    String num(Int n) {
+        if (n >= 0 && n < 256) {
+            return numStr.get(n)
+        }
+        return "" + n
+    }
+
+    sgr() {
+        if (csiCount == 0) {
+            flags = 0
+            fg = EMPTY
+            bg = EMPTY
+        }
+        var i = 0
+        while (i < csiCount) {
+            var p = csiArgs.get(i)
+            if (p <= 0) {
+                flags = 0
+                fg = EMPTY
+                bg = EMPTY
+            } else if (p >= 1 && p <= 9 && p != 6) {
+                flags = setFlag(flags, flagOf(p), true)
+            } else if (p == 22) {
+                flags = setFlag(setFlag(flags, 1, false), 2, false)
+            } else if (p >= 23 && p <= 29 && p != 26) {
+                flags = setFlag(flags, flagOf(p - 20), false)
+            } else if (p >= 30 && p <= 37 || p >= 90 && p <= 97) {
+                fg = num(p)
+            } else if (p == 39) {
+                fg = EMPTY
+            } else if (p >= 40 && p <= 47 || p >= 100 && p <= 107) {
+                bg = num(p)
+            } else if (p == 49) {
+                bg = EMPTY
+            } else if (p == 38 || p == 48) {
+                var color = ""
+                if (i + 2 < csiCount && csiArgs.get(i + 1) == 5) {
+                    color = num(p) + ";5;" + num(csiArgs.get(i + 2))
+                    i = i + 2
+                } else if (i + 4 < csiCount && csiArgs.get(i + 1) == 2) {
+                    color = num(p) + ";2;" + num(csiArgs.get(i + 2)) + ";" + num(csiArgs.get(i + 3)) + ";" + num(csiArgs.get(i + 4))
+                    i = i + 4
+                }
+                if (p == 38) {
+                    fg = color
+                } else {
+                    bg = color
+                }
+            }
+            i = i + 1
+        }
+        attr = cachedAttr()
+    }
+
+    Int flagOf(Int p) {
+        if (p == 1) { return 1 }
+        if (p == 2) { return 2 }
+        if (p == 3) { return 4 }
+        if (p == 4) { return 8 }
+        if (p == 5) { return 16 }
+        if (p == 7) { return 32 }
+        if (p == 8) { return 64 }
+        if (p == 9) { return 128 }
+        return 0
+    }
+
+    Int setFlag(Int f, Int bit, Boolean on) {
+        var has = (f / bit) % 2 == 1
+        if (bit == 0) {
+            return f
+        }
+        if (on && !has) {
+            return f + bit
+        }
+        if (!on && has) {
+            return f - bit
+        }
+        return f
+    }
+
+    // A mesma combinacao de estilo devolve sempre a mesma String (sem criar outra).
+    String cachedAttr() {
+        var i = 0
+        while (i < cacheVal.size) {
+            if (cacheFlags.get(i) == flags && cacheFg.get(i) == fg && cacheBg.get(i) == bg) {
+                return cacheVal.get(i)
+            }
+            i = i + 1
+        }
+        var v = buildAttr()
+        if (cacheVal.size < 512) {
+            cacheFlags.add(flags)
+            cacheFg.add(fg)
+            cacheBg.add(bg)
+            cacheVal.add(v)
+        }
+        return v
+    }
+
+    String buildAttr() {
+        var out = ""
+        var codes = listOf(1, 2, 3, 4, 5, 7, 8, 9)
+        for (var c in codes) {
+            if ((flags / flagOf(c)) % 2 == 1) {
+                if (out.length() > 0) {
+                    out = out + ";"
+                }
+                out = out + num(c)
+            }
+        }
+        if (fg.length() > 0) {
+            if (out.length() > 0) {
+                out = out + ";"
+            }
+            out = out + fg
+        }
+        if (bg.length() > 0) {
+            if (out.length() > 0) {
+                out = out + ";"
+            }
+            out = out + bg
+        }
+        return out
+    }
+
+    // ---------- leitura (para desenhar e testar) ----------
+
+    String textAt(Int r) {
+        var row = screen().get(r)
+        var out = ""
+        for (var c in row.ch) {
+            out = out + c
+        }
+        return out
+    }
+
+    String trimmed(Int r) {
+        var t = textAt(r)
+        var end = t.length()
+        while (end > 0 && t.substring(end - 1, end) == " ") {
+            end = end - 1
+        }
+        return t.substring(0, end)
+    }
+
+    String takeReply() {
+        var r = reply
+        reply = ""
+        return r
+    }
+
+    String takeToHost() {
+        var h = toHost
+        toHost = ""
+        return h
+    }
+}
+
+String vtChar(Int b) {
+    return "" + (b as Char)
+}
+
+Int clampInt(Int v, Int lo, Int hi) {
+    if (v < lo) {
+        return lo
+    }
+    if (v > hi) {
+        return hi
+    }
+    return v
+}
+
+// Desenho de linhas DEC (ESC ( 0), usado por programas antigos e pelo mc.
+String decChar(Int cp) {
+    if (cp == 106) { return "┘" }
+    if (cp == 107) { return "┐" }
+    if (cp == 108) { return "┌" }
+    if (cp == 109) { return "└" }
+    if (cp == 110) { return "┼" }
+    if (cp == 113) { return "─" }
+    if (cp == 116) { return "├" }
+    if (cp == 117) { return "┤" }
+    if (cp == 118) { return "┴" }
+    if (cp == 119) { return "┬" }
+    if (cp == 120) { return "│" }
+    if (cp == 97) { return "▒" }
+    if (cp == 96) { return "◆" }
+    if (cp == 102) { return "°" }
+    if (cp == 103) { return "±" }
+    if (cp == 126) { return "·" }
+    return "" + (cp as Char)
+}
+
+// Bytes de uma String ASCII, para os testes alimentarem o emulador.
+List<Int> vtBytes(String s) {
+    var out = listOf<Int>()
+    var i = 0
+    while (i < s.length()) {
+        out.add(s.charAt(i) as Int)
+        i = i + 1
+    }
+    return out
+}
+
+Vt vtNew(Int r, Int c) {
+    var v = Vt()
+    v.init(r, c)
+    return v
+}
+
+test "texto, quebra de linha e retorno" {
+    var v = vtNew(5, 10)
+    v.feedAll(vtBytes("ola\r\nmundo"))
+    assert(v.trimmed(0) == "ola", "linha 1")
+    assert(v.trimmed(1) == "mundo", "linha 2")
+    assert(v.cy == 1 && v.cx == 5, "cursor")
+}
+
+test "quebra automatica no fim da linha" {
+    var v = vtNew(3, 4)
+    v.feedAll(vtBytes("abcdef"))
+    assert(v.trimmed(0) == "abcd", "primeira")
+    assert(v.trimmed(1) == "ef", "continua embaixo")
+}
+
+test "rolagem quando passa da ultima linha" {
+    var v = vtNew(3, 5)
+    v.feedAll(vtBytes("1\r\n2\r\n3\r\n4"))
+    assert(v.trimmed(0) == "2" && v.trimmed(2) == "4", "subiu uma linha")
+}
+
+test "posicao, apagar linha e tela" {
+    var v = vtNew(4, 10)
+    v.feedAll(vtBytes("abcdefghij"))
+    v.feed(27)
+    v.feedAll(vtBytes("[1;4H"))
+    v.feed(27)
+    v.feedAll(vtBytes("[K"))
+    assert(v.trimmed(0) == "abc", "EL do cursor ao fim")
+    v.feed(27)
+    v.feedAll(vtBytes("[2J"))
+    assert(v.trimmed(0) == "", "ED 2")
+}
+
+test "cores viram atributos normalizados e reaproveitados" {
+    var v = vtNew(2, 10)
+    v.feed(27)
+    v.feedAll(vtBytes("[1;31mX"))
+    v.feed(27)
+    v.feedAll(vtBytes("[0mY"))
+    assert(v.screen().get(0).at.get(0) == "1;31", "negrito vermelho")
+    assert(v.screen().get(0).at.get(1) == "", "reset")
+    v.feed(27)
+    v.feedAll(vtBytes("[38;5;208mZ"))
+    assert(v.screen().get(0).at.get(2) == "38;5;208", "256 cores")
+    v.feed(27)
+    v.feedAll(vtBytes("[22;31mW"))
+    assert(v.screen().get(0).at.get(3) == "31", "22 desliga negrito")
+    var antes = v.cacheVal.size
+    v.feed(27)
+    v.feedAll(vtBytes("[1;31mA"))
+    v.feed(27)
+    v.feedAll(vtBytes("[1;31mB"))
+    assert(v.cacheVal.size == antes, "mesmo estilo nao cria String nova")
+}
+
+test "regiao de rolagem protege o resto" {
+    var v = vtNew(5, 6)
+    v.feedAll(vtBytes("topo"))
+    v.feed(27)
+    v.feedAll(vtBytes("[2;4r"))
+    v.feed(27)
+    v.feedAll(vtBytes("[4;1Ha\r\nb\r\nc"))
+    assert(v.trimmed(0) == "topo", "fora da regiao ficou")
+    assert(v.trimmed(3) == "c", "rolou dentro")
+}
+
+test "tela alternativa volta intacta (vim, htop, less)" {
+    var v = vtNew(3, 10)
+    v.feedAll(vtBytes("prompt$"))
+    v.feed(27)
+    v.feedAll(vtBytes("[?1049h"))
+    v.feed(27)
+    v.feedAll(vtBytes("[HVIM")) // como o vim real: posiciona antes de desenhar
+    assert(v.trimmed(0) == "VIM", "na alternativa")
+    v.feed(27)
+    v.feedAll(vtBytes("[?1049l"))
+    assert(v.trimmed(0) == "prompt$", "principal intacta")
+    assert(v.cx == 7, "cursor restaurado")
+}
+
+test "responde a pergunta de posicao do cursor" {
+    var v = vtNew(5, 10)
+    v.feedAll(vtBytes("ab"))
+    v.feed(27)
+    v.feedAll(vtBytes("[6n"))
+    var r = v.takeReply()
+    assert(r.length() > 0 && r.endsWith("1;3R"), "linha 1 coluna 3")
+}
+
+test "utf8 e desenho de linhas" {
+    var v = vtNew(2, 10)
+    v.feedAll(listOf(195, 167, 195, 163)) // ç ã
+    assert(v.trimmed(0) == "çã", "acentos")
+    v.feed(27)
+    v.feedAll(vtBytes("(0qx"))
+    v.feed(27)
+    v.feedAll(vtBytes("(B"))
+    assert(v.trimmed(0) == "çã─│", "linhas DEC")
+}
+
+test "modos repassados ao terminal real" {
+    var v = vtNew(2, 10)
+    v.feed(27)
+    v.feedAll(vtBytes("[?1h"))
+    v.feed(27)
+    v.feedAll(vtBytes("="))
+    var h = v.takeToHost()
+    assert(h.contains("[?1h") && h.endsWith("="), "DECCKM e teclado")
+}
+
+test "titulo da janela e ignorado na tela" {
+    var v = vtNew(2, 20)
+    v.feed(27)
+    v.feedAll(vtBytes("]0;meu titulo"))
+    v.feed(7)
+    v.feedAll(vtBytes("x"))
+    assert(v.trimmed(0) == "x", "nada do titulo na tela")
+    assert(v.title == "meu titulo", "titulo guardado")
+}
+
+test "redimensionar mantem o conteudo e o cursor" {
+    var v = vtNew(4, 10)
+    v.feedAll(vtBytes("a\r\nb\r\nc\r\nd"))
+    v.resizeKeepCursor(2, 6)
+    assert(v.rows == 2 && v.cols == 6, "tamanho")
+    assert(v.trimmed(1) == "d", "a linha do cursor continua visivel")
+    assert(v.cy == 1, "cursor na ultima linha")
+}
