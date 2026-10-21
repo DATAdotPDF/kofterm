@@ -1,0 +1,27 @@
+// Spike 02 — tamanho da janela via ioctl(TIOCGWINSZ).
+// Prova: ioctl com ponteiro de saida e leitura de campos u16 com buffer.peek8.
+// Rode, redimensione a janela e rode de novo: os numeros devem mudar.
+
+extern "libc.so.6" malloc(Long n): Long
+extern "libc.so.6" free(Long p): void
+// ioctl e variadico em C; com argumentos inteiros/ponteiro a ABI SysV x86_64 e a mesma.
+extern "libc.so.6" ioctl(Int fd, Long request, Long arg): Int
+
+class C {
+    static Long TIOCGWINSZ = 21523L // 0x5413
+}
+
+// struct winsize { u16 ws_row; u16 ws_col; u16 ws_xpixel; u16 ws_ypixel; }
+Int u16(Long p) {
+    return buffer.peek8(p) + buffer.peek8(p + 1L) * 256
+}
+
+main() {
+    var ws = malloc(8L)
+    if (ioctl(1, C.TIOCGWINSZ, ws) != 0) {
+        println("ioctl falhou: stdout nao e um terminal?")
+    } else {
+        println("linhas=" + u16(ws) + " colunas=" + u16(ws + 2L))
+    }
+    free(ws)
+}

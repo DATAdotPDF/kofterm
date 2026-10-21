@@ -1,0 +1,66 @@
+// Spike 01 — modo raw + leitura de teclas byte a byte.
+// Prova: tcgetattr/cfmakeraw/tcsetattr e read(0) sem esperar Enter.
+// Sair: tecla q. O terminal DEVE voltar ao normal depois (confira com `stty -a`).
+//
+// Memoria: ponteiros crus (malloc -> Long) + buffer.peek/poke na forma de endereco.
+// Buffer(U8) so existe dentro de `extern` (nao pode ser parametro de funcao comum
+// no KOF 0.6.6), entao Long e o que deixa este codigo virar a biblioteca kof-tty.
+
+extern "libc.so.6" malloc(Long n): Long
+extern "libc.so.6" free(Long p): void
+extern "libc.so.6" tcgetattr(Int fd, Long termios): Int
+extern "libc.so.6" tcsetattr(Int fd, Int action, Long termios): Int
+extern "libc.so.6" cfmakeraw(Long termios): void
+extern "libc.so.6" read(Int fd, Long buf, Long n): Long
+
+// KOF nao tem constante no topo do arquivo: ficam como static numa classe.
+class C {
+    // sizeof(struct termios) no glibc x86_64 = 60 bytes; 64 por folga.
+    static Long TERMIOS_SIZE = 64L
+    static Int TCSANOW = 0
+}
+
+main() {
+    var saved = malloc(C.TERMIOS_SIZE)
+    if (tcgetattr(0, saved) != 0) {
+        println("tcgetattr falhou: stdin nao e um terminal?")
+        free(saved)
+        return
+    }
+
+    var raw = malloc(C.TERMIOS_SIZE)
+    tcgetattr(0, raw)
+    cfmakeraw(raw)
+    tcsetattr(0, C.TCSANOW, raw)
+
+    var buf = malloc(32L)
+    try {
+        print("modo raw ativo. digite teclas (q para sair)\r\n")
+        var running = true
+        while (running) {
+            var n = read(0, buf, 32L)
+            if (n <= 0L) {
+                running = false
+            } else {
+                var line = "lido " + n + " byte(s):"
+                var i = 0L
+                while (i < n) {
+                    var c = buffer.peek8(buf + i)
+                    line = line + " " + c
+                    if (c == 113) {
+                        running = false
+                    }
+                    i = i + 1L
+                }
+                // em modo raw o \n nao volta o cursor: usar \r\n
+                print(line + "\r\n")
+            }
+        }
+    } finally {
+        tcsetattr(0, C.TCSANOW, saved)
+        free(buf)
+        free(raw)
+        free(saved)
+    }
+    println("terminal restaurado.")
+}

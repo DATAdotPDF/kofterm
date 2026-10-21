@@ -1,0 +1,139 @@
+// Spike 03 — bash dentro de um PTY, com repasse de I/O.
+// Prova: forkpty + execvp("bash") + poll em stdin e no master + repasse de bytes
+// + sincronizacao do tamanho da janela. E o "esqueleto" da Fase 1 (passthrough).
+// Teste: ls, vim, htop, Ctrl-C, redimensionar, `exit`. Depois `stty -a` deve estar normal.
+
+extern "libc.so.6" malloc(Long n): Long
+extern "libc.so.6" free(Long p): void
+extern "libc.so.6" tcgetattr(Int fd, Long termios): Int
+extern "libc.so.6" tcsetattr(Int fd, Int action, Long termios): Int
+extern "libc.so.6" cfmakeraw(Long termios): void
+extern "libc.so.6" ioctl(Int fd, Long request, Long arg): Int
+// forkpty(int *amaster, char *name, const struct termios *termp, const struct winsize *winp)
+// name = NULL (0L): nao precisamos do nome do /dev/pts/N.
+extern "libc.so.6" forkpty(Long amaster, Long name, Long termp, Long winp): Int
+// char* como Long = endereco cru; e assim que montamos o argv (char**).
+extern "libc.so.6" strdup(String s): Long
+extern "libc.so.6" execvp(Long file, Long argv): Int
+extern "libc.so.6" _exit(Int code): void
+// `poll` NAO: o nome colide com o poll(handle) nativo do KOF (concorrencia) e a chamada
+// vai para ele em silencio (retorna null). ppoll e o mesmo syscall com outro nome.
+// ppoll(struct pollfd *fds, nfds_t n, const struct timespec *tmo, const sigset_t *mask)
+extern "libc.so.6" ppoll(Long fds, Long nfds, Long tmo, Long sigmask): Int
+extern "libc.so.6" read(Int fd, Long buf, Long n): Long
+extern "libc.so.6" write(Int fd, Long buf, Long n): Long
+extern "libc.so.6" waitpid(Int pid, Long status, Int options): Int
+
+class C {
+    static Long TERMIOS_SIZE = 64L
+    static Int TCSANOW = 0
+    static Long TIOCGWINSZ = 21523L // 0x5413
+    static Long TIOCSWINSZ = 21524L // 0x5414
+    static Int POLLIN = 1
+    static Long CHUNK = 4096L
+}
+
+// write pode ser parcial: repete ate tudo sair.
+writeAll(Int fd, Long buf, Long n) {
+    var done = 0L
+    while (done < n) {
+        var w = write(fd, buf + done, n - done)
+        if (w <= 0L) {
+            return
+        }
+        done = done + w
+    }
+}
+
+main() {
+    var saved = malloc(C.TERMIOS_SIZE)
+    if (tcgetattr(0, saved) != 0) {
+        println("stdin nao e um terminal")
+        free(saved)
+        return
+    }
+    var ws = malloc(8L)
+    ioctl(1, C.TIOCGWINSZ, ws)
+
+    // O filho herda o termios "cozido" atual e o tamanho atual da janela.
+    var masterBox = malloc(8L)
+    var pid = forkpty(masterBox, 0L, saved, ws)
+    if (pid < 0) {
+        println("forkpty falhou")
+        return
+    }
+    if (pid == 0) {
+        // processo filho: vira o bash. argv = { "bash", "-i", NULL }
+        var argv = malloc(24L)
+        var bash = strdup("bash")
+        buffer.poke64(argv, bash)
+        buffer.poke64(argv + 8L, strdup("-i"))
+        buffer.poke64(argv + 16L, 0L)
+        execvp(bash, argv)
+        _exit(127) // so chega aqui se o execvp falhar
+    }
+
+    var master = buffer.peek32(masterBox)
+    var raw = malloc(C.TERMIOS_SIZE)
+    tcgetattr(0, raw)
+    cfmakeraw(raw)
+    tcsetattr(0, C.TCSANOW, raw)
+
+    // struct pollfd { int fd; short events; short revents; } x2
+    var fds = malloc(16L)
+    var buf = malloc(C.CHUNK)
+    var current = malloc(8L)
+    // struct timespec { long tv_sec; long tv_nsec; } = 100 ms
+    var tmo = malloc(16L)
+    buffer.poke64(tmo, 0L)
+    buffer.poke64(tmo + 8L, 100000000L)
+    try {
+        buffer.poke32(fds, 0)
+        buffer.poke32(fds + 8L, master)
+        var running = true
+        while (running) {
+            buffer.poke32(fds + 4L, C.POLLIN) // events=POLLIN, revents=0
+            buffer.poke32(fds + 12L, C.POLLIN)
+            var ready = ppoll(fds, 2L, tmo, 0L)
+
+            // Sem callback de SIGWINCH (callback que escapa e FFI001): checagem por polling.
+            ioctl(1, C.TIOCGWINSZ, current)
+            if (buffer.peek32(current) != buffer.peek32(ws)) {
+                ioctl(master, C.TIOCSWINSZ, current)
+                buffer.poke64(ws, buffer.peek64(current))
+            }
+
+            if (ready > 0) {
+                // revents de stdin: offset 6; do master: offset 14 (u16 little-endian)
+                if (buffer.peek8(fds + 6L) != 0) {
+                    var n = read(0, buf, C.CHUNK)
+                    if (n > 0L) {
+                        writeAll(master, buf, n)
+                    }
+                }
+                if (buffer.peek8(fds + 14L) != 0) {
+                    var n = read(master, buf, C.CHUNK)
+                    if (n <= 0L) {
+                        running = false // bash saiu (EIO no master)
+                    } else {
+                        writeAll(1, buf, n)
+                    }
+                }
+            }
+        }
+    } finally {
+        tcsetattr(0, C.TCSANOW, saved)
+    }
+    var status = malloc(8L)
+    waitpid(pid, status, 0)
+    free(status)
+    free(tmo)
+    free(current)
+    free(buf)
+    free(fds)
+    free(raw)
+    free(masterBox)
+    free(ws)
+    free(saved)
+    println("[kofterm spike] bash encerrado, terminal restaurado.")
+}
