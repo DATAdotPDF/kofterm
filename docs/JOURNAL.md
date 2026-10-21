@@ -88,6 +88,17 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Bug found and fixed in the same session: for a long line at the bottom, the start row was moved up before writing, overwriting the prompt. The terminal scrolls while writing, so the coordinates must move after. This also fixed the Phase 2 long-line limitation.
 - 30 unit tests pass (keys 8, editor 5, history 4, prompt 4, index 9).
 
+### Phase 4: context-aware model and local learning (night)
+- Design: suggestions in priority order — on an empty line, a fix after an error (`sudo …` after a permission error, the closest known command after exit 127) or the command that usually follows the previous one; while typing, the best full line, then the next word, options from the index, subcommands and files/folders.
+- Probed first: `Map` (`put`, `get` returning `V?`, `containsKey`, `keys`), `opendir`/`readdir` (`d_type` at +18, `d_name` at +19), `String.hashCode()`.
+- `model.kf` (pure, 9 tests): line counts, transitions between lines, folder features per command, word n-grams, recency, dangerous-command rules, Levenshtein typo fix.
+- First full build crashed at startup (exit 139). Bisected with markers to the corpus load, then isolated: KOF native's `Map<String, Int>` crashes at about 3,650 keys (works on JVM; `List` with 20,000 items is fine). Wrote `KtIntMap`/`KtTextMap` in KOF (buckets of lists + `hashCode`), tested with 20,000 keys.
+- Folder features and file completion silently failed. Isolated step by step: `access` returned -1 (ENOENT) even for a literal path inside `brain.kf`, but 0 from `main.kf` in the same run. Cause: files compile in alphabetical order, and an `extern` declared in a later file (`libc.kf`) passes strings wrongly in earlier files (`brain.kf`). Renamed to `src/00_libc.kf`.
+- Exit codes were always 0: Kali's `~/.bashrc` sets `PROMPT_COMMAND="PROMPT_COMMAND=echo"`, which overwrites itself on the first prompt and removed KofTerm's hook. The hook now reinstalls itself at every prompt.
+- Typos (exit 127) are recorded but never learned.
+- Verified in tmux in a git repo: corpus completes `sudo apt up` → `date`; after `git status` the empty line suggests the next git step; `grpe root /etc/hostname` → `grep root /etc/hostname`; `cat /etc/shadow` → `sudo cat /etc/shadow`; `/etc/hostn` → `ame`, `/us` → `r/`, `.gi` → `t/`; `ls --a` → `ll`; `git commit ` → `-m ""`; after two repetitions of a pair of commands the empty line predicts the second one; `rm -rf /` shows in red with no suggestion; events file is `0600` with features like `git`, never folder names.
+- 39 unit tests pass. All KOF findings collected in `docs/KOF_FINDINGS.md`.
+
 ### Still to verify by hand
 - `vim`, `htop` and resizing with a real window, running `build/kofterm/Default/Main` in the VM.
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).

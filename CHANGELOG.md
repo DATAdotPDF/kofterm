@@ -2,6 +2,27 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.4.0] - 21/10/2026
+
+Phase 4: context-aware model and local learning.
+
+### Added
+- `model.kf`: local model that learns from every command (line counts, line-to-line transitions, kind of folder, word n-grams, recency), with 9 unit tests
+- Empty-line prediction of the next command; `sudo` after "Permission denied"; typo fix after exit 127
+- Completion of files, folders, options from the index and subcommands
+- Dangerous commands shown in red with a warning in the panel, never suggested or learned
+- `corpus/sessions.txt`: starter command sequences written by the project
+- Event file `~/.local/share/kofterm/events` (0600): exit code, folder features, command
+- `docs/KOF_FINDINGS.md`: four KOF 0.6.6 problems with minimal reproductions
+
+### Fixed
+- Exit code was always 0 under bashrc files that rewrite `PROMPT_COMMAND` (Kali): the hook reinstalls itself
+- Typos (exit 127) are no longer learned
+
+### Changed
+- `src/libc.kf` renamed to `src/00_libc.kf` so its `extern`s compile before every other file
+- KOF's native `Map` replaced by a hash map written in KOF (`KtIntMap`), which survives tens of thousands of keys
+
 ## [0.3.0] - 21/10/2026
 
 Phase 3: offline command index, index tab and live panel.

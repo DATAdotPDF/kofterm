@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <img src="https://img.shields.io/badge/Status-Phase_3_done-8b5cf6?style=flat-square" alt="Phase 3 done">
+  <img src="https://img.shields.io/badge/Status-Phase_4_done-8b5cf6?style=flat-square" alt="Phase 4 done">
 </p>
 
 <p align="center">
@@ -45,7 +45,8 @@
 - **Phase 1 (passthrough terminal): done.** `kofterm` runs Bash in a pseudo-terminal, passes Bash's exit code through, follows window resizes and restores your terminal even when killed by `SIGTERM` or `SIGHUP`.
 - **Phase 2 (line editor and ghost text): done.** At the prompt, KofTerm edits the line itself and shows the rest of a matching command from your history in grey. **TAB** or **→** accepts it, **Ctrl+→** accepts one word, and ↑/↓ browse the history.
 - **Phase 3 (offline command index and panel): done.** **F1** or **Ctrl+T** opens a full-screen index tab with search; **F2** splits the screen and keeps a live explanation of what you are typing at the bottom. `ls -ld` shows `-l` and `-d` explained one by one, with examples and reading links.
-- **Phase 4 (the context-aware model): next.** Today the grey suggestions still come from your own history only.
+- **Phase 4 (the context-aware model): done.** The grey suggestion now comes from a local model that learns from every command you run: it uses what you typed, the previous command, the kind of folder you are in and how recent each command is. On an empty line it predicts your next command, offers `sudo` after "Permission denied" and fixes typos after "command not found". It also completes files, folders and options, and never suggests dangerous commands.
+- **Phase 5 (contribution, installer, first release): next.**
 
 ###
 
@@ -87,10 +88,12 @@
 | Ghost-text suggestion, **TAB** / **→** accepts the line, **Ctrl+→** accepts one word | ✅ Phase 2 |
 | Line editing: ←/→, Home/End, Ctrl-A/E/U/K/W, Ctrl-L, ↑/↓ history, UTF-8 (accents) | ✅ Phase 2 |
 | Private history in `~/.local/share/kofterm` (folder 0700, files 0600) | ✅ Phase 2 |
-| Context-aware suggestions (what you typed, previous command, exit code, folders) | Phase 4 |
-| Learns from you as you type, locally | Phase 4 |
-| "Refactor" suggestions: `sudo` retry, typo fix, `cat f \| grep x` → `grep x f` | Phase 4 |
-| Dangerous commands (`rm -rf /`, `mkfs`, fork bomb) flagged in red and never suggested | Phase 4 |
+| Context-aware suggestions (what you typed, previous command, exit code, kind of folder) | ✅ Phase 4 |
+| Empty line predicts your next command (`sudo apt update` → `sudo apt upgrade`) | ✅ Phase 4 |
+| Learns from you as you run commands, locally, from the first repetition | ✅ Phase 4 |
+| Fixes after errors: `sudo` after "Permission denied", typo after "command not found" | ✅ Phase 4 |
+| Completes files, folders (`/etc/hostn` → `ame`) and options (`ls --a` → `ll`) | ✅ Phase 4 |
+| Dangerous commands (`rm -rf /`, `mkfs`, `dd of=/dev/sd…`, fork bomb) in red and never suggested | ✅ Phase 4 |
 | Full-screen index tab with search (**F1** / **Ctrl+T**), 53 entries in Portuguese | ✅ Phase 3 |
 | Split screen with a live explanation of the current line (**F2**, remembered) | ✅ Phase 3 |
 | Each option explained on its own (`-ld` → `-l` + `-d`), with examples and reading links | ✅ Phase 3 |
@@ -128,6 +131,8 @@ kofterm/
 │   ├── PLAN.md              Full plan: architecture, modules, AI, index, phases
 │   ├── JOURNAL.md           Dated development journal (authorship record)
 │   └── images/              Banner and screenshots
+├── corpus/
+│   └── sessions.txt         Starter sequences of commands, so suggestions work on day one
 ├── index/
 │   └── pt_BR.txt            The offline command index, written by the project (see below)
 ├── spikes/                  Phase 0: one folder per proof, each with main.kf
@@ -142,9 +147,11 @@ kofterm/
 │   ├── history.kf           History and suggestions, with tests
 │   ├── prompt.kf            Finds the invisible prompt marker in Bash's output, with tests
 │   ├── index.kf             Index format, search and option splitting (-ld → -l, -d), with tests
+│   ├── model.kf             The learning model, safety rules, typo fix, own hash map, with tests
+│   ├── brain.kf             Connects the model to the folder, files, options and your events
 │   ├── tab.kf               The full-screen index tab (F1 / Ctrl+T)
 │   ├── storage.kf           Private files, UTF-8 conversions, KofTerm's bashrc
-│   ├── libc.kf              Every libc extern and Linux constant, in one place
+│   ├── 00_libc.kf           Every libc extern and Linux constant; named to compile first (see journal)
 │   ├── tty.kf               Raw mode, restore, window size (future kof-tty)
 │   ├── pty.kf               Bash in a pseudo-terminal, exit status (future kof-tty)
 │   └── sig.kf               Signals read as data through signalfd (future kof-tty)
@@ -196,10 +203,10 @@ You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to co
 | **F2** | Splits the screen: a live explanation of the current line at the bottom (remembered next time) |
 | **Ctrl-L** | Clears the screen and keeps what you were typing |
 
-Run the unit tests (30 tests, one file at a time):
+Run the unit tests (39 tests, one file at a time):
 
 ```bash
-for f in keys editor history prompt index; do kof test src/$f.kf --target native; done
+for f in keys editor history prompt index model; do kof test src/$f.kf --target native; done
 ```
 
 **4. Optional: run the Phase 0 spikes** (in a real terminal window, not through a pipe):
@@ -226,8 +233,8 @@ Spike 01 prints every key you press (`q` quits). Spike 03 opens a Bash inside Ko
 | 1 | Passthrough terminal, signal-safe restore (`signalfd`) | ✅ done (21/10/2026) |
 | 2 | Line editor and ghost text from history | ✅ done (21/10/2026) |
 | 3 | Offline command index, index tab, live panel, per-option explanations, reading links | ✅ done (21/10/2026) |
-| 4 | n-gram model with local continuous learning, context, grammar, safety rules | next |
-| 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | planned |
+| 4 | n-gram model with local continuous learning, context, grammar, safety rules | ✅ done (21/10/2026) |
+| 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | next |
 | 6 | Optional neural model in pure KOF (`kof-nn`) | planned |
 
 Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal and PTY), `kof-ansi` (keys and screen), `kof-nn` (tensors and a tiny transformer).
@@ -256,7 +263,9 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **9. Phase 3: the index.** 53 entries written by the project in Portuguese for people learning Bash, from `ls` to `git commit` and the shell operators (`|`, `>`, `&&`…), with every reading link checked. The tab uses the terminal's alternate screen, so Esc brings back exactly what was there. The live panel splits the screen with a scroll region and tells Bash its screen is shorter; KofTerm now asks the terminal where the cursor is at each prompt and draws by absolute position, which also fixed long lines at the bottom of the screen. A right-hand side panel would need KofTerm to emulate a whole terminal, so the split is top/bottom for now.
 
-**10. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
+**10. Phase 4: the model.** A counting model written in KOF learns from every command when its exit code comes back: how often each line is used, which line usually follows which, in what kind of folder (`git`, `node`, `python`…, never the folder name) and which word usually follows two others. Typos (exit 127) never become suggestions. A starter corpus written by the project gives sensible suggestions on day one. Three new obstacles: KOF's native `Map` crashes at about 3,650 keys (the project now has its own hash map in KOF), an `extern` declared in a file compiled later passes strings wrongly to C (the declarations file is now `00_libc.kf`), and Kali's bashrc rewrites `PROMPT_COMMAND` on the first prompt (KofTerm's hook now reinstalls itself). All KOF findings are written up in [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md) for the KOF maintainers.
+
+**11. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
 
 The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 
@@ -264,7 +273,7 @@ The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 
 <h3 align="left">KNOWN LIMITATIONS:</h3>
 
-- **TAB** accepts the suggestion; Bash's own TAB completion is off while KofTerm edits the line. File and folder completion returns in Phase 4, inside KofTerm.
+- **TAB** accepts the suggestion. File and folder completion is part of the suggestion: when several names match, it completes their common start, but there is no list of candidates yet.
 - The split screen is top/bottom. A panel on the right would need KofTerm to emulate a full terminal.
 - The live panel needs a terminal that answers the cursor-position query (all common ones do). If it does not answer in 300 ms, KofTerm keeps working without the panel.
 - The index is in Portuguese only for now, with 53 entries.
@@ -294,7 +303,8 @@ $ ls -la | Tudo, inclusive ocultos, em formato longo.
 - No network code: the source never imports `kof.web`, `kof.net` or `http`, and CI will fail if it does
 - A `kofterm doctor` check will confirm zero network syscalls with `strace`
 - Suggestions never execute anything: only Enter runs a command
-- History and the trained model stay in `~/.local/share/kofterm`, readable only by you
+- History, the event file the model learns from (exit code, kind of folder, command) and your settings stay in `~/.local/share/kofterm`, readable only by you
+- Lines starting with a space are not saved, like in Bash; dangerous commands are not learned
 - Contribution is opt-in, shown to you in full before sending, anonymized twice (on your machine and again in CI), and sent by your own Git, never by KofTerm
 - Reading links in the side panel are only displayed; KofTerm never opens them
 - Dependencies are limited to the KOF standard library and this project's own KOF libraries, with pinned versions
