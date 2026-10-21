@@ -76,6 +76,18 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
   - `echo ação ok` (UTF-8), Ctrl+→ accepts one word at a time, Ctrl-W, Ctrl-A, Ctrl-L keeps the draft.
 - **New KOF trap:** the bashrc came out `644` instead of `600`. My own function `writeFile` was being replaced in silence by a KOF built-in of the same name. Renamed to `saveFile` (and `readLines` to `loadLines` to be safe), and added `chmod` so the folder is always `0700` and files `0600`, even if they existed before. To be reported to KofLang/Kof4j together with the `poll` case.
 
+### Phase 3: offline index, tab and live panel (night)
+- Scope split in two commits: 3a (index + full-screen tab) and 3b (live split screen). A right-hand panel was ruled out: most terminals have no column margins, so it would need a full terminal emulator inside KofTerm. Top/bottom split works everywhere.
+- Index format: a plain text file, `index/pt_BR.txt`, editable by anyone (`#` command, `>` summary, `-` option, `$` example, `@` link). 53 entries written by the project in Portuguese for Bash learners. All 53 reading links were checked over HTTP; one SS64 page that does not exist (`clear`) was swapped for man7.
+- `index.kf` (pure, 9 tests): parser, search by name then summary, the entry for a line (skips `sudo`, takes the last command after `|`/`&&`/`;`, tries `git commit` before `git`) and option splitting (`-ld` → `-l`, `-d`, while `find -name` stays whole). Example commands can contain a pipe, so the explanation is taken after the **last** ` | `.
+- KOF's null safety showed up: an `Entry?` must be checked before use (`SEM049`); helpers `must()` and `nameOf()` keep that short.
+- A lone Esc used to wait forever for the rest of a sequence; now an ESC at the end of a read is the Esc key. F1, F2, Ctrl+T, PgUp/PgDn and the cursor-position reply were added to the decoder (8 tests).
+- 17:03 (3a): the tab opens on the alternate screen straight on the command being typed and shows "NA SUA LINHA" with `-l` and `-d` for `ls -ld /etc`; search "apag" finds `rm`, `>`, `>>`; Esc returns to the exact previous screen and the line runs. Screens checked by running KofTerm inside `tmux` and reading `capture-pane`.
+- 3b: at each prompt KofTerm asks `ESC[6n` and draws by absolute position; if no reply in 300 ms it falls back to the Phase 2 mode. F2 sets a scroll region above a panel of up to 10 rows, tells Bash its screen is shorter, and remembers the choice in `~/.local/share/kofterm/panel`.
+- Verified in tmux (100×30): panel stays fixed while `seq 1 40` scrolls above it; Bash sees `20 100`; `vim` uses exactly 20 rows and the panel is intact after quitting it (the region is reapplied at every prompt); F2 off returns `30 100`; exiting KofTerm with the panel on gives the outer shell its full screen back.
+- Bug found and fixed in the same session: for a long line at the bottom, the start row was moved up before writing, overwriting the prompt. The terminal scrolls while writing, so the coordinates must move after. This also fixed the Phase 2 long-line limitation.
+- 30 unit tests pass (keys 8, editor 5, history 4, prompt 4, index 9).
+
 ### Still to verify by hand
 - `vim`, `htop` and resizing with a real window, running `build/kofterm/Default/Main` in the VM.
-- Typing in a real window to feel the ghost text (latency, colors).
+- Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).

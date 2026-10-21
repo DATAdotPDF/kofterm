@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <img src="https://img.shields.io/badge/Status-Phase_2_done-8b5cf6?style=flat-square" alt="Phase 2 done">
+  <img src="https://img.shields.io/badge/Status-Phase_3_done-8b5cf6?style=flat-square" alt="Phase 3 done">
 </p>
 
 <p align="center">
@@ -44,8 +44,8 @@
 - **Phase 0 (FFI spikes): done.** Raw keyboard mode, window size and Bash running inside a pseudo-terminal are proven in KOF native on Kali Linux. See [spikes/README.md](spikes/README.md).
 - **Phase 1 (passthrough terminal): done.** `kofterm` runs Bash in a pseudo-terminal, passes Bash's exit code through, follows window resizes and restores your terminal even when killed by `SIGTERM` or `SIGHUP`.
 - **Phase 2 (line editor and ghost text): done.** At the prompt, KofTerm edits the line itself and shows the rest of a matching command from your history in grey. **TAB** or **→** accepts it, **Ctrl+→** accepts one word, and ↑/↓ browse the history.
-- **Phase 3 (offline command index and side panel): next.**
-- Today the suggestions come from your own history only. The model that understands context arrives in Phase 4.
+- **Phase 3 (offline command index and panel): done.** **F1** or **Ctrl+T** opens a full-screen index tab with search; **F2** splits the screen and keeps a live explanation of what you are typing at the bottom. `ls -ld` shows `-l` and `-d` explained one by one, with examples and reading links.
+- **Phase 4 (the context-aware model): next.** Today the grey suggestions still come from your own history only.
 
 ###
 
@@ -91,8 +91,9 @@
 | Learns from you as you type, locally | Phase 4 |
 | "Refactor" suggestions: `sudo` retry, typo fix, `cat f \| grep x` → `grep x f` | Phase 4 |
 | Dangerous commands (`rm -rf /`, `mkfs`, fork bomb) flagged in red and never suggested | Phase 4 |
-| Side panel / split screen with an offline command index | Phase 3 |
-| Each option explained on its own (`-ld` → `-l` + `-d`), with reading links | Phase 3 |
+| Full-screen index tab with search (**F1** / **Ctrl+T**), 53 entries in Portuguese | ✅ Phase 3 |
+| Split screen with a live explanation of the current line (**F2**, remembered) | ✅ Phase 3 |
+| Each option explained on its own (`-ld` → `-l` + `-d`), with examples and reading links | ✅ Phase 3 |
 | Opt-in, anonymized contribution of your learning back to the project via Git | Phase 5 |
 | Optional tiny neural model, trained and run in pure KOF (`kof-nn`) | Phase 6 |
 | One-command install from GitHub | Phase 5 |
@@ -127,6 +128,8 @@ kofterm/
 │   ├── PLAN.md              Full plan: architecture, modules, AI, index, phases
 │   ├── JOURNAL.md           Dated development journal (authorship record)
 │   └── images/              Banner and screenshots
+├── index/
+│   └── pt_BR.txt            The offline command index, written by the project (see below)
 ├── spikes/                  Phase 0: one folder per proof, each with main.kf
 │   ├── 01_raw_keys/         Raw mode, byte-by-byte keyboard input
 │   ├── 02_winsize/          Window size via ioctl(TIOCGWINSZ)
@@ -138,6 +141,8 @@ kofterm/
 │   ├── editor.kf            The line being typed and its cursor, with tests
 │   ├── history.kf           History and suggestions, with tests
 │   ├── prompt.kf            Finds the invisible prompt marker in Bash's output, with tests
+│   ├── index.kf             Index format, search and option splitting (-ld → -l, -d), with tests
+│   ├── tab.kf               The full-screen index tab (F1 / Ctrl+T)
 │   ├── storage.kf           Private files, UTF-8 conversions, KofTerm's bashrc
 │   ├── libc.kf              Every libc extern and Linux constant, in one place
 │   ├── tty.kf               Raw mode, restore, window size (future kof-tty)
@@ -180,12 +185,21 @@ kof build src --target native --output build/kofterm
 ./build/kofterm/Default/Main
 ```
 
-You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Run a few commands, then start typing one of them again: the rest appears in grey, and **TAB** completes it. Type `exit` to come back; KofTerm exits with the same code as Bash.
+You get your Bash inside KofTerm (`echo $KOFTERM` prints `1`). Type `exit` to come back; KofTerm exits with the same code as Bash.
 
-Run the unit tests (19 tests, one file at a time):
+| Key | What it does |
+| --- | --- |
+| **TAB** or **→** | Accepts the grey suggestion |
+| **Ctrl+→** | Accepts one word of the suggestion |
+| **↑ / ↓** | Previous / next command |
+| **F1** or **Ctrl+T** | Opens the index tab, straight on the command you are typing. Type to search, Enter opens, Esc goes back |
+| **F2** | Splits the screen: a live explanation of the current line at the bottom (remembered next time) |
+| **Ctrl-L** | Clears the screen and keeps what you were typing |
+
+Run the unit tests (30 tests, one file at a time):
 
 ```bash
-for f in keys editor history prompt; do kof test src/$f.kf --target native; done
+for f in keys editor history prompt index; do kof test src/$f.kf --target native; done
 ```
 
 **4. Optional: run the Phase 0 spikes** (in a real terminal window, not through a pipe):
@@ -211,8 +225,8 @@ Spike 01 prints every key you press (`q` quits). Spike 03 opens a Bash inside Ko
 | 0 | FFI spikes: raw mode, window size, PTY | ✅ done (21/10/2026) |
 | 1 | Passthrough terminal, signal-safe restore (`signalfd`) | ✅ done (21/10/2026) |
 | 2 | Line editor and ghost text from history | ✅ done (21/10/2026) |
-| 3 | Offline command index, side panel, per-option explanations, reading links | next |
-| 4 | n-gram model with local continuous learning, context, grammar, safety rules | planned |
+| 3 | Offline command index, index tab, live panel, per-option explanations, reading links | ✅ done (21/10/2026) |
+| 4 | n-gram model with local continuous learning, context, grammar, safety rules | next |
 | 5 | `kofterm contribute` (anonymized, opt-in), installer, CI with "no network" check, first release | planned |
 | 6 | Optional neural model in pure KOF (`kof-nn`) | planned |
 
@@ -240,7 +254,9 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **8. Phase 2: KofTerm owns the line.** Bash starts without its own line editor (`--noediting`), and KofTerm's bashrc loads yours and adds an invisible marker at the end of the prompt with the last exit code and the current folder. When the marker arrives, KofTerm edits the line, draws the grey suggestion and only sends the finished line on Enter; while a command runs, every key goes straight to it. Two more KOF traps showed up: `charAt` returns a character, not a `String`, and a function you write yourself (`writeFile`) can be silently replaced by a KOF built-in of the same name. 19 unit tests now cover the pure modules.
 
-**9. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
+**9. Phase 3: the index.** 53 entries written by the project in Portuguese for people learning Bash, from `ls` to `git commit` and the shell operators (`|`, `>`, `&&`…), with every reading link checked. The tab uses the terminal's alternate screen, so Esc brings back exactly what was there. The live panel splits the screen with a scroll region and tells Bash its screen is shorter; KofTerm now asks the terminal where the cursor is at each prompt and draws by absolute position, which also fixed long lines at the bottom of the screen. A right-hand side panel would need KofTerm to emulate a whole terminal, so the split is top/bottom for now.
+
+**10. Learning that comes back.** The model learns from each user locally. Users who want to help can export an anonymized file (paths, hosts, users and numbers become placeholders, and anything that looks like a secret is dropped), review it, and send it as a pull request. CI checks it again and retrains the base model, so each release ships a smarter one. KofTerm itself never touches the network: the user's own Git does the sending.
 
 The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 
@@ -249,8 +265,27 @@ The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md).
 <h3 align="left">KNOWN LIMITATIONS:</h3>
 
 - **TAB** accepts the suggestion; Bash's own TAB completion is off while KofTerm edits the line. File and folder completion returns in Phase 4, inside KofTerm.
-- A line that wraps past the bottom of the screen may redraw in the wrong place. Fix planned: ask the terminal for the cursor position instead of saving it.
+- The split screen is top/bottom. A panel on the right would need KofTerm to emulate a full terminal.
+- The live panel needs a terminal that answers the cursor-position query (all common ones do). If it does not answer in 300 ms, KofTerm keeps working without the panel.
+- The index is in Portuguese only for now, with 53 entries.
 - Full-width characters (CJK, some emoji) count as one column.
+
+###
+
+<h3 align="left">CONTRIBUTE TO THE INDEX:</h3>
+
+The easiest way to help is to add or improve entries in [index/pt_BR.txt](index/pt_BR.txt). The format is plain text:
+
+```text
+# ls
+> Lista os arquivos e pastas de um diretório.
+- -l | Formato longo: permissões, dono, grupo, tamanho e data de cada item.
+- -a, --all | Mostra também os itens ocultos.
+$ ls -la | Tudo, inclusive ocultos, em formato longo.
+@ https://ss64.com/bash/ls.html
+```
+
+`#` starts a command, `>` is the one-line summary, `-` an option, `$` an example (the explanation goes after the last ` | `), `@` a reading link. Write in your own words for people who are learning; do not copy text from other sites.
 
 ###
 

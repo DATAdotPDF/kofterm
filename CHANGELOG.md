@@ -2,6 +2,21 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.3.0] - 21/10/2026
+
+Phase 3: offline command index, index tab and live panel.
+
+### Added
+- `index/pt_BR.txt`: 53 entries written by the project for Bash learners (files, search, permissions, packages, processes, network, Git, shell operators), with checked reading links
+- Index tab (**F1** / **Ctrl+T**) on the alternate screen: search by name or summary, details with options, examples and links, "Na sua linha" explaining each option of the current line (`-ld` → `-l` + `-d`)
+- Live panel (**F2**): split screen with the explanation of the line being typed; Bash gets a shorter screen and a scroll region protects the panel; the choice is remembered
+- Cursor position asked to the terminal at each prompt (`ESC[6n`) with a 300 ms fallback to the previous mode
+- Keys: Esc, F1, F2, Ctrl+T, PgUp/PgDn
+- `index.kf` with 9 unit tests; 30 unit tests in total
+
+### Fixed
+- Long lines that wrap at the bottom of the screen are drawn in the right place
+
 ## [0.2.0] - 21/10/2026
 
 Phase 2: line editor and ghost text.
