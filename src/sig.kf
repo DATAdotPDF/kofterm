@@ -1,0 +1,35 @@
+// Sinais como dados: bloqueados e lidos por um signalfd no mesmo laco do ppoll.
+// KOF nao aceita callback guardado para depois (FFI001), entao nao ha handler de sinal.
+// Futuro modulo da biblioteca kof-tty.
+
+// Bloqueia HUP, INT, QUIT, TERM e WINCH e devolve um signalfd que os entrega, ou -1.
+Int sigOpen() {
+    var set = malloc(Sys.SIGSET_SIZE)
+    sigemptyset(set)
+    sigaddset(set, Sys.SIGHUP)
+    sigaddset(set, Sys.SIGINT)
+    sigaddset(set, Sys.SIGQUIT)
+    sigaddset(set, Sys.SIGTERM)
+    sigaddset(set, Sys.SIGWINCH)
+    sigprocmask(Sys.SIG_BLOCK, set, 0L)
+    var fd = signalfd(-1, set, 0)
+    free(set)
+    return fd
+}
+
+// No processo filho, antes do exec: a mascara de sinais e herdada, entao o bash
+// ficaria com Ctrl-C bloqueado se nao limparmos aqui.
+sigUnblockAll() {
+    var set = malloc(Sys.SIGSET_SIZE)
+    sigemptyset(set)
+    sigprocmask(Sys.SIG_SETMASK, set, 0L)
+    free(set)
+}
+
+// Le um sinal do signalfd. Retorna o numero do sinal ou 0.
+Int sigRead(Int fd, Long info) {
+    if (read(fd, info, Sys.SIGINFO_SIZE) <= 0L) {
+        return 0
+    }
+    return buffer.peek32(info) // ssi_signo
+}

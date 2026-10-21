@@ -1,0 +1,46 @@
+// Terminal do usuario: modo raw, restauracao e tamanho da janela.
+// Futuro modulo da biblioteca kof-tty.
+
+// Guarda o termios atual de `fd` num bloco novo. Retorna 0L se `fd` nao e um terminal.
+Long ttySave(Int fd) {
+    var t = malloc(Sys.TERMIOS_SIZE)
+    if (tcgetattr(fd, t) != 0) {
+        free(t)
+        return 0L
+    }
+    return t
+}
+
+// Coloca `fd` em modo raw: cada tecla chega na hora, sem eco nem tratamento de sinais.
+ttyRaw(Int fd) {
+    var t = malloc(Sys.TERMIOS_SIZE)
+    tcgetattr(fd, t)
+    cfmakeraw(t)
+    tcsetattr(fd, Sys.TCSANOW, t)
+    free(t)
+}
+
+ttyRestore(Int fd, Long saved) {
+    tcsetattr(fd, Sys.TCSANOW, saved)
+}
+
+// Le o tamanho da janela de `fd` para dentro de `ws` (struct winsize, 8 bytes).
+Boolean winsizeGet(Int fd, Long ws) {
+    return ioctl(fd, Sys.TIOCGWINSZ, ws) == 0
+}
+
+winsizeSet(Int fd, Long ws) {
+    ioctl(fd, Sys.TIOCSWINSZ, ws)
+}
+
+// write pode ser parcial: repete ate tudo sair.
+writeAll(Int fd, Long buf, Long n) {
+    var done = 0L
+    while (done < n) {
+        var w = write(fd, buf + done, n - done)
+        if (w <= 0L) {
+            return
+        }
+        done = done + w
+    }
+}

@@ -1,0 +1,102 @@
+// KofTerm — Fase 1: terminal passthrough.
+// Abre o bash num PTY e repassa teclado e tela, com restauracao segura do terminal
+// em saida normal e nos sinais HUP/TERM. As sugestoes entram na Fase 2.
+
+class Loop {
+    static Long CHUNK = 4096L
+}
+
+main() {
+    var saved = ttySave(Sys.STDIN)
+    if (saved == 0L) {
+        println("kofterm: a entrada padrao nao e um terminal")
+        process.exit(1)
+    }
+    var ws = malloc(Sys.WINSIZE_SIZE)
+    winsizeGet(Sys.STDOUT, ws)
+
+    // Sinais bloqueados ANTES do fork: nenhum chega no meio da preparacao.
+    var sfd = sigOpen()
+    if (sfd < 0) {
+        println("kofterm: signalfd falhou")
+        process.exit(1)
+    }
+
+    var child = ptySpawn(saved, ws, sfd)
+    if (child.pid < 0) {
+        println("kofterm: forkpty falhou")
+        process.exit(1)
+    }
+
+    ttyRaw(Sys.STDIN)
+    var exitCode = -1
+
+    // struct pollfd { int fd; short events; short revents; } x3: stdin, master, signalfd
+    var fds = malloc(24L)
+    var buf = malloc(Loop.CHUNK)
+    var info = malloc(Sys.SIGINFO_SIZE)
+    try {
+        buffer.poke32(fds, Sys.STDIN)
+        buffer.poke32(fds + 8L, child.master)
+        buffer.poke32(fds + 16L, sfd)
+        var running = true
+        while (running) {
+            buffer.poke32(fds + 4L, Sys.POLLIN) // events=POLLIN, revents=0
+            buffer.poke32(fds + 12L, Sys.POLLIN)
+            buffer.poke32(fds + 20L, Sys.POLLIN)
+            // timeout NULL: dorme ate ter tecla, saida do bash ou sinal
+            var ready = ppoll(fds, 3L, 0L, 0L)
+            if (ready > 0) {
+                // saida do bash primeiro, para nao atrasar a tela
+                if (buffer.peek8(fds + 14L) != 0) {
+                    var n = read(child.master, buf, Loop.CHUNK)
+                    if (n <= 0L) {
+                        running = false // bash saiu (EIO no master)
+                    } else {
+                        writeAll(Sys.STDOUT, buf, n)
+                    }
+                }
+                if (running && buffer.peek8(fds + 6L) != 0) {
+                    var n = read(Sys.STDIN, buf, Loop.CHUNK)
+                    if (n <= 0L) {
+                        // terminal de fora fechou: avisa o bash como um terminal faria
+                        kill(child.pid, Sys.SIGHUP)
+                        running = false
+                    } else {
+                        writeAll(child.master, buf, n)
+                    }
+                }
+                if (running && buffer.peek8(fds + 22L) != 0) {
+                    var sig = sigRead(sfd, info)
+                    if (sig == Sys.SIGWINCH) {
+                        if (winsizeGet(Sys.STDOUT, ws)) {
+                            winsizeSet(child.master, ws)
+                        }
+                    } else if (sig == Sys.SIGHUP || sig == Sys.SIGTERM) {
+                        kill(child.pid, Sys.SIGHUP)
+                        exitCode = 128 + sig
+                        running = false
+                    } else if (sig == Sys.SIGINT || sig == Sys.SIGQUIT) {
+                        // vindo de fora (no modo raw o teclado nao gera sinal): repassa
+                        kill(child.pid, sig)
+                    }
+                }
+            }
+        }
+    } finally {
+        ttyRestore(Sys.STDIN, saved)
+    }
+
+    var childCode = ptyWait(child.pid)
+    if (exitCode < 0) {
+        exitCode = childCode
+    }
+    close(child.master)
+    close(sfd)
+    free(info)
+    free(buf)
+    free(fds)
+    free(ws)
+    free(saved)
+    process.exit(exitCode)
+}

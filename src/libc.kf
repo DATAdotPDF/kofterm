@@ -1,0 +1,55 @@
+// Fronteira com o sistema operacional: todos os `extern` da libc ficam aqui.
+//
+// Regras aprendidas na Fase 0 (ver spikes/README.md):
+// - Ponteiros sao Long (malloc/free + buffer.peek/poke na forma de endereco).
+//   Buffer(U8) so existe dentro de `extern`, nao como parametro de funcao comum.
+// - O nome do `extern` e o simbolo C e pode colidir com builtins do KOF em silencio.
+//   `poll` colide; por isso usamos `ppoll`. Todo nome novo aqui precisa de teste.
+
+extern "libc.so.6" malloc(Long n): Long
+extern "libc.so.6" free(Long p): void
+extern "libc.so.6" strdup(String s): Long
+extern "libc.so.6" setenv(String name, String value, Int overwrite): Int
+
+extern "libc.so.6" read(Int fd, Long buf, Long n): Long
+extern "libc.so.6" write(Int fd, Long buf, Long n): Long
+extern "libc.so.6" close(Int fd): Int
+extern "libc.so.6" ppoll(Long fds, Long nfds, Long tmo, Long sigmask): Int
+// ioctl e variadico em C; com argumentos inteiros/ponteiro a ABI SysV x86_64 e a mesma.
+extern "libc.so.6" ioctl(Int fd, Long request, Long arg): Int
+
+extern "libc.so.6" tcgetattr(Int fd, Long termios): Int
+extern "libc.so.6" tcsetattr(Int fd, Int action, Long termios): Int
+extern "libc.so.6" cfmakeraw(Long termios): void
+
+extern "libc.so.6" forkpty(Long amaster, Long name, Long termp, Long winp): Int
+extern "libc.so.6" execvp(Long file, Long argv): Int
+extern "libc.so.6" waitpid(Int pid, Long status, Int options): Int
+extern "libc.so.6" kill(Int pid, Int sig): Int
+extern "libc.so.6" _exit(Int code): void
+
+extern "libc.so.6" sigemptyset(Long set): Int
+extern "libc.so.6" sigaddset(Long set, Int signo): Int
+extern "libc.so.6" sigprocmask(Int how, Long set, Long old): Int
+extern "libc.so.6" signalfd(Int fd, Long mask, Int flags): Int
+
+// Constantes do Linux x86_64 (glibc). KOF nao tem constante no topo do arquivo.
+class Sys {
+    static Long TERMIOS_SIZE = 64L  // sizeof(struct termios) = 60
+    static Long WINSIZE_SIZE = 8L
+    static Long SIGSET_SIZE = 128L
+    static Long SIGINFO_SIZE = 128L // sizeof(struct signalfd_siginfo)
+    static Int TCSANOW = 0
+    static Long TIOCGWINSZ = 21523L // 0x5413
+    static Long TIOCSWINSZ = 21524L // 0x5414
+    static Int POLLIN = 1
+    static Int SIG_BLOCK = 0
+    static Int SIG_SETMASK = 2
+    static Int SIGHUP = 1
+    static Int SIGINT = 2
+    static Int SIGQUIT = 3
+    static Int SIGTERM = 15
+    static Int SIGWINCH = 28
+    static Int STDIN = 0
+    static Int STDOUT = 1
+}

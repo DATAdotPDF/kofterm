@@ -1,0 +1,49 @@
+// Shell dentro de um pseudo-terminal.
+// Futuro modulo da biblioteca kof-tty.
+
+class PtyChild(Int pid, Int master)
+
+// Abre o bash interativo num PTY novo, herdando termios e tamanho da janela.
+// Retorna pid = -1 se o forkpty falhar.
+PtyChild ptySpawn(Long termios, Long ws, Int closeInChild) {
+    var masterBox = malloc(8L)
+    var pid = forkpty(masterBox, 0L, termios, ws)
+    if (pid == 0) {
+        // processo filho
+        sigUnblockAll()
+        close(closeInChild)
+        setenv("KOFTERM", "1", 1)
+        var argv = malloc(24L)
+        var bash = strdup("bash")
+        buffer.poke64(argv, bash)
+        buffer.poke64(argv + 8L, strdup("-i"))
+        buffer.poke64(argv + 16L, 0L)
+        execvp(bash, argv)
+        _exit(127) // so chega aqui se o execvp falhar
+    }
+    var master = -1
+    if (pid > 0) {
+        master = buffer.peek32(masterBox)
+    }
+    free(masterBox)
+    return PtyChild(pid, master)
+}
+
+// Espera o filho e devolve o codigo de saida no estilo do shell:
+// saida normal -> 0..255; morto por sinal N -> 128 + N.
+Int ptyWait(Int pid) {
+    var status = malloc(8L)
+    buffer.poke32(status, 0)
+    waitpid(pid, status, 0)
+    var low = buffer.peek8(status)
+    var code = buffer.peek8(status + 1L)
+    free(status)
+    if (low == 0) {
+        return code
+    }
+    var sig = low
+    if (sig >= 128) {
+        sig = sig - 128 // bit de core dump
+    }
+    return 128 + sig
+}
