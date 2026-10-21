@@ -8,6 +8,12 @@ e dos contribuidores.
 Ambiente: KOF 0.6.6 (release oficial, SHA-256 conferido), Kali Linux x86_64, glibc 2.43,
 `kof build --target native`.
 
+**Reportados em 21/10/2026:** 1 → [Kof4j#931](https://github.com/KofLang/Kof4j/issues/931),
+2 → [Kof4j#932](https://github.com/KofLang/Kof4j/issues/932),
+3 → [Kof4j#933](https://github.com/KofLang/Kof4j/issues/933),
+4 → [Kof4j#934](https://github.com/KofLang/Kof4j/issues/934).
+Texto enviado: [docs/issues/kof4j-drafts.md](issues/kof4j-drafts.md).
+
 ---
 
 ## 1. `extern` com o nome de um builtin é desviado em silêncio

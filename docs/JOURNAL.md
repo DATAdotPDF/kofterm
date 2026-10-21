@@ -109,6 +109,10 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - CI (`.github/workflows/ci.yml`): official KOF with pinned SHA-256, "no network code" grep over `src/`, the 47 unit tests, native build, contribution validation, smoke test.
 - 47 unit tests pass.
 
+### Release and upstream reports
+- v0.5.0 published: CI green on `main` and on the signed tag (47 tests on GitHub's Ubuntu 24.04); release tarball (119 KB) and `SHA256SUMS`; tested as an end user from a clean `HOME` with no KOF installed.
+- The four KOF findings were reported to the KOF central repository after checking for duplicates (issues and `known-bugs.md`), re-running each reproduction on 0.6.6 and following its bug template, in Portuguese like its recent issues: [Kof4j#931](https://github.com/KofLang/Kof4j/issues/931) (`extern` named like a builtin), [#932](https://github.com/KofLang/Kof4j/issues/932) (user function shadowed by a builtin), [#933](https://github.com/KofLang/Kof4j/issues/933) (native `Map` crash), [#934](https://github.com/KofLang/Kof4j/issues/934) (`extern` and file order). Kof4j's bot triaged the labels.
+
 ### Still to verify by hand
 - `vim`, `htop` and resizing with a real window, running `kofterm` in the VM.
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).
