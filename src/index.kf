@@ -117,11 +117,56 @@ class CommandIndex {
         return find(words.get(0))
     }
 
+    // Todas as entradas que explicam a linha, na ordem em que interessam a quem aprende:
+    // o comando principal, depois o prefixo (sudo, env, time...) e os caminhos importantes
+    // que aparecem nela (/etc/passwd, /var/log/auth.log...).
+    List<Entry> entriesForLine(String line) {
+        var out = listOf<Entry>()
+        var main = forLine(line)
+        if (main != null) {
+            out.add(must(main))
+        }
+        var prefix = prefixWords(line)
+        if (prefix.size > 0) {
+            var p = find(prefix.get(0))
+            if (p != null && nameOf(main) != prefix.get(0)) {
+                out.add(must(p))
+            }
+        }
+        for (var w in splitOn(line, " ")) {
+            var t = w.trim()
+            if (t.startsWith("/") || t.startsWith("~/")) {
+                var path = find(t)
+                if (path == null && t.endsWith("/") && t.length() > 1) {
+                    path = find(t.substring(0, t.length() - 1))
+                }
+                if (path != null) {
+                    var already = false
+                    for (var x in out) {
+                        if (x.name == nameOf(path)) {
+                            already = true
+                        }
+                    }
+                    if (!already) {
+                        out.add(must(path))
+                    }
+                }
+            }
+        }
+        return out
+    }
+
     // As opcoes da linha que a entrada conhece. "-ld" vira "-l" e "-d", a menos que a
-    // propria entrada tenha "-ld" (como o "-name" do find).
+    // propria entrada tenha "-ld" (como o "-name" do find). Para o prefixo (sudo -i),
+    // valem as opcoes do proprio prefixo.
     List<Opt> optionsInLine(Entry e, String line) {
         var out = listOf<Opt>()
-        for (var w in commandWords(line)) {
+        var words = commandWords(line)
+        var prefix = prefixWords(line)
+        if (prefix.size > 0 && prefix.get(0) == e.name) {
+            words = prefix
+        }
+        for (var w in words) {
             if (!w.startsWith("-") || w == "-" || w == "--") {
                 continue
             }
@@ -153,8 +198,8 @@ addOnce(List<Opt> list, Opt o) {
     list.add(o)
 }
 
-// As palavras do ultimo comando da linha, sem prefixos como sudo.
-List<String> commandWords(String line) {
+// O ultimo trecho da linha (depois de |, &&, ||, ;), que e o que esta sendo digitado.
+String lastSegment(String line) {
     var segment = line
     for (var sep in listOf("|", "&&", "||", ";")) {
         var parts = splitOn(segment, sep)
@@ -162,15 +207,58 @@ List<String> commandWords(String line) {
             segment = parts.get(parts.size - 1)
         }
     }
-    var words = listOf<String>()
-    var started = false
-    for (var w in splitOn(segment, " ")) {
+    return segment
+}
+
+Boolean isPrefixCommand(String t) {
+    return t == "sudo" || t == "env" || t == "time" || t == "nohup" || t == "watch"
+}
+
+// O prefixo do ultimo trecho com as opcoes dele: "sudo -u root ls" -> [sudo, -u, root].
+List<String> prefixWords(String line) {
+    var out = listOf<String>()
+    var inPrefix = false
+    var expectValue = false
+    for (var w in splitOn(lastSegment(line), " ")) {
         var t = w.trim()
         if (t.length() == 0) {
             continue
         }
-        if (!started && (t == "sudo" || t == "env" || t == "time" || t == "nohup" || (t.contains("=") && !t.startsWith("-")))) {
+        if (out.size == 0) {
+            if (isPrefixCommand(t)) {
+                out.add(t)
+                inPrefix = true
+            } else {
+                return out
+            }
+        } else if (inPrefix && (expectValue || t.startsWith("-"))) {
+            out.add(t)
+            // sudo -u usuario / sudo -g grupo: o proximo valor pertence a opcao
+            expectValue = !expectValue && (t == "-u" || t == "-g")
+        } else {
+            return out
+        }
+    }
+    return out
+}
+
+// As palavras do ultimo comando da linha, sem prefixos como sudo (e sem as opcoes deles).
+List<String> commandWords(String line) {
+    var skip = prefixWords(line).size
+    var words = listOf<String>()
+    var started = false
+    var seen = 0
+    for (var w in splitOn(lastSegment(line), " ")) {
+        var t = w.trim()
+        if (t.length() == 0) {
             continue
+        }
+        if (seen < skip) {
+            seen = seen + 1
+            continue
+        }
+        if (!started && t.contains("=") && !t.startsWith("-")) {
+            continue // VAR=valor antes do comando
         }
         started = true
         words.add(t)
@@ -276,14 +364,43 @@ List<String> sampleIndex() {
         "> Controle de versao.",
         "# git commit",
         "> Grava as mudancas.",
-        "- -m | Mensagem do commit."
+        "- -m | Mensagem do commit.",
+        "# sudo",
+        "> Roda como administrador.",
+        "- -i | Abre um shell de root.",
+        "- -u | Roda como outro usuario.",
+        "# /etc/passwd",
+        "> Lista de usuarios do sistema."
     )
+}
+
+test "sudo sozinho e sudo com opcao sao explicados" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var a = idx.entriesForLine("sudo")
+    assert(a.size == 1 && a.get(0).name == "sudo", "sudo sozinho")
+    var b = idx.entriesForLine("sudo -i")
+    assert(b.size == 1 && b.get(0).name == "sudo", "sudo -i nao vira comando -i")
+    var used = idx.optionsInLine(b.get(0), "sudo -i")
+    assert(used.size == 1 && used.get(0).names == "-i", "opcao do sudo")
+}
+
+test "comando principal, prefixo e caminho na mesma linha" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var e = idx.entriesForLine("sudo -u root ls -l /etc/passwd")
+    assert(e.size == 3, "tres entradas")
+    assert(e.get(0).name == "ls" && e.get(1).name == "sudo" && e.get(2).name == "/etc/passwd", "ordem")
+    var lsOpts = idx.optionsInLine(e.get(0), "sudo -u root ls -l /etc/passwd")
+    assert(lsOpts.size == 1 && lsOpts.get(0).names == "-l", "-l e do ls, -u e do sudo")
+    var sudoOpts = idx.optionsInLine(e.get(1), "sudo -u root ls -l /etc/passwd")
+    assert(sudoOpts.size == 1 && sudoOpts.get(0).names == "-u", "-u do sudo")
 }
 
 test "le o formato do arquivo" {
     var idx = CommandIndex()
     idx.load(sampleIndex())
-    assert(idx.entries.size == 4, "quatro entradas")
+    assert(idx.entries.size == 6, "seis entradas")
     var ls = must(idx.find("ls"))
     assert(ls.name == "ls", "ls existe")
     assert(ls.summary == "Lista arquivos e pastas.", "resumo")

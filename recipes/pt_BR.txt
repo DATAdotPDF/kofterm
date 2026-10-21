@@ -328,6 +328,9 @@ $ journalctl -p err -b
 ; ───────────── Rede ─────────────
 
 # ver meu ip
+? ver meu ip
+? meu ip
+? ver o ip da maquina
 ? qual meu ip
 ? ver endereco ip
 ? ver meu endereco de rede
@@ -442,3 +445,430 @@ $ clear
 ? ajuda do {comando}
 $ man {comando}
 > Abre o manual de {comando}. q sai, / procura.
+
+; ───────────── Redes (estudo e laboratório) ─────────────
+
+# ver o gateway
+? ver o gateway
+? qual o gateway
+? qual o roteador da rede
+? ver as rotas
+? tabela de rotas
+$ ip r
+> Mostra as rotas. A linha "default via X" diz qual é o gateway (o roteador).
+
+# ver interfaces e MAC
+? ver as interfaces de rede
+? ver as placas de rede
+? qual meu mac
+? ver endereço mac
+$ ip link
+> Lista as interfaces, se estão UP ou DOWN, e o MAC (link/ether).
+
+# ver ip resumido
+? ver ip resumido
+? ip de cada interface
+? ver ipv4 das interfaces
+$ ip -br a
+> Uma linha por interface: nome, estado e endereços.
+
+# ligar interface
+? ligar a interface {interface}
+? ativar a placa {interface}
+? subir a interface {interface}
+$ sudo ip link set {interface} up
+> Liga a interface {interface}.
+
+# desligar interface
+? desligar a interface {interface}
+? desativar a placa {interface}
+? derrubar a interface {interface}
+$ sudo ip link set {interface} down
+> Desliga a interface {interface} (a conexão por ela cai).
+
+# tabela arp
+? ver tabela arp
+? ver os vizinhos da rede
+? arp da rede
+$ ip neigh
+> IPs da rede local já vistos e o MAC de cada um (o antigo arp -a).
+
+# qual dns estou usando
+? qual dns estou usando
+? ver servidor dns
+? ver o dns configurado
+$ cat /etc/resolv.conf
+> As linhas "nameserver" são os servidores DNS em uso.
+
+# descobrir ip de um site
+? descobrir ip do site {site}
+? qual o ip do site {site}
+? resolver o nome {site}
+? consultar dns de {site}
+? testar dns de {site}
+$ dig +short {site}
+> Pergunta ao DNS qual o endereço de {site}.
+
+# nome de um ip
+? nome do ip {ip}
+? dns reverso de {ip}
+$ dig -x {ip} +short
+> DNS reverso: qual nome está ligado ao IP {ip}.
+
+# caminho até um site
+? caminho até {site}
+? rota até {site}
+? saltos até {site}
+? fazer traceroute para {site}
+$ traceroute -n {site}
+> Mostra cada roteador no caminho até {site}. * * * são saltos que não respondem.
+
+# dono de um domínio
+? quem é dono do dominio {site}
+? whois de {site}
+? quem registrou {site}
+$ whois {site}
+> Dados de registro do domínio {site}.
+
+# conexões ativas
+? ver conexões ativas
+? conexões abertas agora
+? quem está conectado na minha máquina
+? ver conexões de rede
+$ sudo ss -tunp
+> Conexões TCP/UDP estabelecidas e qual programa usa cada uma.
+
+# quem usa uma porta
+? quem usa a porta {porta}
+? qual programa está na porta {porta}
+? o que está rodando na porta {porta}
+$ sudo lsof -i :{porta}
+> Mostra o programa (e o PID) que usa a porta {porta}.
+
+# testar se uma porta responde
+? testar a porta {porta} de {destino}
+? a porta {porta} está aberta em {destino}
+? verificar porta {porta} no {destino}
+$ nc -zv {destino} {porta}
+> Tenta conectar na porta {porta} de {destino} e diz se está aberta.
+
+# descobrir máquinas da rede
+? descobrir maquinas da rede {rede}
+? quem está ligado na rede {rede}
+? escanear a rede {rede}
+? varrer a rede {rede}
+? hosts ativos na rede {rede}
+$ nmap -sn {rede}
+> Descobre quem responde em {rede} (ex.: 192.168.56.0/24), sem testar portas. Só na sua rede de laboratório.
+
+# aparelhos da rede local
+? ver aparelhos da rede local
+? descobrir dispositivos da rede local
+? listar maquinas da rede local
+$ sudo arp-scan --localnet
+> Varre a rede da sua interface por ARP: IP, MAC e fabricante. Só na sua rede.
+
+# escanear portas de uma máquina
+? escanear portas de {destino}
+? ver portas abertas de {destino}
+? quais serviços rodam em {destino}
+? fazer nmap em {destino}
+$ nmap -sV {destino}
+> Portas abertas e versões dos serviços em {destino}. Só em máquinas do seu laboratório ou com autorização.
+
+# capturar pacotes
+? capturar pacotes
+? capturar tráfego da rede
+? ver o tráfego da rede
+? sniffar a rede
+$ sudo tcpdump -i any -n
+> Mostra os pacotes de todas as interfaces. Ctrl-C para parar.
+
+# capturar ping
+? capturar ping
+? ver pacotes icmp
+$ sudo tcpdump -i any -n icmp
+> Só pacotes ICMP (ping). Rode um ping em outro terminal para ver.
+
+# capturar dns
+? capturar consultas dns
+? ver pacotes dns
+$ sudo tcpdump -i any -n port 53
+> Só DNS (porta 53).
+
+# gravar captura
+? gravar captura em {arquivo}
+? salvar pacotes em {arquivo}
+? capturar para o wireshark
+$ sudo tcpdump -i any -w {arquivo}.pcap
+> Grava os pacotes em {arquivo}.pcap para abrir no Wireshark depois.
+
+# ver regras do firewall
+? ver regras do firewall
+? ver o firewall
+? listar firewall
+? ver iptables
+$ sudo nft list ruleset
+> Mostra todas as regras do nftables (o iptables do Kali usa ele por baixo).
+
+# cabeçalhos de um site
+? ver cabeçalhos do site {url}
+? headers de {url}
+? testar resposta http de {url}
+$ curl -I {url}
+> Só os cabeçalhos da resposta: código (200, 301, 404...) e servidor.
+
+# certificado de um site
+? ver certificado do site {site}
+? certificado tls de {site}
+? testar https de {site}
+$ openssl s_client -connect {site}:443
+> Abre TLS com {site} e mostra o certificado. Ctrl-C para sair.
+
+# estado da rede
+? estado da rede
+? ver conexões do network manager
+? ver wifi
+$ nmcli device status
+> Estado de cada interface no NetworkManager (conectada, desconectada).
+
+# dar nome a uma máquina do lab
+? dar nome a um ip
+? editar o arquivo hosts
+? apelido para uma vm
+$ sudo nano /etc/hosts
+> Adicione uma linha "IP nome" para usar o nome no lugar do IP (ping nome).
+
+; ───────────── SSH ─────────────
+
+# criar chave ssh
+? criar chave ssh
+? gerar chave ssh
+? fazer par de chaves
+$ ssh-keygen -t ed25519
+> Cria ~/.ssh/id_ed25519 (privada, não compartilhe) e .pub (pública).
+
+# copiar chave para o servidor
+? copiar chave para {destino}
+? entrar sem senha em {destino}
+? instalar minha chave em {destino}
+$ ssh-copy-id {destino}
+> Coloca sua chave pública em {destino}; depois o ssh entra sem senha.
+
+# ligar o servidor ssh
+? ligar o ssh
+? ligar o servidor ssh
+? ativar o ssh
+? deixar o ssh ligado
+$ sudo systemctl enable --now ssh
+> Liga o servidor SSH agora e em todo boot.
+
+; ───────────── Usuários e segurança ─────────────
+
+# quem está logado
+? quem está logado
+? quem está usando a máquina
+? usuários conectados
+$ w
+> Quem está logado, de onde e o que está rodando.
+
+# tentativas de login no ssh
+? tentativas de login falhas
+? ver logins errados
+? quem tentou entrar
+? ver tentativas de senha errada
+$ sudo journalctl -u ssh | grep -i failed
+> Tentativas de login por SSH que falharam (no Kali não existe /var/log/auth.log).
+
+# quem usou sudo
+? quem usou sudo
+? ver uso do sudo
+? log do sudo
+$ sudo journalctl _COMM=sudo
+> Cada uso do sudo: quem, quando e qual comando.
+
+# listar usuários
+? listar usuários
+? ver os usuários do sistema
+? quais usuários existem
+$ cut -d: -f1 /etc/passwd
+> Todos os usuários, inclusive os de sistema.
+
+# usuários com login
+? usuários com bash
+? usuários de verdade
+? usuários humanos
+$ awk -F: '$3 >= 1000 {print $1}' /etc/passwd
+> Só os usuários de pessoas (uid 1000 ou mais).
+
+# criar usuário
+? criar usuário {usuario}
+? adicionar usuário {usuario}
+? novo usuário {usuario}
+$ sudo adduser {usuario}
+> Cria {usuario} com pasta pessoal e pergunta a senha.
+
+# dar sudo a um usuário
+? dar sudo para {usuario}
+? colocar {usuario} no grupo sudo
+? tornar {usuario} administrador
+$ sudo usermod -aG sudo {usuario}
+> Adiciona {usuario} ao grupo sudo (vale no próximo login).
+
+# meus grupos
+? meus grupos
+? ver meus grupos
+? quais grupos eu tenho
+? ver meu uid
+$ id
+> Seu uid, gid e todos os grupos.
+
+# quem pode usar sudo
+? quem pode usar sudo
+? quem está no grupo sudo
+$ grep '^sudo' /etc/group
+> Membros do grupo sudo.
+
+# arquivos suid
+? arquivos suid
+? procurar binários suid
+? auditar permissões suid
+$ find / -perm -4000 -type f 2>/dev/null
+> Programas que rodam com a permissão do dono (geralmente root). Lista clássica de auditoria.
+
+# arquivos que qualquer um pode alterar
+? arquivos que todos podem escrever
+? permissões perigosas
+$ find / -xdev -type f -perm -0002 2>/dev/null
+> Arquivos com escrita para todos (o "w" no fim do ls -l). Normalmente deveria ser vazio.
+
+; ───────────── Arquivos (análise) ─────────────
+
+# tipo de arquivo
+? qual o tipo do arquivo {arquivo}
+? que arquivo é {arquivo}
+? tipo real de {arquivo}
+$ file {arquivo}
+> Diz o tipo pelo conteúdo, não pela extensão.
+
+# textos dentro de um binário
+? textos dentro de {arquivo}
+? strings de {arquivo}
+? ver texto do binário {arquivo}
+$ strings {arquivo} | less
+> Trechos legíveis dentro de {arquivo}. q para sair.
+
+# ver em hexadecimal
+? ver {arquivo} em hexadecimal
+? hexdump de {arquivo}
+? ver os bytes de {arquivo}
+$ xxd {arquivo} | head -n 20
+> Os primeiros bytes de {arquivo} em hexa.
+
+# hash de arquivo
+? hash do arquivo {arquivo}
+? calcular sha256 de {arquivo}
+? checksum de {arquivo}
+$ sha256sum {arquivo}
+> Impressão digital SHA-256 de {arquivo}. Compare com a do site oficial.
+
+# conferir hashes
+? conferir hashes
+? verificar sha256sums
+? conferir download
+$ sha256sum -c SHA256SUMS
+> Confere cada arquivo listado em SHA256SUMS (OK ou FAILED).
+
+# codificar base64
+? codificar {texto} em base64
+? base64 de {texto}
+$ echo -n "{texto}" | base64
+> Codifica {texto} em Base64 (não é criptografia).
+
+# decodificar base64
+? decodificar base64 {texto}
+? decodificar {texto}
+$ echo "{texto}" | base64 -d
+> Volta o Base64 {texto} ao original.
+
+# gerar senha aleatória
+? gerar senha aleatória
+? criar senha forte
+$ openssl rand -base64 16
+> Uma senha aleatória de 16 bytes em Base64.
+
+# comparar arquivos
+? comparar {arquivo1} com {arquivo2}
+? diferença entre {arquivo1} e {arquivo2}
+$ diff -u {arquivo1} {arquivo2}
+> Mostra as linhas que mudaram (- saiu, + entrou).
+
+; ───────────── Sistema ─────────────
+
+# serviços rodando
+? serviços rodando
+? ver os serviços ativos
+? listar serviços
+$ systemctl list-units --type=service --state=running
+> Todos os serviços em execução.
+
+# ligar serviço no boot
+? ligar o serviço {servico} no boot
+? iniciar {servico} junto com o sistema
+? ativar o serviço {servico}
+$ sudo systemctl enable --now {servico}
+> Liga {servico} agora e em todo boot.
+
+# data e hora
+? ver data e hora
+? ajustar fuso horário
+? ver fuso horário
+$ timedatectl
+> Data, hora, fuso e se o relógio está sincronizado.
+
+# nome da máquina
+? nome da máquina
+? ver hostname
+? é uma máquina virtual
+$ hostnamectl
+> Nome da máquina, sistema e virtualização.
+
+# discos e partições
+? ver discos
+? ver partições
+? listar discos e partições
+$ lsblk -f
+> Discos, partições, sistema de arquivos e onde estão montados.
+
+# mensagens do kernel
+? mensagens do kernel
+? ver dmesg
+? ver o pendrive conectado
+$ sudo dmesg -T | tail -n 30
+> Últimas mensagens do kernel (hardware, USB, rede).
+
+# tarefas agendadas
+? tarefas agendadas
+? ver cron
+? ver o crontab
+$ crontab -l
+> Suas tarefas agendadas (crontab -e edita).
+
+# ver o processador
+? ver o processador
+? quantos núcleos tenho
+? ver cpu
+$ lscpu
+> Modelo do processador e número de núcleos.
+
+# ver o path
+? ver o path
+? onde o bash procura comandos
+$ echo $PATH
+> Pastas onde o bash procura os comandos, separadas por ":".
+
+# variáveis de ambiente
+? variáveis de ambiente
+? ver variáveis
+$ env
+> Todas as variáveis de ambiente.

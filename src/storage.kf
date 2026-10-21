@@ -241,10 +241,31 @@ List<String> commandArgs() {
 // O gancho se reinstala a cada prompt: o ~/.bashrc do Kali faz
 // PROMPT_COMMAND="PROMPT_COMMAND=echo", que se sobrescreve no primeiro prompt e apagaria o
 // gancho (o codigo de saida ficava sempre 0). Sem barra invertida: o KOF nao a produz em String.
-String shellRc() {
+//
+// Shells dentro do shell: `sudo -i` (e su, -s, bash) abre outro bash, que nao carregaria este
+// arquivo, e o KofTerm deixaria de ver o prompt. As funcoes sudo e bash abaixo abrem esses
+// shells ja com este arquivo; qualquer outro uso de sudo/bash passa direto. A linha digitada
+// continua a mesma (a tela mostra "sudo -i").
+String shellRc(String dir, Boolean login) {
     var esc = "\u001b"
     var bel = "\u0007"
+    var rc = dir + "/bashrc"
+    var rcLogin = dir + "/bashrc-login"
+    var extra = ""
+    if (login) {
+        extra = "cd ~\n" // sudo -i comeca na pasta do root
+    }
     return "# KofTerm: gerado a cada inicio. Nao edite.\n" +
+        "__kofterm_rc='" + rc + "'\n" +
+        "__kofterm_login='" + rcLogin + "'\n" +
+        "sudo() {\n" +
+        "  case \"$*\" in\n" +
+        "    -i|su|'su -'|'su root'|'su - root'|'-i bash') command sudo -H bash --noediting --rcfile \"$__kofterm_login\" -i ;;\n" +
+        "    -s|bash|'-s bash') command sudo -H bash --noediting --rcfile \"$__kofterm_rc\" -i ;;\n" +
+        "    *) command sudo \"$@\" ;;\n" +
+        "  esac\n" +
+        "}\n" +
+        "bash() { if [ $# -eq 0 ]; then command bash --noediting --rcfile \"$__kofterm_rc\" -i; else command bash \"$@\"; fi; }\n" +
         "[ -f ~/.bashrc ] && . ~/.bashrc\n" +
         "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$PWD" + bel + "'\n" +
         "__kofterm_pre() { __kofterm_s=$?; }\n" +
@@ -256,5 +277,6 @@ String shellRc() {
         "  fi\n" +
         "}\n" +
         "__kofterm_prompt() { [[ \"$PS1\" == *\"$__kofterm_mark\" ]] || PS1=\"$PS1$__kofterm_mark\"; __kofterm_hook; }\n" +
-        "__kofterm_hook\n"
+        "__kofterm_hook\n" +
+        extra
 }

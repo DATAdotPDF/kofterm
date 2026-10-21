@@ -2,7 +2,7 @@
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
-    static String NUMBER = "0.6.1"
+    static String NUMBER = "0.6.2"
 }
 
 printHelp() {
@@ -228,7 +228,7 @@ Int runDoctor() {
     println("  seus dados: " + dir + " (pasta 0700, arquivos 0600)")
     var idx = CommandIndex()
     idx.load(loadLines(findShared(dir, "index/pt_BR.txt")))
-    println("  indice:     " + idx.entries.size + " comandos")
+    println("  indice:     " + idx.entries.size + " entradas")
     println("  corpus:     " + loadLines(findShared(dir, "corpus/sessions.txt")).size + " linhas")
     println("  contribuicoes da comunidade: " + listFiles(findShared(dir, "datasets/contrib"), ".kofdata").size + " arquivo(s)")
     println("  aprendido com voce: " + loadLines(dir + "/events").size + " comandos, historico com " + loadLines(dir + "/history").size)

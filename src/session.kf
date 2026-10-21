@@ -532,8 +532,8 @@ class Session {
                 out.add(" " + esc() + "[1;31m" + t + esc() + "[0m")
             }
         }
-        var e = tab.index.forLine(ed.line)
-        if (e == null) {
+        var entries = tab.index.entriesForLine(ed.line)
+        if (entries.size == 0) {
             out.add("")
             if (ed.line.trim().length() == 0) {
                 for (var t in wrapText("Comece a digitar um comando: aqui aparece o que ele faz e o que cada opção significa.", w - 1)) {
@@ -565,7 +565,7 @@ class Session {
             }
             return out
         }
-        var entry = must(e)
+        var entry = entries.get(0)
         out.add("")
         out.add(" " + esc() + "[1m" + clip(entry.name, w - 1) + esc() + "[0m")
         for (var t in wrapText(entry.summary, w - 1)) {
@@ -576,6 +576,24 @@ class Session {
             out.add("")
             out.add(" " + esc() + "[1;32mNA SUA LINHA" + esc() + "[0m")
             panelOptions(out, used, w)
+        }
+        // o resto da linha (sudo -i, /etc/passwd...) vem logo, antes da lista completa de opcoes
+        if (entries.size > 1) {
+            out.add("")
+            out.add(" " + esc() + "[1;32mTAMBÉM NA LINHA" + esc() + "[0m")
+            var k = 1
+            while (k < entries.size) {
+                var other = entries.get(k)
+                out.add(" " + esc() + "[1m" + clip(other.name, w - 1) + esc() + "[0m")
+                for (var t in wrapText(other.summary, w - 3)) {
+                    out.add("   " + t)
+                }
+                var oUsed = tab.index.optionsInLine(other, ed.line)
+                if (oUsed.size > 0) {
+                    panelOptions(out, oUsed, w)
+                }
+                k = k + 1
+            }
         }
         var others = listOf<Opt>()
         for (var o in entry.options) {

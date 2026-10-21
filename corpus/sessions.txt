@@ -84,7 +84,7 @@ exit
 chmod +x
 ./
 
-tail -f /var/log/syslog
+sudo journalctl -f
 
 find . -name ""
 grep -rn "" .

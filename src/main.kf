@@ -32,7 +32,8 @@ main() {
 
     var dir = dataDir()
     var rcPath = dir + "/bashrc"
-    saveFile(rcPath, shellRc())
+    saveFile(rcPath, shellRc(dir, false))
+    saveFile(dir + "/bashrc-login", shellRc(dir, true)) // para sudo -i (comeca em ~)
 
     // Sinais bloqueados ANTES do fork: nenhum chega no meio da preparacao.
     var sfd = sigOpen()

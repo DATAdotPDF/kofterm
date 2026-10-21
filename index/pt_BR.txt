@@ -104,7 +104,7 @@ $ cat a.txt b.txt > tudo.txt | Junta dois arquivos em um.
 # less
 > Abre um arquivo para ler com rolagem. q sai, / procura.
 - -N | Mostra o número das linhas.
-$ less /var/log/syslog | Lê um arquivo grande sem encher a tela.
+$ less /etc/services | Lê um arquivo grande (a lista de portas conhecidas) sem encher a tela.
 @ https://man7.org/linux/man-pages/man1/less.1.html
 
 # head
@@ -117,7 +117,7 @@ $ head -n 5 notas.txt | As 5 primeiras linhas.
 > Mostra o fim de um arquivo (10 linhas por padrão).
 - -n | Quantas linhas mostrar.
 - -f | Continua mostrando as linhas novas que chegarem. Ctrl-C sai. Ótimo para logs.
-$ tail -f /var/log/syslog | Acompanha o log ao vivo.
+$ tail -f /var/log/apt/history.log | Acompanha um log ao vivo (aqui, o das instalações do apt).
 @ https://ss64.com/bash/tail.html
 
 # grep
@@ -181,10 +181,14 @@ $ sudo chown voce:voce arquivo | Passa o arquivo para o seu usuário.
 @ https://ss64.com/bash/chown.html
 
 # sudo
-> Roda um comando como administrador (root). Pede a SUA senha.
-- -i | Abre um shell de root. Use só quando precisar.
+> "Super-user do": roda UM comando como administrador (root). Pede a SUA senha, não a do root, e só funciona se você estiver no grupo sudo. Tudo fica registrado no journal.
+- -i | Abre um shell de root (o prompt muda de $ para #). Digite exit para voltar ao seu usuário.
+- -s | Shell de root, mas continua na pasta atual.
+- -l | Lista o que você tem permissão de rodar com sudo.
 - -k | Esquece a senha digitada; a próxima vez vai pedir de novo.
 - -u | Roda como outro usuário: sudo -u nome comando.
+$ sudo -l | Confere se você pode usar sudo.
+$ sudo -i | Vira root até digitar exit.
 $ sudo apt update | Atualiza a lista de pacotes como administrador.
 $ sudo !! | Repete o último comando com sudo (quando deu "Permission denied").
 @ https://ss64.com/bash/sudo.html
@@ -261,16 +265,47 @@ $ tar -xzvf backup.tar.gz | Extrai na pasta atual.
 @ https://ss64.com/bash/tar.html
 
 # ping
-> Testa se um computador responde pela rede. Ctrl-C para parar.
-- -c | Quantos pacotes enviar.
+> Testa se um computador responde pela rede (ICMP echo). Mostra o tempo de ida e volta (RTT). Ctrl-C para parar.
+- -c | Quantos pacotes enviar e então parar.
+- -i | Intervalo entre os pacotes, em segundos.
+- -s | Tamanho dos dados de cada pacote (útil para testar MTU).
+- -W | Quanto tempo esperar a resposta, em segundos.
+- -4, -6 | Força IPv4 ou IPv6.
 $ ping -c 4 kali.org | Envia 4 pacotes e para.
+$ ping -c 4 192.168.0.1 | Testa o gateway (roteador) da sua rede.
 @ https://ss64.com/bash/ping.html
+@ https://manpages.debian.org/ping
 
 # ip
-> Mostra e configura a rede (substitui o antigo ifconfig).
-$ ip a | Endereços de cada placa de rede.
-$ ip r | Rotas (por onde sai o tráfego).
+> Mostra e configura a rede (substitui o antigo ifconfig). Os subcomandos podem ser abreviados: ip a = ip address.
+$ ip a | Endereços IP de cada placa de rede (inet = IPv4, inet6 = IPv6).
+$ ip r | Tabela de rotas: "default via" é o gateway.
+$ ip link | Placas de rede, estado (UP/DOWN) e endereço MAC.
+$ ip neigh | Tabela ARP: os vizinhos da rede local e seus MACs.
 @ https://man7.org/linux/man-pages/man8/ip.8.html
+
+# ip a
+> Mostra os endereços de cada interface. Procure "inet" (IPv4 com a máscara em /24, /16...) e "state UP".
+$ ip -br a | Versão resumida: uma linha por interface.
+$ ip a show eth0 | Só a interface eth0.
+@ https://man7.org/linux/man-pages/man8/ip-address.8.html
+
+# ip r
+> Mostra a tabela de rotas. A linha "default via X" diz qual é o gateway (o roteador da sua rede).
+$ ip r | Todas as rotas.
+$ ip r get 8.8.8.8 | Por qual interface e gateway um destino sairia.
+@ https://man7.org/linux/man-pages/man8/ip-route.8.html
+
+# ip link
+> Mostra as interfaces de rede, se estão ligadas (UP) e o endereço MAC (link/ether).
+$ ip link | Lista as interfaces.
+$ sudo ip link set eth0 down | Desliga a interface eth0 (up liga de novo).
+@ https://man7.org/linux/man-pages/man8/ip-link.8.html
+
+# ip neigh
+> Tabela ARP/vizinhos: quais IPs da rede local já foram vistos e qual o MAC de cada um. Equivale ao antigo "arp -a".
+$ ip neigh | Lista os vizinhos.
+@ https://man7.org/linux/man-pages/man8/ip-neighbour.8.html
 
 # ssh
 > Acessa outro computador pelo terminal, com conexão criptografada.
@@ -406,3 +441,595 @@ $ cd ~/Downloads | Vai para Downloads.
 $ ls *.txt | Todos os .txt da pasta.
 $ rm *.tmp | Apaga todos os .tmp. Rode ls *.tmp antes para conferir.
 @ https://www.gnu.org/software/bash/manual/bash.html#Pattern-Matching
+
+; ───────────── Usuários e permissões ─────────────
+
+# su
+> Troca de usuário. Diferente do sudo, pede a senha do usuário de destino (no Kali o root não tem senha: use sudo -i).
+- - | Abre como login completo (pasta e variáveis do outro usuário).
+$ su - aluno | Vira o usuário aluno.
+@ https://manpages.debian.org/su
+
+# id
+> Mostra seu número de usuário (uid), grupo principal (gid) e todos os grupos. Ver "sudo" na lista indica que você pode virar root.
+$ id | Seus dados.
+$ id aluno | Os dados de outro usuário.
+@ https://manpages.debian.org/id
+
+# groups
+> Lista os grupos de um usuário. Grupos dão permissões extras (sudo, wireshark, docker...).
+$ groups | Seus grupos.
+@ https://manpages.debian.org/groups
+
+# adduser
+> Cria um usuário de forma interativa (pasta pessoal, senha, nome). É o jeito recomendado no Debian e no Kali.
+$ sudo adduser aluno | Cria o usuário aluno.
+$ sudo adduser aluno sudo | Coloca aluno no grupo sudo (vale no próximo login).
+@ https://manpages.debian.org/adduser
+
+# useradd
+> Cria um usuário pelo jeito "baixo nível": sem perguntas. Prefira adduser no dia a dia.
+- -m | Cria a pasta pessoal.
+- -s | Shell do usuário (ex.: /bin/bash).
+- -G | Grupos extras.
+$ sudo useradd -m -s /bin/bash aluno | Cria aluno com pasta e bash.
+@ https://manpages.debian.org/useradd
+
+# usermod
+> Altera um usuário existente.
+- -aG | Adiciona a um grupo sem tirar dos outros (sem o -a ele substitui todos).
+- -L, -U | Bloqueia ou desbloqueia a conta.
+$ sudo usermod -aG sudo aluno | Dá sudo para aluno.
+$ sudo usermod -aG wireshark $USER | Permite capturar pacotes sem root.
+@ https://manpages.debian.org/usermod
+
+# deluser
+> Remove um usuário (ou tira de um grupo).
+- --remove-home | Apaga também a pasta pessoal.
+$ sudo deluser aluno | Remove o usuário, mantendo os arquivos.
+$ sudo deluser aluno sudo | Tira aluno do grupo sudo.
+@ https://manpages.debian.org/deluser
+
+# passwd
+> Troca senha. Sem nome, troca a sua; com sudo e um nome, a de outro usuário.
+- -l | Bloqueia a senha da conta.
+- -S | Mostra o estado da senha.
+$ passwd | Troca a sua senha.
+$ sudo passwd aluno | Define a senha de aluno.
+@ https://manpages.debian.org/passwd
+
+# who
+> Quem está logado agora e de onde (terminal local, pts/ remoto via SSH).
+$ who | Lista as sessões.
+@ https://manpages.debian.org/who
+
+# w
+> Como o who, mas mostra também o que cada um está rodando e há quanto tempo o sistema está ligado.
+$ w | Sessões e atividade.
+@ https://manpages.debian.org/w
+
+; ───────────── Sistema e serviços ─────────────
+
+# uname
+> Informações do kernel e da arquitetura.
+- -a | Tudo: kernel, versão, máquina.
+- -r | Só a versão do kernel.
+$ uname -a | Mostra tudo.
+@ https://manpages.debian.org/uname
+
+# hostnamectl
+> Mostra ou muda o nome da máquina; também mostra o sistema e se é uma VM (Virtualization).
+$ hostnamectl | Resumo do sistema.
+$ sudo hostnamectl set-hostname lab01 | Renomeia a máquina.
+@ https://manpages.debian.org/hostnamectl
+
+# uptime
+> Há quanto tempo o sistema está ligado e a carga média (1, 5 e 15 minutos).
+$ uptime | Mostra o tempo ligado.
+@ https://manpages.debian.org/uptime
+
+# free
+> Memória RAM e swap: total, usada e disponível.
+- -h | Em unidades legíveis (MB, GB).
+$ free -h | Memória em formato fácil.
+@ https://manpages.debian.org/free
+
+# lscpu
+> Detalhes do processador: núcleos, modelo, virtualização.
+$ lscpu | Mostra o processador.
+@ https://manpages.debian.org/lscpu
+
+# lsblk
+> Lista discos e partições em árvore, com tamanho e onde estão montados.
+- -f | Mostra também o sistema de arquivos e o UUID.
+$ lsblk | Discos e partições.
+@ https://manpages.debian.org/lsblk
+
+# mount
+> Monta (liga) um disco ou partição numa pasta. Sem argumentos, lista o que está montado.
+$ mount | grep sd | Mostra as partições de disco montadas.
+$ sudo mount /dev/sdb1 /mnt | Monta sdb1 em /mnt.
+@ https://manpages.debian.org/mount
+
+# dmesg
+> Mensagens do kernel: hardware detectado, USB conectado, erros de disco ou de placa de rede.
+- -w | Fica mostrando as novas mensagens.
+- -T | Horário legível.
+$ sudo dmesg -T | tail | Últimas mensagens do kernel.
+@ https://manpages.debian.org/dmesg
+
+# systemctl
+> Controla os serviços do sistema (systemd): ligar, desligar, reiniciar e ver o estado.
+$ systemctl status ssh | Estado do serviço SSH.
+$ sudo systemctl start ssh | Liga o SSH agora.
+$ sudo systemctl enable --now ssh | Liga agora e em todo boot.
+$ sudo systemctl stop ssh | Desliga.
+$ systemctl list-units --type=service --state=running | Serviços rodando.
+@ https://manpages.debian.org/systemctl
+
+# journalctl
+> Lê o diário (logs) do systemd. No Kali ele substitui /var/log/syslog e /var/log/auth.log.
+- -u | Só de um serviço (ex.: -u ssh).
+- -f | Acompanha ao vivo.
+- -b | Só desde o último boot.
+- -p | Por prioridade (ex.: -p err).
+- --since | A partir de quando (ex.: --since "1 hour ago").
+$ sudo journalctl -u ssh --since today | Logs do SSH de hoje.
+$ sudo journalctl -f | Acompanha tudo ao vivo.
+$ sudo journalctl -p err -b | Erros desde o boot.
+$ sudo journalctl _COMM=sudo | Quem usou sudo e para quê.
+@ https://manpages.debian.org/journalctl
+
+# timedatectl
+> Mostra e ajusta data, hora, fuso horário e sincronização (NTP). Horário errado quebra certificados e logs.
+$ timedatectl | Estado do relógio.
+$ sudo timedatectl set-timezone America/Sao_Paulo | Ajusta o fuso.
+@ https://manpages.debian.org/timedatectl
+
+# crontab
+> Agenda comandos para rodar sozinhos (cron). Cada linha: minuto hora dia mês dia-da-semana comando.
+- -l | Lista suas tarefas.
+- -e | Edita suas tarefas.
+$ crontab -l | Mostra suas tarefas agendadas.
+$ crontab -e | Edita. Ex.: "0 3 * * * comando" roda às 3h todo dia.
+@ https://manpages.debian.org/crontab
+@ https://crontab.guru
+
+# env
+> Mostra as variáveis de ambiente ou roda um comando com uma variável diferente.
+$ env | Todas as variáveis.
+$ echo $PATH | Pastas onde o bash procura comandos.
+@ https://manpages.debian.org/env
+
+# export
+> Cria ou muda uma variável de ambiente para este shell e os programas que ele abrir.
+$ export EDITOR=nano | Define o editor padrão.
+$ export PATH="$PATH:$HOME/bin" | Acrescenta uma pasta ao PATH.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bourne-Shell-Builtins
+
+# alias
+> Cria um apelido para um comando. Para durar, coloque no ~/.bashrc.
+$ alias | Lista os apelidos.
+$ alias ll='ls -la' | ll vira ls -la.
+@ https://www.gnu.org/software/bash/manual/bash.html#Aliases
+
+# lsof
+> Lista arquivos abertos, e no Linux conexões também são arquivos. Ótimo para descobrir quem usa uma porta.
+- -i | Conexões de rede (ex.: -i :80).
+$ sudo lsof -i :22 | Quem está usando a porta 22.
+$ sudo lsof -i -P -n | Todas as conexões, sem traduzir nomes.
+@ https://manpages.debian.org/lsof
+
+; ───────────── Redes ─────────────
+
+# ss
+> Mostra conexões e portas abertas (substitui o netstat).
+- -t | TCP.
+- -u | UDP.
+- -l | Só portas escutando (servidores).
+- -n | Números em vez de nomes (mais rápido).
+- -p | Qual programa usa cada porta (precisa de sudo para ver todos).
+$ ss -tuln | Portas TCP/UDP abertas esperando conexão.
+$ sudo ss -tunp | Conexões ativas e seus programas.
+@ https://man7.org/linux/man-pages/man8/ss.8.html
+
+# netstat
+> Versão antiga do ss (pacote net-tools). Ainda aparece em cursos e provas; as opções são parecidas.
+$ netstat -tuln | Portas escutando.
+$ netstat -rn | Tabela de rotas (como ip r).
+@ https://manpages.debian.org/netstat
+
+# ifconfig
+> Versão antiga do ip a (pacote net-tools). Mostra interfaces e endereços.
+$ ifconfig | Interfaces ativas.
+$ ifconfig -a | Todas, até as desligadas.
+@ https://manpages.debian.org/ifconfig
+
+# traceroute
+> Mostra cada roteador (salto) no caminho até um destino. Asteriscos (* * *) são saltos que não respondem.
+- -n | Não traduz IPs em nomes (mais rápido).
+- -I | Usa ICMP em vez de UDP.
+$ traceroute -n 8.8.8.8 | Caminho até o DNS do Google.
+@ https://manpages.debian.org/traceroute
+
+# dig
+> Consulta DNS em detalhe: pergunta a um servidor qual IP (ou outro registro) um nome tem.
+- +short | Só a resposta.
+- @servidor | Pergunta a um servidor DNS específico.
+$ dig kali.org | Consulta completa.
+$ dig +short kali.org A | Só o IPv4.
+$ dig @1.1.1.1 kali.org MX | Servidores de e-mail, perguntando à Cloudflare.
+$ dig -x 8.8.8.8 | DNS reverso: nome de um IP.
+@ https://manpages.debian.org/dig
+
+# nslookup
+> Consulta DNS simples (também existe no Windows, com uso parecido).
+$ nslookup kali.org | IP de um nome.
+$ nslookup kali.org 1.1.1.1 | Perguntando a outro servidor DNS.
+@ https://manpages.debian.org/nslookup
+
+# host
+> Consulta DNS com saída curta e fácil de ler.
+$ host kali.org | IPs e servidor de e-mail.
+$ host 8.8.8.8 | Nome de um IP.
+@ https://manpages.debian.org/host
+
+# whois
+> Quem registrou um domínio ou a quem pertence um bloco de IPs.
+$ whois kali.org | Dados do registro do domínio.
+@ https://manpages.debian.org/whois
+
+# wget
+> Baixa arquivos da web, inclusive pastas inteiras.
+- -c | Continua um download interrompido.
+- -O | Nome do arquivo de saída.
+$ wget https://exemplo.com/arquivo.iso | Baixa o arquivo.
+@ https://manpages.debian.org/wget
+
+# nmcli
+> Controla o NetworkManager: conexões, Wi-Fi, IP fixo ou DHCP.
+$ nmcli device status | Estado de cada interface.
+$ nmcli connection show | Conexões salvas.
+$ nmcli device wifi list | Redes Wi-Fi visíveis.
+@ https://manpages.debian.org/nmcli
+
+# nmap
+> Descobre computadores e portas abertas numa rede. Use só na sua rede de laboratório ou com autorização por escrito: escanear redes de terceiros pode ser crime.
+- -sn | Só descobre quem está ligado (sem portas).
+- -sV | Tenta identificar o serviço e a versão em cada porta.
+- -p | Quais portas (ex.: -p 22,80 ou -p-).
+- -O | Tenta adivinhar o sistema operacional (precisa de sudo).
+- -oN | Salva o resultado num arquivo.
+$ nmap -sn 192.168.56.0/24 | Quem está ligado na rede da VM (host-only).
+$ nmap -sV 192.168.56.101 | Portas e serviços de uma máquina do lab.
+$ nmap localhost | Portas abertas na sua própria máquina.
+@ https://nmap.org/book/man.html
+@ https://manpages.debian.org/nmap
+
+# arp-scan
+> Descobre os aparelhos da rede local por ARP (mostra IP, MAC e fabricante). Só na sua rede.
+$ sudo arp-scan --localnet | Varre a rede da interface principal.
+@ https://manpages.debian.org/arp-scan
+
+# netdiscover
+> Descobre aparelhos da rede local escutando e enviando ARP, numa tela que se atualiza. Só na sua rede.
+- -r | Faixa a varrer.
+- -p | Modo passivo: só escuta.
+$ sudo netdiscover -r 192.168.56.0/24 | Varre a rede do laboratório.
+@ https://manpages.debian.org/netdiscover
+
+# tcpdump
+> Captura e mostra pacotes que passam por uma interface. Ctrl-C para parar.
+- -i | Interface (ex.: eth0, any).
+- -n | Não traduz IPs em nomes.
+- -c | Para depois de N pacotes.
+- -w | Grava num arquivo .pcap (abre no Wireshark).
+$ sudo tcpdump -i eth0 -n | Mostra os pacotes da eth0.
+$ sudo tcpdump -i any -n icmp | Só ping (ICMP).
+$ sudo tcpdump -i eth0 -n port 53 | Só DNS.
+$ sudo tcpdump -i eth0 -w captura.pcap | Grava para analisar depois.
+@ https://www.tcpdump.org/manpages/tcpdump.1.html
+
+# tshark
+> O Wireshark no terminal: captura e analisa pacotes com os mesmos filtros.
+- -i | Interface.
+- -r | Lê um arquivo .pcap.
+- -Y | Filtro de exibição (ex.: http, dns).
+$ sudo tshark -i eth0 | Captura na eth0.
+$ tshark -r captura.pcap -Y dns | Só DNS de uma captura.
+@ https://www.wireshark.org/docs/man-pages/tshark.html
+
+# wireshark
+> Analisador de pacotes com interface gráfica. Para usar sem root: sudo usermod -aG wireshark $USER e entre de novo.
+$ wireshark captura.pcap | Abre uma captura.
+@ https://www.wireshark.org/docs/wsug_html_chunked/
+
+# nc
+> Netcat: abre conexões TCP/UDP "cruas". Bom para testar se uma porta responde ou para conversar entre duas VMs.
+- -z | Só testa se a porta está aberta.
+- -v | Mostra detalhes.
+- -l | Escuta numa porta (vira servidor).
+- -u | Usa UDP.
+$ nc -zv 192.168.56.101 22 | A porta 22 está aberta?
+$ nc -lvp 4444 | Escuta na porta 4444 (na outra VM: nc IP 4444).
+@ https://manpages.debian.org/nc.traditional
+
+# scp
+> Copia arquivos entre computadores por SSH.
+- -r | Pastas inteiras.
+- -P | Porta (P maiúsculo).
+$ scp arquivo.txt usuario@192.168.56.101:/tmp/ | Envia um arquivo.
+$ scp usuario@192.168.56.101:/etc/hosts . | Traz um arquivo para a pasta atual.
+@ https://manpages.debian.org/scp
+
+# rsync
+> Sincroniza pastas (local ou por SSH), copiando só o que mudou.
+- -a | Mantém permissões e datas, e entra nas subpastas.
+- -v | Mostra o que copia.
+- --delete | Apaga no destino o que não existe mais na origem.
+$ rsync -av pasta/ backup/ | Copia o conteúdo de pasta para backup.
+$ rsync -av pasta/ usuario@servidor:~/pasta/ | Envia por SSH.
+@ https://manpages.debian.org/rsync
+
+# ssh-keygen
+> Cria um par de chaves SSH: a privada fica com você e a pública (.pub) vai para o servidor. Login sem senha e mais seguro.
+- -t | Tipo da chave (use ed25519).
+- -C | Comentário (ex.: seu e-mail).
+$ ssh-keygen -t ed25519 -C "aluno@lab" | Cria a chave em ~/.ssh/id_ed25519.
+$ ssh-keygen -lf ~/.ssh/id_ed25519.pub | Mostra a impressão digital da chave.
+@ https://manpages.debian.org/ssh-keygen
+
+# ssh-copy-id
+> Instala sua chave pública no servidor (em ~/.ssh/authorized_keys de lá).
+$ ssh-copy-id usuario@192.168.56.101 | Copia a chave; depois ssh entra sem senha.
+@ https://manpages.debian.org/ssh-copy-id
+
+# iptables
+> Firewall clássico do Linux: regras por cadeia (INPUT, OUTPUT, FORWARD). No Kali ele usa o nftables por baixo.
+- -L | Lista as regras.
+- -n | Números em vez de nomes.
+- -v | Contadores de pacotes.
+$ sudo iptables -L -n -v | Mostra as regras e quantos pacotes bateram em cada uma.
+$ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT | Libera a porta 22 (SSH).
+@ https://manpages.debian.org/iptables
+
+# nft
+> nftables: o firewall atual do Linux, substituto do iptables.
+$ sudo nft list ruleset | Mostra todas as regras.
+@ https://manpages.debian.org/nft
+@ https://wiki.nftables.org
+
+# ufw
+> Firewall simplificado ("uncomplicated"). Não vem no Kali: sudo apt install ufw.
+$ sudo ufw status verbose | Estado e regras.
+$ sudo ufw allow 22/tcp | Libera o SSH.
+$ sudo ufw enable | Liga o firewall.
+@ https://manpages.debian.org/ufw
+
+; ───────────── Arquivos e texto (análise) ─────────────
+
+# file
+> Diz o tipo real de um arquivo pelo conteúdo, não pela extensão.
+$ file arquivo.jpg | Pode revelar que é, por exemplo, um ZIP.
+$ file /bin/ls | Um executável ELF de 64 bits.
+@ https://manpages.debian.org/file
+
+# strings
+> Mostra os trechos de texto legível dentro de um arquivo binário.
+- -n | Tamanho mínimo do texto (padrão 4).
+$ strings programa | less | Procura textos dentro do programa.
+@ https://manpages.debian.org/strings
+
+# sha256sum
+> Calcula o hash SHA-256: a "impressão digital" de um arquivo. Se um byte mudar, o hash muda inteiro.
+- -c | Confere hashes salvos num arquivo (ex.: SHA256SUMS).
+$ sha256sum kali.iso | Calcula o hash para comparar com o do site.
+$ sha256sum -c SHA256SUMS | Confere todos os arquivos da lista.
+@ https://manpages.debian.org/sha256sum
+
+# md5sum
+> Hash MD5. Ainda usado para conferir downloads, mas não é seguro contra falsificação: prefira sha256sum.
+$ md5sum arquivo | Calcula o MD5.
+@ https://manpages.debian.org/md5sum
+
+# base64
+> Codifica e decodifica Base64. Não é criptografia: qualquer um decodifica.
+- -d | Decodifica.
+$ echo -n 'texto' | base64 | Codifica.
+$ echo 'dGV4dG8=' | base64 -d | Decodifica.
+@ https://manpages.debian.org/base64
+
+# xxd
+> Mostra um arquivo em hexadecimal, byte a byte (hexdump).
+$ xxd arquivo | head | Primeiros bytes em hexa.
+@ https://manpages.debian.org/xxd
+
+# openssl
+> Caixa de ferramentas de criptografia: certificados TLS, hashes, chaves, senhas aleatórias.
+$ openssl s_client -connect kali.org:443 | Abre TLS e mostra o certificado (Ctrl-C sai).
+$ openssl rand -base64 16 | Gera uma senha aleatória.
+$ openssl dgst -sha256 arquivo | Hash SHA-256.
+@ https://docs.openssl.org/master/man1/openssl/
+
+# diff
+> Compara dois arquivos linha a linha.
+- -u | Formato unificado (o mesmo do git diff).
+$ diff -u antigo.conf novo.conf | O que mudou entre os dois.
+@ https://manpages.debian.org/diff
+
+# cut
+> Recorta colunas de cada linha.
+- -d | Separador.
+- -f | Quais campos.
+$ cut -d: -f1 /etc/passwd | Só os nomes dos usuários.
+@ https://manpages.debian.org/cut
+
+# awk
+> Processa texto por colunas (campos separados por espaço). $1 é a primeira coluna, $NF a última.
+- -F | Separador de campos.
+$ awk -F: '$3 >= 1000 {print $1}' /etc/passwd | Usuários "humanos" (uid 1000 ou mais).
+$ ip -br a | awk '{print $1, $3}' | Interface e IP.
+@ https://manpages.debian.org/gawk
+
+# sed
+> Edita texto em fluxo: troca, apaga ou mostra linhas.
+- -n | Só mostra o que for pedido.
+- -i | Altera o próprio arquivo (cuidado; faça backup).
+$ sed 's/antigo/novo/g' arquivo | Troca todas as ocorrências (só na tela).
+$ sed -n '10,20p' arquivo | Mostra as linhas 10 a 20.
+@ https://manpages.debian.org/sed
+
+# tr
+> Troca ou apaga caracteres.
+$ echo 'ABC' | tr 'A-Z' 'a-z' | Converte para minúsculas.
+@ https://manpages.debian.org/tr
+
+# uniq
+> Junta linhas repetidas seguidas (use depois do sort).
+- -c | Conta quantas vezes cada uma aparece.
+$ sort acessos.txt | uniq -c | sort -rn | Ranking das linhas que mais aparecem.
+@ https://manpages.debian.org/uniq
+
+# tee
+> Mostra a saída na tela e grava num arquivo ao mesmo tempo.
+- -a | Acrescenta em vez de sobrescrever.
+$ nmap -sn 192.168.56.0/24 | tee varredura.txt | Vê e salva o resultado.
+$ echo '192.168.56.101 alvo' | sudo tee -a /etc/hosts | Escreve num arquivo de root.
+@ https://manpages.debian.org/tee
+
+# xargs
+> Transforma a saída de um comando em argumentos de outro.
+$ find . -name '*.log' | xargs wc -l | Conta as linhas de cada .log.
+@ https://manpages.debian.org/xargs
+
+; ───────────── Caminhos importantes ─────────────
+
+# /etc
+> Configurações do sistema, em arquivos de texto. Editar precisa de sudo.
+$ ls /etc | Lista as configurações.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s07.html
+
+# /etc/passwd
+> Lista de usuários. Cada linha: nome:x:uid:gid:descrição:pasta:shell. O "x" diz que a senha está no /etc/shadow. Pode ser lido por todos.
+$ cat /etc/passwd | Mostra os usuários.
+$ grep bash /etc/passwd | Usuários que usam bash.
+@ https://manpages.debian.org/passwd.5
+
+# /etc/shadow
+> Os hashes das senhas e as regras de validade. Só o root lê: sem sudo dá "Permissão negada".
+$ sudo cat /etc/shadow | Mostra (como root).
+@ https://manpages.debian.org/shadow.5
+
+# /etc/group
+> Lista de grupos e seus membros: grupo:x:gid:membros.
+$ grep sudo /etc/group | Quem está no grupo sudo.
+@ https://manpages.debian.org/group.5
+
+# /etc/sudoers
+> Quem pode usar sudo e como. Nunca edite direto: use sudo visudo, que confere a sintaxe antes de salvar.
+$ sudo visudo | Edita com segurança.
+@ https://manpages.debian.org/sudoers
+
+# /etc/hosts
+> Tabela de nomes local: resolve nomes antes do DNS. Útil para dar nomes às VMs do laboratório.
+$ cat /etc/hosts | Mostra.
+$ echo '192.168.56.101 alvo' | sudo tee -a /etc/hosts | Agora "ping alvo" funciona.
+@ https://manpages.debian.org/hosts
+
+# /etc/resolv.conf
+> Qual servidor DNS o sistema usa (linhas nameserver). Normalmente gerado pelo NetworkManager.
+$ cat /etc/resolv.conf | Mostra o DNS em uso.
+@ https://manpages.debian.org/resolv.conf
+
+# /etc/hostname
+> O nome da máquina (o mesmo do prompt). Mude com hostnamectl.
+$ cat /etc/hostname | Mostra o nome.
+@ https://manpages.debian.org/hostname.5
+
+# /etc/os-release
+> Qual distribuição e versão está instalada.
+$ cat /etc/os-release | Nome e versão do sistema.
+@ https://manpages.debian.org/os-release
+
+# /etc/services
+> Tabela de portas conhecidas: qual serviço usa qual porta (22 ssh, 80 http, 443 https...).
+$ grep -w 22 /etc/services | Qual serviço é a porta 22.
+@ https://manpages.debian.org/services.5
+
+# /etc/ssh/sshd_config
+> Configuração do servidor SSH: porta, login de root, senha ou só chave. Depois de editar: sudo systemctl restart ssh.
+$ sudo nano /etc/ssh/sshd_config | Edita.
+$ grep -i '^PermitRootLogin' /etc/ssh/sshd_config | Root pode entrar por SSH?
+@ https://manpages.debian.org/sshd_config
+
+# /etc/fstab
+> Quais discos e partições são montados no boot. Um erro aqui pode impedir o sistema de iniciar.
+$ cat /etc/fstab | Mostra.
+@ https://manpages.debian.org/fstab
+
+# /etc/crontab
+> Tarefas agendadas do sistema (com uma coluna a mais: o usuário que roda).
+$ cat /etc/crontab | Mostra.
+$ ls /etc/cron.d | Outras tarefas do sistema.
+@ https://manpages.debian.org/crontab.5
+
+# /var/log
+> Pasta dos logs. No Kali a maioria fica no journal (use journalctl); aqui ficam apt, Xorg e outros.
+$ ls /var/log | Lista os logs.
+$ tail /var/log/apt/history.log | Últimos pacotes instalados.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s10.html
+
+# /proc
+> Pasta virtual com informações do kernel e de cada processo (uma pasta por PID).
+$ cat /proc/cpuinfo | Processador.
+$ cat /proc/meminfo | Memória.
+$ ls /proc/$$ | Seu próprio shell.
+@ https://man7.org/linux/man-pages/man5/proc.5.html
+
+# /dev/null
+> O "buraco negro": tudo que vai para lá some.
+$ comando 2>/dev/null | Esconde as mensagens de erro.
+$ find / -name '*.conf' 2>/dev/null | Busca sem a lista de "Permissão negada".
+@ https://manpages.debian.org/null.4
+
+# /tmp
+> Arquivos temporários; qualquer usuário escreve e o sistema limpa no boot. Não guarde nada importante.
+$ cd /tmp | Vai para a pasta temporária.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s18.html
+
+# /home
+> As pastas pessoais dos usuários (/home/nome). A sua é ~.
+$ ls /home | Usuários com pasta pessoal.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s08.html
+
+# /root
+> A pasta pessoal do root. Só o root entra: use sudo ls /root ou sudo -i.
+$ sudo ls -la /root | Lista a pasta do root.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s14.html
+
+# /usr/share/wordlists
+> No Kali: listas de palavras usadas em exercícios de senha e de descoberta (rockyou vem compactado em .gz).
+$ ls -l /usr/share/wordlists | Mostra as listas.
+@ https://www.kali.org/tools/wordlists/
+
+# ~/.bashrc
+> Configuração do seu bash, lida a cada terminal novo: aliases, PATH, prompt. Depois de editar: source ~/.bashrc.
+$ nano ~/.bashrc | Edita.
+$ source ~/.bashrc | Aplica sem abrir outro terminal.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bash-Startup-Files
+
+# ~/.bash_history
+> Os comandos que você já digitou (salvos ao sair do shell).
+$ tail -20 ~/.bash_history | Os últimos 20.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bash-History-Facilities
+
+# ~/.ssh
+> Suas chaves SSH e configurações. A pasta deve ser 700 e a chave privada 600, senão o ssh recusa.
+$ ls -la ~/.ssh | Mostra as chaves.
+$ chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_ed25519 | Corrige as permissões.
+@ https://manpages.debian.org/ssh
+
+# ~/.ssh/authorized_keys
+> Chaves públicas autorizadas a entrar na SUA conta por SSH. Uma por linha. Confira de vez em quando.
+$ cat ~/.ssh/authorized_keys | Quem pode entrar sem senha.
+@ https://manpages.debian.org/sshd
