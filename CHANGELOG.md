@@ -2,6 +2,20 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.2] - 21/10/2026
+
+Fixes from the second human test of 0.6.1, plus content for people studying networking and security.
+
+### Added
+- Index: 146 entries (was 53). New: users and permissions (`su`, `id`, `groups`, `adduser`, `usermod`, `passwd`, `who`, `w`…), system and services (`systemctl`, `journalctl`, `timedatectl`, `lsblk`, `dmesg`, `crontab`, `lsof`…), networking (`ss`, `ip a`/`ip r`/`ip link`/`ip neigh`, `traceroute`, `dig`, `nslookup`, `nmap`, `tcpdump`, `tshark`, `nc`, `ssh-keygen`, `iptables`, `nft`…), file analysis (`file`, `strings`, `sha256sum`, `base64`, `xxd`, `openssl`, `awk`, `sed`…) and important paths (`/etc/passwd`, `/etc/shadow`, `/etc/hosts`, `/etc/ssh/sshd_config`, `/var/log`, `/proc`, `~/.ssh/authorized_keys`…). Every link checked; every tool checked on Kali (with a note when it needs installing)
+- Recipes: 122 (was 63), 348 ways of asking: gateway, MAC, DNS, traceroute, active connections, who uses a port, test a port, discover hosts in your lab network, capture traffic, firewall rules, SSH keys, failed logins, sudo log, users and groups, SUID audit, hashes, Base64, services, disks, kernel messages
+- The index column explains the whole line: the `sudo` prefix and its options, and paths on the line, in a new "TAMBÉM NA LINHA" section
+
+### Fixed
+- KofTerm kept working only in the first shell: `sudo -i`, `sudo -s`, `sudo su` and a plain `bash` now open the inner shell with KofTerm's hook, so the grey suggestion, `?` and the column keep working as root
+- The `sudo` entry now says what it does; examples no longer mention `/var/log/syslog`, which Kali does not have (use `journalctl`)
+- `kofterm doctor` counts index "entries" (commands and paths)
+
 ## [0.6.1] - 21/10/2026
 
 Fixes from the first human test of 0.6.0.

@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Feito_com-KOF_0.6.6-f59e0b?style=flat-square" alt="Feito com KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Plataforma-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Rede-nenhuma-22c55e?style=flat-square" alt="Sem rede">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.1-8b5cf6?style=flat-square" alt="Release v0.6.1"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.2-8b5cf6?style=flat-square" alt="Release v0.6.2"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
@@ -49,7 +49,7 @@
 - **Fase 4 (o modelo que entende contexto): concluída.** A sugestão em cinza agora vem de um modelo local que aprende com cada comando que você roda: usa o que você digitou, o comando anterior, o tipo de pasta em que você está e quão recente é cada comando. Na linha vazia ele prevê o próximo comando, oferece `sudo` depois de "Permissão negada" e corrige o nome depois de "comando não encontrado". Também completa arquivos, pastas e opções, e nunca sugere comandos perigosos.
 - **Fase 5 (contribuição, instalador, primeira release): concluída.** `kofterm contribute` exporta o que o seu modelo aprendeu, anonimizado na sua máquina, para você revisar e enviar por pull request; o CI valida cada contribuição e a próxima versão aprende com ela. Instalação com um comando, pela release ou pelo código. **Primeira release: v0.5.0.**
 - **Fase 6 (o KofTerm desenha a própria tela): concluída.** Um emulador de terminal escrito em KOF (`vt.kf`) interpreta tudo o que o Bash e os programas escrevem, então o índice fica numa **coluna à direita** que os programas nunca tocam: o Bash, o `vim`, o `top` e o `less` enxergam só a área da esquerda. Funciona dentro de qualquer terminal Linux.
-- **Fase 7 (modo humanizado): concluída.** Digite `?` e o que você quer fazer, do seu jeito. O KofTerm acha a mais parecida entre 63 receitas escritas por pessoas (164 jeitos de pedir), preenche as lacunas e mostra o comando em cinza; o TAB coloca na linha, nada roda sozinho, e a coluna lateral explica cada parte.
+- **Fase 7 (modo humanizado): concluída.** Digite `?` e o que você quer fazer, do seu jeito. O KofTerm acha a mais parecida entre 122 receitas escritas por pessoas (348 jeitos de pedir), preenche as lacunas e mostra o comando em cinza; o TAB coloca na linha, nada roda sozinho, e a coluna lateral explica cada parte.
 - **Próximos passos:** o seu retorno como primeiro testador humano, mais receitas e entradas no índice, índice em inglês, lista de candidatos ao completar arquivos, modelo neural opcional em KOF puro (`kof-nn`).
 
 ###
@@ -98,10 +98,10 @@
 | Correções depois de erros: `sudo` após "Permissão negada", nome certo após "comando não encontrado" | ✅ Fase 4 |
 | Completa arquivos, pastas (`/etc/hostn` → `ame`) e opções (`ls --a` → `ll`) | ✅ Fase 4 |
 | Comandos perigosos (`rm -rf /`, `mkfs`, `dd of=/dev/sd…`, fork bomb) em vermelho e nunca sugeridos | ✅ Fase 4 |
-| Aba do índice em tela cheia com busca (**F1** / **Ctrl+T**), 53 entradas em português | ✅ Fase 3 |
+| Aba do índice em tela cheia com busca (**F1** / **Ctrl+T**), 146 entradas em português (comandos, redes, usuários, serviços e caminhos importantes) | ✅ Fase 3 |
 | **Coluna do índice à direita** com explicação ao vivo da linha atual (**F2**, lembrado) | ✅ Fase 6 |
 | Emulador de terminal próprio: o Bash e os programas de tela cheia nunca escrevem por cima do índice | ✅ Fase 6 |
-| Modo humanizado: `? o que você quer` → comando real de 63 receitas revisadas | ✅ Fase 7 |
+| Modo humanizado: `? o que você quer` → comando real de 122 receitas revisadas | ✅ Fase 7 |
 | Cada opção explicada separadamente (`-ld` → `-l` + `-d`), com exemplos e links de leitura | ✅ Fase 3 |
 | Contribuição opcional e anonimizada do aprendizado de volta ao projeto via Git | ✅ Fase 5 |
 | Modelo neural pequeno opcional, treinado e executado em KOF puro (`kof-nn`) | Fase 6 |
@@ -184,13 +184,13 @@ kofterm/
 
 **Requisitos:** Linux x86_64 com glibc 2.34 ou mais nova (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). O binário depende só da `libc` do sistema.
 
-**Opção A: release pronta (sem precisar do KOF).** Baixe `kofterm-0.6.1-linux-x86_64.tar.gz` e `SHA256SUMS` da [página de releases](https://github.com/DATAdotPDF/kofterm/releases) e rode:
+**Opção A: release pronta (sem precisar do KOF).** Baixe `kofterm-0.6.2-linux-x86_64.tar.gz` e `SHA256SUMS` da [página de releases](https://github.com/DATAdotPDF/kofterm/releases) e rode:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-tar -xzf kofterm-0.6.1-linux-x86_64.tar.gz && ./kofterm-0.6.1-linux-x86_64/kofterm install
+tar -xzf kofterm-0.6.2-linux-x86_64.tar.gz && ./kofterm-0.6.2-linux-x86_64/kofterm install
 ```
 
 **Opção B: a partir do código.** O `install.sh` compila o KofTerm com o KOF 0.6.6. Se o KOF faltar, ele pergunta antes de baixar a release oficial (cerca de 370 MB) e confere o SHA-256, que está fixado no script.
@@ -232,7 +232,7 @@ Para abrir o KofTerm sozinho em todo terminal novo, coloque no fim do `~/.bashrc
 | **?** + o que você quer | Modo humanizado: `? quanto espaço sobrou` sugere `df -h`. **TAB** ou **Enter** coloca o comando na linha; Enter de novo roda |
 | **Ctrl-L** | Limpa a tela e mantém o que você estava digitando |
 
-**Para quem desenvolve.** Compile e rode a partir do repositório sem instalar, e rode os testes unitários (68 testes, um arquivo por vez):
+**Para quem desenvolve.** Compile e rode a partir do repositório sem instalar, e rode os testes unitários (70 testes, um arquivo por vez):
 
 ```bash
 kof build src --target native --output build/kofterm && ./build/kofterm/Default/Main
@@ -305,6 +305,8 @@ Bibliotecas KOF paralelas que serão extraídas no caminho: `kof-tty` (terminal 
 
 **13. Fase 7: modo humanizado.** `? instalar o htop` procura entre 63 receitas escritas por pessoas (164 jeitos de pedir), tolera acentos e uma letra errada, e preenche as lacunas com as palavras do pedido. É recuperação, não geração: o KofTerm nunca inventa comando, as palavras do pedido nunca levam caracteres do shell para o comando, resultados perigosos são descartados e o comando só roda depois que a pessoa lê e aperta Enter de novo.
 
+**14. Root e estudos de redes (0.6.2).** O terceiro teste humano mostrou que o índice não dizia o que o `sudo` faz e que o KofTerm parava de funcionar depois do `sudo -i`, porque o shell de root não carregava o gancho dele. Agora a coluna explica cada parte da linha, inclusive o prefixo `sudo` e caminhos como `/etc/shadow`, e `sudo -i`, `sudo -s`, `sudo su` e um `bash` simples abrem o shell de dentro já com o gancho do KofTerm. O índice passou a 146 entradas e as receitas a 122, pensadas para quem estuda Linux, redes e segurança no próprio laboratório: rotas, DNS, portas, captura de pacotes, firewall, chaves SSH, usuários, logs, hashes e os caminhos importantes do sistema, tudo conferido numa VM Kali.
+
 O registro completo e datado está em [docs/JOURNAL.md](docs/JOURNAL.md); os achados sobre o KOF estão em [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md).
 
 <h3 align="left">CONTRIBUA COM O SEU APRENDIZADO:</h3>
@@ -332,7 +334,7 @@ Se você concordar, `kofterm contribute` grava `kofterm-contrib.kofdata`. Copie 
 - A coluna do índice precisa que sobrem pelo menos 40 colunas para o Bash; numa janela estreita o F2 apita e a mantém escondida.
 - Caracteres de largura dupla (CJK, alguns emoji) contam como uma coluna; emoji acima de U+FFFF aparecem como `�`.
 - Desempenho é medido, não suposto: com o `top` redesenhando 5 vezes por segundo e a coluna do índice ligada, o KofTerm ficou em 7,9 MB por 6 minutos e usou 0,2% de CPU. Chegar nisso exigiu contornar como o KOF 0.6.6 native lida com Strings temporárias (veja [docs/JOURNAL.md](docs/JOURNAL.md)).
-- Por enquanto o índice está só em português, com 53 entradas.
+- Por enquanto o índice está só em português, com 146 entradas.
 - Caracteres de largura dupla (CJK, alguns emoji) contam como uma coluna.
 
 ###

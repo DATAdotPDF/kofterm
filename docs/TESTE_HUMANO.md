@@ -1,8 +1,8 @@
-# Roteiro de teste humano — KofTerm 0.6.1
+# Roteiro de teste humano — KofTerm 0.6.2
 
 Este roteiro é para uma **pessoa de verdade, numa janela de terminal de verdade**, usar o
 KofTerm como um cliente usaria e dizer o que funcionou, o que estranhou e o que faltou.
-A versão 0.6 traz duas novidades grandes, pedidas no primeiro teste humano (a 0.6.1 corrige o que o segundo teste achou):
+A versão 0.6 traz duas novidades grandes, pedidas no primeiro teste humano (a 0.6.1 e a 0.6.2 corrigem o que os testes seguintes acharam):
 
 - **o índice numa coluna à direita** (F2), que nunca cobre o terminal;
 - **o modo humanizado**: `? quero instalar o htop` vira o comando.
@@ -32,9 +32,9 @@ cd ~/kofterm && git pull && ./install.sh
 
 | # | Verificar | Resultado |
 |---|---|---|
-| 0.1 | O `install.sh` termina com "KofTerm 0.6.1 instalado" | |
-| 0.2 | `kofterm version` mostra `KofTerm 0.6.1` | |
-| 0.3 | `kofterm doctor` mostra 53 comandos no índice e nenhum erro | |
+| 0.1 | O `install.sh` termina com "KofTerm 0.6.2 instalado" | |
+| 0.2 | `kofterm version` mostra `KofTerm 0.6.2` | |
+| 0.3 | `kofterm doctor` mostra 146 entradas no índice e nenhum erro | |
 
 ## 1. Primeira impressão
 
@@ -87,6 +87,39 @@ olhe o texto em cinza e a coluna da direita.
 | 4.9 | `? acessar root` | `sudo -i` (o que falhou no teste anterior) | |
 | 4.10 | Rode `sudo apt install -y claude` (pacote que não existe) e olhe a linha vazia seguinte | Sugere `apt search claude` | |
 | 4.11 | Invente 5 pedidos seus, do jeito que você falaria | Anote quais acertaram e quais não. **Esses são os mais valiosos** | |
+
+## 4b. Root e sudo (o que falhou no teste da 0.6.1)
+
+| # | Fazer | Deve acontecer | Resultado |
+|---|---|---|---|
+| 4b.1 | Digite só `sudo ` (sem Enter) | A coluna explica o que o sudo faz ("Super-user do"...) | |
+| 4b.2 | Digite `sudo -i` (sem Enter) | Em "NA SUA LINHA" aparece o `-i` explicado | |
+| 4b.3 | Digite `sudo cat /etc/shadow` (sem Enter) | A coluna mostra `cat` e, em "TAMBÉM NA LINHA", o `sudo` e o `/etc/shadow` | |
+| 4b.4 | Rode `sudo -i` e a sua senha | O prompt vira de root (`#`) e você está em `/root` | |
+| 4b.5 | Ainda como root: `? ver as pastas dentro do root` e depois `? quanto espaço sobrou` | O cinza e a coluna continuam funcionando (antes dava "?: comando não encontrado") | |
+| 4b.6 | `exit` | Volta ao seu usuário, com o KofTerm ainda funcionando | |
+| 4b.7 | Rode `bash`, teste um `?` e saia com `exit` | Funciona também num bash dentro do bash | |
+
+## 4c. Redes e estudos de segurança (novas receitas e índice)
+
+Use a sua rede de laboratório (por exemplo, a rede host-only das VMs). Não precisa rodar
+todos: o importante é ver se o pedido vira o comando certo e se a coluna explica.
+
+| # | Digite | Deve aparecer em cinza | Resultado |
+|---|---|---|---|
+| 4c.1 | `? qual o gateway` | `ip r` | |
+| 4c.2 | `? qual meu mac` | `ip link` | |
+| 4c.3 | `? descobrir ip do site kali.org` | `dig +short kali.org` | |
+| 4c.4 | `? caminho até google.com` | `traceroute -n google.com` | |
+| 4c.5 | `? quem usa a porta 22` | `sudo lsof -i :22` | |
+| 4c.6 | `? escanear a rede 192.168.56.0/24` (troque pela sua) | `nmap -sn 192.168.56.0/24` | |
+| 4c.7 | `? capturar tráfego` | `sudo tcpdump -i any -n` | |
+| 4c.8 | `? ver regras do firewall` | `sudo nft list ruleset` | |
+| 4c.9 | `? tentativas de login falhas` | `sudo journalctl -u ssh \| grep -i failed` | |
+| 4c.10 | `? arquivos suid` | `find / -perm -4000 -type f 2>/dev/null` | |
+| 4c.11 | Digite `ss -tuln` (sem Enter) | A coluna explica `-t`, `-u`, `-l` e `-n` | |
+| 4c.12 | Digite `cat ~/.ssh/authorized_keys` (sem Enter) | A coluna explica o arquivo em "TAMBÉM NA LINHA" | |
+| 4c.13 | Pedidos do seu curso (Cisco ou outro) | Anote os que não acertaram: viram receitas novas | |
 
 ## 5. A sugestão em cinza e o contexto
 
