@@ -1,8 +1,8 @@
-# Roteiro de teste humano — KofTerm 0.6.0
+# Roteiro de teste humano — KofTerm 0.6.1
 
 Este roteiro é para uma **pessoa de verdade, numa janela de terminal de verdade**, usar o
 KofTerm como um cliente usaria e dizer o que funcionou, o que estranhou e o que faltou.
-A versão 0.6.0 traz duas novidades grandes, pedidas no primeiro teste humano:
+A versão 0.6 traz duas novidades grandes, pedidas no primeiro teste humano (a 0.6.1 corrige o que o segundo teste achou):
 
 - **o índice numa coluna à direita** (F2), que nunca cobre o terminal;
 - **o modo humanizado**: `? quero instalar o htop` vira o comando.
@@ -24,7 +24,7 @@ script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm
 
 ## 0. Atualizar (uma vez)
 
-Você já tem o KofTerm 0.5.0 instalado e o repositório em `~/kofterm`. Fora do KofTerm:
+Você já tem o KofTerm instalado e o repositório em `~/kofterm`. Fora do KofTerm:
 
 ```bash
 cd ~/kofterm && git pull && ./install.sh
@@ -32,8 +32,8 @@ cd ~/kofterm && git pull && ./install.sh
 
 | # | Verificar | Resultado |
 |---|---|---|
-| 0.1 | O `install.sh` termina com "KofTerm 0.6.0 instalado" | |
-| 0.2 | `kofterm version` mostra `KofTerm 0.6.0` | |
+| 0.1 | O `install.sh` termina com "KofTerm 0.6.1 instalado" | |
+| 0.2 | `kofterm version` mostra `KofTerm 0.6.1` | |
 | 0.3 | `kofterm doctor` mostra 53 comandos no índice e nenhum erro | |
 
 ## 1. Primeira impressão
@@ -49,7 +49,7 @@ cd ~/kofterm && git pull && ./install.sh
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|
-| 2.1 | Aperte **F2** | Aparece uma coluna à direita, separada por uma linha `│`. O terminal fica à esquerda, sem nada por cima | |
+| 2.1 | Só abrir o KofTerm | No topo, uma linha cinza com as teclas; à direita, a coluna do índice já ligada, com "O QUE DÁ PARA FAZER" (se não aparecer, aperte **F2**) | |
 | 2.2 | Digite devagar `ls -ld /etc` | A coluna muda a cada letra e explica `-l` e `-d` em "NA SUA LINHA" | |
 | 2.3 | Digite `tar -czvf` | A coluna explica cada opção do `tar` | |
 | 2.4 | Rode `seq 1 100` | Os números rolam só na esquerda; a coluna fica parada | |
@@ -84,7 +84,9 @@ olhe o texto em cinza e a coluna da direita.
 | 4.6 | `? fazer um bolo de chocolate` | "nenhuma receita ainda" — ele não inventa | |
 | 4.7 | Volte ao 4.1 e aperte **TAB** | O comando vira a linha; **nada roda**. A coluna passa a explicar o comando | |
 | 4.8 | Aperte **Enter** | Agora sim o comando roda (pode cancelar a senha do sudo com Ctrl-C) | |
-| 4.9 | Invente 5 pedidos seus, do jeito que você falaria | Anote quais acertaram e quais não. **Esses são os mais valiosos** | |
+| 4.9 | `? acessar root` | `sudo -i` (o que falhou no teste anterior) | |
+| 4.10 | Rode `sudo apt install -y claude` (pacote que não existe) e olhe a linha vazia seguinte | Sugere `apt search claude` | |
+| 4.11 | Invente 5 pedidos seus, do jeito que você falaria | Anote quais acertaram e quais não. **Esses são os mais valiosos** | |
 
 ## 5. A sugestão em cinza e o contexto
 

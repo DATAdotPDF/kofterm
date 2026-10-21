@@ -2,6 +2,19 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.1] - 21/10/2026
+
+Fixes from the first human test of 0.6.0.
+
+### Added
+- First run shows what KofTerm can do: the index column starts on (F2 still hides it and the choice is remembered), a welcome line lists the keys, and the empty column shows the keys and `?` examples
+- Recipes for root: `? acessar root` → `sudo -i`, `? ver pasta do root` → `sudo ls -la /root` (63 recipes, 164 ways of asking)
+- After "Unable to locate package" / "Não é possível encontrar o pacote", the empty line suggests `apt search <name>`
+
+### Fixed
+- Human mode understands synonyms (acessar = entrar, achar/encontrar/buscar = procurar, deletar/excluir = apagar…), conjugated verbs (instalo = instalar) and ignores a stray `@` before a word
+- A recipe that matches more of the request's words now wins over a generic one with a gap (`? entrar na pasta root` → `sudo -i`, not `cd root`)
+
 ## [0.6.0] - 21/10/2026
 
 Phases 6 and 7: KofTerm draws its own screen, index column on the right, human mode.

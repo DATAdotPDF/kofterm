@@ -134,6 +134,12 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Verified in tmux: `? quero instalar o htop` → `sudo apt update && sudo apt install -y htop`; `? quanto espaço sobrou no disco` → `df -h`; `? procurar arquivo chamado relatorio` → `find . -iname "*relatorio*"`; `? compactr pasta fotos` (typo) → `tar -czvf fotos.tar.gz fotos`; `? apagar pasta lixo` → `rm -ri lixo`; `? fazer um bolo de chocolate` → no recipe. TAB puts the command on the line and the column explains it (`apt install`, `-y`).
 - 66 unit tests pass.
 
+### Second human test (Pedro, 0.6.0 in QTerminal) and 0.6.1
+- `? acessar root` found nothing: recipes knew "entrar" but not "acessar", there was no root recipe, and a stray `@` before the word (`@acessar`) blocked the match. Fixed with a synonym table applied to both recipes and requests, conjugated verbs matched by their first 6 letters, a leading `@` dropped, root recipes, and a score that prefers recipes matching more of the request's words.
+- `? instalar o claude` worked as designed, but the package does not exist in Kali's repositories; a learner is left stuck. KofTerm now reads apt's "não é possível encontrar o pacote" and suggests `apt search claude` on the empty line.
+- "How do I open the side index?" and "the commands should show up right away": on first run the index column starts on, a welcome line lists the keys, and the empty column shows what KofTerm can do with `?` examples.
+- Verified in tmux with a fresh HOME: the first screen, `? acessar root` / `? @acessar root` → `sudo -i`, `? ver pasta do root` → `sudo ls -la /root`, `? acessar a pasta fotos` → `cd fotos`, `? instalo o htop`, `? encontrar arquivo relatorio`, `? deletar arquivo velho.txt` → `rm -i velho.txt`, and `apt-get install -s claude` → `apt search claude`. 68 unit tests pass.
+
 ### Still to verify by hand
 - Everything above in a real QTerminal window, by Pedro (script in `docs/TESTE_HUMANO.md`).
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).
