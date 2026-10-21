@@ -1,0 +1,151 @@
+// Editor de linha: o texto que o usuario esta digitando, com cursor em caracteres.
+// Modulo puro (sem libc), testado com `kof test src/editor.kf`.
+
+class LineEditor {
+    String line = ""
+    Int cursor = 0
+
+    set(String text) {
+        line = text
+        cursor = text.length()
+    }
+
+    clear() {
+        set("")
+    }
+
+    Boolean atEnd() {
+        return cursor == line.length()
+    }
+
+    // charAt devolve um caractere, nao uma String: comparar com " " seria sempre falso.
+    Boolean spaceAt(Int i) {
+        return line.substring(i, i + 1) == " "
+    }
+
+    insert(String text) {
+        line = line.substring(0, cursor) + text + line.substring(cursor, line.length())
+        cursor = cursor + text.length()
+    }
+
+    backspace() {
+        if (cursor > 0) {
+            line = line.substring(0, cursor - 1) + line.substring(cursor, line.length())
+            cursor = cursor - 1
+        }
+    }
+
+    deleteForward() {
+        if (cursor < line.length()) {
+            line = line.substring(0, cursor) + line.substring(cursor + 1, line.length())
+        }
+    }
+
+    left() {
+        if (cursor > 0) {
+            cursor = cursor - 1
+        }
+    }
+
+    right() {
+        if (cursor < line.length()) {
+            cursor = cursor + 1
+        }
+    }
+
+    home() {
+        cursor = 0
+    }
+
+    end() {
+        cursor = line.length()
+    }
+
+    // Ctrl-U: apaga do inicio ate o cursor.
+    killToStart() {
+        line = line.substring(cursor, line.length())
+        cursor = 0
+    }
+
+    // Ctrl-K: apaga do cursor ate o fim.
+    killToEnd() {
+        line = line.substring(0, cursor)
+    }
+
+    // Ctrl-W: apaga a palavra antes do cursor (e os espacos antes dela).
+    killWordBack() {
+        var start = cursor
+        while (start > 0 && spaceAt(start - 1)) {
+            start = start - 1
+        }
+        while (start > 0 && !spaceAt(start - 1)) {
+            start = start - 1
+        }
+        line = line.substring(0, start) + line.substring(cursor, line.length())
+        cursor = start
+    }
+
+    wordLeft() {
+        while (cursor > 0 && spaceAt(cursor - 1)) {
+            cursor = cursor - 1
+        }
+        while (cursor > 0 && !spaceAt(cursor - 1)) {
+            cursor = cursor - 1
+        }
+    }
+
+    wordRight() {
+        while (cursor < line.length() && spaceAt(cursor)) {
+            cursor = cursor + 1
+        }
+        while (cursor < line.length() && !spaceAt(cursor)) {
+            cursor = cursor + 1
+        }
+    }
+}
+
+test "insere e apaga" {
+    var e = LineEditor()
+    e.insert("ls")
+    e.insert(" -la")
+    assert(e.line == "ls -la" && e.cursor == 6, "insercao")
+    e.backspace()
+    assert(e.line == "ls -l", "backspace")
+}
+
+test "insere no meio com cursor" {
+    var e = LineEditor()
+    e.set("sudo apt update")
+    e.home()
+    e.wordRight()
+    e.insert(" -E")
+    assert(e.line == "sudo -E apt update", "meio")
+}
+
+test "ctrl-w apaga a palavra anterior" {
+    var e = LineEditor()
+    e.set("git commit -m")
+    e.killWordBack()
+    assert(e.line == "git commit ", "ctrl-w")
+}
+
+test "ctrl-u e ctrl-k" {
+    var e = LineEditor()
+    e.set("echo ola mundo")
+    e.home()
+    e.wordRight()
+    e.killToEnd()
+    assert(e.line == "echo", "ctrl-k")
+    e.end()
+    e.killToStart()
+    assert(e.line == "" && e.cursor == 0, "ctrl-u")
+}
+
+test "acentos contam como um caractere" {
+    var e = LineEditor()
+    e.insert("ação")
+    assert(e.cursor == 4, "4 caracteres")
+    e.left()
+    e.deleteForward()
+    assert(e.line == "açã", "delete")
+}

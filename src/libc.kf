@@ -9,7 +9,16 @@
 extern "libc.so.6" malloc(Long n): Long
 extern "libc.so.6" free(Long p): void
 extern "libc.so.6" strdup(String s): Long
+// strndup devolvendo String: copia n bytes UTF-8 de um ponteiro cru para uma String do KOF.
+extern "libc.so.6" strndup(Long s, Long n): String
+extern "libc.so.6" strlen(Long s): Long
 extern "libc.so.6" setenv(String name, String value, Int overwrite): Int
+extern "libc.so.6" getenv(String name): String
+
+extern "libc.so.6" open(String path, Int flags, Int mode): Int
+extern "libc.so.6" lseek(Int fd, Long offset, Int whence): Long
+extern "libc.so.6" mkdir(String path, Int mode): Int
+extern "libc.so.6" chmod(String path, Int mode): Int
 
 extern "libc.so.6" read(Int fd, Long buf, Long n): Long
 extern "libc.so.6" write(Int fd, Long buf, Long n): Long
@@ -52,4 +61,12 @@ class Sys {
     static Int SIGWINCH = 28
     static Int STDIN = 0
     static Int STDOUT = 1
+    static Int O_RDONLY = 0
+    static Int O_WRITE_TRUNC = 577   // O_WRONLY | O_CREAT | O_TRUNC
+    static Int O_WRITE_APPEND = 1089 // O_WRONLY | O_CREAT | O_APPEND
+    static Int MODE_600 = 384
+    static Int MODE_700 = 448
+    static Int MODE_755 = 493
+    static Int SEEK_SET = 0
+    static Int SEEK_END = 2
 }

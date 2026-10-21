@@ -4,8 +4,10 @@
 class PtyChild(Int pid, Int master)
 
 // Abre o bash interativo num PTY novo, herdando termios e tamanho da janela.
+// --noediting: quem edita a linha e o kofterm, nao o readline do bash.
+// --rcfile: o bashrc do kofterm, que carrega o ~/.bashrc e marca o fim do prompt.
 // Retorna pid = -1 se o forkpty falhar.
-PtyChild ptySpawn(Long termios, Long ws, Int closeInChild) {
+PtyChild ptySpawn(Long termios, Long ws, Int closeInChild, String rcPath) {
     var masterBox = malloc(8L)
     var pid = forkpty(masterBox, 0L, termios, ws)
     if (pid == 0) {
@@ -13,11 +15,15 @@ PtyChild ptySpawn(Long termios, Long ws, Int closeInChild) {
         sigUnblockAll()
         close(closeInChild)
         setenv("KOFTERM", "1", 1)
-        var argv = malloc(24L)
+        // argv = { "bash", "--noediting", "--rcfile", rcPath, "-i", NULL }
+        var argv = malloc(48L)
         var bash = strdup("bash")
         buffer.poke64(argv, bash)
-        buffer.poke64(argv + 8L, strdup("-i"))
-        buffer.poke64(argv + 16L, 0L)
+        buffer.poke64(argv + 8L, strdup("--noediting"))
+        buffer.poke64(argv + 16L, strdup("--rcfile"))
+        buffer.poke64(argv + 24L, strdup(rcPath))
+        buffer.poke64(argv + 32L, strdup("-i"))
+        buffer.poke64(argv + 40L, 0L)
         execvp(bash, argv)
         _exit(127) // so chega aqui se o execvp falhar
     }

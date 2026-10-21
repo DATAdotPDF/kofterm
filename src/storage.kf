@@ -1,0 +1,129 @@
+// Arquivos do kofterm em ~/.local/share/kofterm (pasta 0700, arquivos 0600)
+// e conversoes entre bytes crus e String.
+
+// Cria ~/.local/share/kofterm se faltar e devolve o caminho.
+String dataDir() {
+    var home = getenv("HOME")
+    mkdir(home + "/.local", Sys.MODE_755)
+    mkdir(home + "/.local/share", Sys.MODE_755)
+    var dir = home + "/.local/share/kofterm"
+    mkdir(dir, Sys.MODE_700)
+    // o modo do mkdir/open so vale na criacao: garante 0700 mesmo se a pasta ja existia
+    chmod(dir, Sys.MODE_700)
+    return dir
+}
+
+saveFile(String path, String content) {
+    var fd = open(path, Sys.O_WRITE_TRUNC, Sys.MODE_600)
+    if (fd < 0) {
+        return
+    }
+    var p = strdup(content)
+    writeAll(fd, p, strlen(p))
+    free(p)
+    close(fd)
+    chmod(path, Sys.MODE_600)
+}
+
+appendLine(String path, String line) {
+    var fd = open(path, Sys.O_WRITE_APPEND, Sys.MODE_600)
+    if (fd < 0) {
+        return
+    }
+    var p = strdup(line + "\n")
+    writeAll(fd, p, strlen(p))
+    free(p)
+    close(fd)
+    chmod(path, Sys.MODE_600)
+}
+
+// Le o arquivo inteiro e devolve as linhas (sem o \n). Arquivo ausente -> lista vazia.
+List<String> loadLines(String path) {
+    var lines = listOf<String>()
+    var fd = open(path, Sys.O_RDONLY, 0)
+    if (fd < 0) {
+        return lines
+    }
+    var size = lseek(fd, 0L, Sys.SEEK_END)
+    lseek(fd, 0L, Sys.SEEK_SET)
+    if (size > 0L) {
+        var buf = malloc(size)
+        var got = 0L
+        while (got < size) {
+            var n = read(fd, buf + got, size - got)
+            if (n <= 0L) {
+                size = got
+            } else {
+                got = got + n
+            }
+        }
+        var start = 0L
+        var i = 0L
+        while (i < got) {
+            if (buffer.peek8(buf + i) == 10) {
+                if (i > start) {
+                    lines.add(strndup(buf + start, i - start))
+                }
+                start = i + 1L
+            }
+            i = i + 1L
+        }
+        if (got > start) {
+            lines.add(strndup(buf + start, got - start))
+        }
+        free(buf)
+    }
+    close(fd)
+    return lines
+}
+
+String bytesToString(List<Int> bytes) {
+    var n = bytes.size
+    var p = malloc((n + 1) as Long)
+    var i = 0
+    while (i < n) {
+        buffer.poke8(p + i, bytes.get(i))
+        i = i + 1
+    }
+    var s = strndup(p, n as Long)
+    free(p)
+    return s
+}
+
+// Codepoint Unicode -> String (UTF-8 de 1 a 4 bytes).
+String codepointToString(Int cp) {
+    var b = listOf<Int>()
+    if (cp < 128) {
+        b.add(cp)
+    } else if (cp < 2048) {
+        b.add(192 + cp / 64)
+        b.add(128 + cp % 64)
+    } else if (cp < 65536) {
+        b.add(224 + cp / 4096)
+        b.add(128 + (cp / 64) % 64)
+        b.add(128 + cp % 64)
+    } else {
+        b.add(240 + cp / 262144)
+        b.add(128 + (cp / 4096) % 64)
+        b.add(128 + (cp / 64) % 64)
+        b.add(128 + cp % 64)
+    }
+    return bytesToString(b)
+}
+
+// bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel
+// (ESC ] 7770 ; status ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
+// o \[ \] do PS1 nao e necessario.
+String shellRc() {
+    var esc = "\u001b"
+    var bel = "\u0007"
+    return "# KofTerm: gerado a cada inicio. Nao edite.\n" +
+        "[ -f ~/.bashrc ] && . ~/.bashrc\n" +
+        "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$PWD" + bel + "'\n" +
+        "__kofterm_prompt() { [[ \"$PS1\" == *\"$__kofterm_mark\" ]] || PS1=\"$PS1$__kofterm_mark\"; }\n" +
+        "if [[ \"$(declare -p PROMPT_COMMAND 2>/dev/null)\" == \"declare -a\"* ]]; then\n" +
+        "  PROMPT_COMMAND=('__kofterm_s=$?' \"${PROMPT_COMMAND[@]}\" '__kofterm_prompt')\n" +
+        "else\n" +
+        "  PROMPT_COMMAND='__kofterm_s=$?;'\"${PROMPT_COMMAND:+${PROMPT_COMMAND%;};}\"'__kofterm_prompt'\n" +
+        "fi\n"
+}

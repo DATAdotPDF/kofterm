@@ -1,9 +1,20 @@
-// KofTerm — Fase 1: terminal passthrough.
-// Abre o bash num PTY e repassa teclado e tela, com restauracao segura do terminal
-// em saida normal e nos sinais HUP/TERM. As sugestoes entram na Fase 2.
+// KofTerm — Fase 2: editor de linha com ghost text.
+// Abre o bash (sem readline) num PTY. No prompt, o kofterm edita a linha e sugere o resto
+// em cinza a partir do historico; TAB aceita. Fora do prompt, tudo passa direto.
+// Restauracao segura do terminal em saida normal e nos sinais HUP/TERM (Fase 1).
 
 class Loop {
     static Long CHUNK = 4096L
+}
+
+List<Int> toList(Long buf, Long n) {
+    var out = listOf<Int>()
+    var i = 0L
+    while (i < n) {
+        out.add(buffer.peek8(buf + i))
+        i = i + 1L
+    }
+    return out
 }
 
 main() {
@@ -15,6 +26,10 @@ main() {
     var ws = malloc(Sys.WINSIZE_SIZE)
     winsizeGet(Sys.STDOUT, ws)
 
+    var dir = dataDir()
+    var rcPath = dir + "/bashrc"
+    saveFile(rcPath, shellRc())
+
     // Sinais bloqueados ANTES do fork: nenhum chega no meio da preparacao.
     var sfd = sigOpen()
     if (sfd < 0) {
@@ -22,11 +37,18 @@ main() {
         process.exit(1)
     }
 
-    var child = ptySpawn(saved, ws, sfd)
+    var child = ptySpawn(saved, ws, sfd, rcPath)
     if (child.pid < 0) {
         println("kofterm: forkpty falhou")
         process.exit(1)
     }
+
+    var session = Session()
+    session.master = child.master
+    session.histPath = dir + "/history"
+    session.loadHistory()
+    var keys = KeyDecoder()
+    var scanner = PromptScanner()
 
     ttyRaw(Sys.STDIN)
     var exitCode = -1
@@ -34,6 +56,7 @@ main() {
     // struct pollfd { int fd; short events; short revents; } x3: stdin, master, signalfd
     var fds = malloc(24L)
     var buf = malloc(Loop.CHUNK)
+    var out = malloc(Loop.CHUNK * 2L)
     var info = malloc(Sys.SIGINFO_SIZE)
     try {
         buffer.poke32(fds, Sys.STDIN)
@@ -53,7 +76,31 @@ main() {
                     if (n <= 0L) {
                         running = false // bash saiu (EIO no master)
                     } else {
-                        writeAll(Sys.STDOUT, buf, n)
+                        // separa o marcador de prompt do resto da saida
+                        var o = 0L
+                        var i = 0L
+                        while (i < n) {
+                            var b = buffer.peek8(buf + i)
+                            var r = scanner.feed(b)
+                            if (r == Feed.EMIT) {
+                                buffer.poke8(out + o, b)
+                                o = o + 1L
+                                i = i + 1L
+                            } else if (r == Feed.FLUSH) {
+                                for (var h in scanner.takeHeld()) {
+                                    buffer.poke8(out + o, h)
+                                    o = o + 1L
+                                }
+                            } else if (r == Feed.MARK) {
+                                writeAll(Sys.STDOUT, out, o)
+                                o = 0L
+                                session.onPrompt(scanner.status(), bytesToString(scanner.cwdBytes()))
+                                i = i + 1L
+                            } else {
+                                i = i + 1L
+                            }
+                        }
+                        writeAll(Sys.STDOUT, out, o)
                     }
                 }
                 if (running && buffer.peek8(fds + 6L) != 0) {
@@ -62,6 +109,10 @@ main() {
                         // terminal de fora fechou: avisa o bash como um terminal faria
                         kill(child.pid, Sys.SIGHUP)
                         running = false
+                    } else if (session.editing) {
+                        for (var k in keys.decode(toList(buf, n))) {
+                            session.onKey(k)
+                        }
                     } else {
                         writeAll(child.master, buf, n)
                     }
@@ -94,6 +145,7 @@ main() {
     close(child.master)
     close(sfd)
     free(info)
+    free(out)
     free(buf)
     free(fds)
     free(ws)

@@ -1,0 +1,193 @@
+// Sessao: liga o editor de linha, o historico e o bash.
+//
+// Dois estados:
+// - editing = true: o bash mostrou o prompt (marcador recebido). O kofterm e dono da linha:
+//   desenha o texto e o ghost text, e so manda a linha para o bash no Enter.
+// - editing = false: um comando esta rodando (vim, sudo pedindo senha, read...).
+//   Cada byte do teclado vai direto para o bash, como na Fase 1.
+
+class Session {
+    Int master = -1
+    String histPath = ""
+    LineEditor ed = LineEditor()
+    History hist = History()
+    Boolean editing = false
+    String ghost = ""
+    String draftAfterClear = ""
+    Int lastStatus = 0
+    String cwd = ""
+
+    String esc() {
+        return "\u001b"
+    }
+
+    loadHistory() {
+        for (var line in loadLines(histPath)) {
+            hist.add(line)
+        }
+        hist.resetBrowse()
+    }
+
+    // O bash acabou de imprimir o prompt; o cursor esta onde a linha comeca.
+    onPrompt(Int status, String dir) {
+        lastStatus = status
+        cwd = dir
+        editing = true
+        ed.set(draftAfterClear)
+        draftAfterClear = ""
+        print(esc() + "7") // salva a posicao do inicio da linha
+        render()
+    }
+
+    // Redesenha a linha a partir do inicio salvo, com o ghost em cinza.
+    render() {
+        ghost = ""
+        if (ed.atEnd()) {
+            ghost = hist.suggest(ed.line)
+        }
+        var out = esc() + "8" + esc() + "[J" + ed.line
+        if (ghost.length() > 0) {
+            out = out + esc() + "[90m" + ghost + esc() + "[0m"
+        }
+        var back = ghost.length() + ed.line.length() - ed.cursor
+        if (back > 0) {
+            out = out + esc() + "[" + back + "D"
+        }
+        print(out)
+    }
+
+    // Apaga o desenho (linha + ghost), deixando o cursor no inicio da linha.
+    erase() {
+        print(esc() + "8" + esc() + "[J")
+    }
+
+    sendText(String s) {
+        var p = strdup(s)
+        writeAll(master, p, strlen(p))
+        free(p)
+    }
+
+    sendByte(Int b) {
+        var p = malloc(1L)
+        buffer.poke8(p, b)
+        writeAll(master, p, 1L)
+        free(p)
+    }
+
+    // Enter: a linha vai para o bash. O eco do terminal do bash a mostra de novo,
+    // por isso o desenho do kofterm e apagado antes.
+    submit() {
+        var line = ed.line
+        erase()
+        editing = false
+        ed.clear()
+        if (hist.add(line)) {
+            appendLine(histPath, line)
+        }
+        hist.resetBrowse()
+        sendText(line + "\r")
+    }
+
+    acceptGhost() {
+        ed.insert(ghost)
+    }
+
+    onKey(Key k) {
+        if (!editing) {
+            forwardKey(k)
+            return
+        }
+        var kind = k.kind
+        if (kind == K.CHAR) {
+            ed.insert(codepointToString(k.code))
+            hist.resetBrowse()
+        } else if (kind == K.ENTER) {
+            submit()
+            return
+        } else if (kind == K.TAB) {
+            if (ghost.length() > 0) {
+                acceptGhost()
+            }
+        } else if (kind == K.RIGHT) {
+            if (ed.atEnd() && ghost.length() > 0) {
+                acceptGhost()
+            } else {
+                ed.right()
+            }
+        } else if (kind == K.WORD_RIGHT) {
+            if (ed.atEnd() && ghost.length() > 0) {
+                ed.insert(firstWord(ghost))
+            } else {
+                ed.wordRight()
+            }
+        } else if (kind == K.LEFT) {
+            ed.left()
+        } else if (kind == K.WORD_LEFT) {
+            ed.wordLeft()
+        } else if (kind == K.HOME) {
+            ed.home()
+        } else if (kind == K.END) {
+            ed.end()
+        } else if (kind == K.BACKSPACE) {
+            ed.backspace()
+            hist.resetBrowse()
+        } else if (kind == K.DELETE) {
+            ed.deleteForward()
+        } else if (kind == K.CTRL_U) {
+            ed.killToStart()
+        } else if (kind == K.CTRL_W) {
+            ed.killWordBack()
+        } else if (kind == K.CTRL_K) {
+            ed.killToEnd()
+        } else if (kind == K.UP) {
+            ed.set(hist.prev(ed.line))
+        } else if (kind == K.DOWN) {
+            ed.set(hist.next(ed.line))
+        } else if (kind == K.CTRL_C) {
+            // mostra o que foi cancelado (sem ghost) e deixa o bash tratar o ^C
+            var line = ed.line
+            erase()
+            print(line)
+            editing = false
+            ed.clear()
+            hist.resetBrowse()
+            sendByte(3)
+            return
+        } else if (kind == K.CTRL_D) {
+            if (ed.line.length() == 0) {
+                erase()
+                editing = false
+                sendByte(4)
+                return
+            }
+            ed.deleteForward()
+        } else if (kind == K.CTRL_L) {
+            // limpa a tela e pede um prompt novo ao bash com uma linha vazia,
+            // que nao muda o $?. O rascunho volta quando o prompt chegar.
+            draftAfterClear = ed.line
+            print(esc() + "[H" + esc() + "[2J")
+            editing = false
+            ed.clear()
+            sendText("\r")
+            return
+        }
+        render()
+    }
+
+    // Fora do prompt (ou depois de um Enter no meio de um colar): a tecla vira bytes de novo.
+    forwardKey(Key k) {
+        if (k.kind == K.CHAR) {
+            sendText(codepointToString(k.code))
+        } else if (k.kind == K.ENTER) {
+            sendText("\r")
+        } else if (k.kind == K.TAB) {
+            sendByte(9)
+        } else if (k.kind == K.BACKSPACE) {
+            sendByte(127)
+        } else if (k.kind == K.CTRL_C) {
+            sendByte(3)
+        } else if (k.kind == K.CTRL_D) {
+            sendByte(4)
+        }
+    }
+}

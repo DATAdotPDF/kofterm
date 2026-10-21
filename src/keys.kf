@@ -1,0 +1,235 @@
+// Decodificador de teclas: bytes crus do terminal -> teclas.
+// Modulo puro (sem libc), testado com `kof test src/keys.kf`. Futuro kof-ansi.
+
+class K {
+    static Int IGNORE = 0
+    static Int CHAR = 1
+    static Int ENTER = 2
+    static Int TAB = 3
+    static Int BACKSPACE = 4
+    static Int DELETE = 5
+    static Int LEFT = 6
+    static Int RIGHT = 7
+    static Int UP = 8
+    static Int DOWN = 9
+    static Int HOME = 10
+    static Int END = 11
+    static Int CTRL_C = 12
+    static Int CTRL_D = 13
+    static Int CTRL_U = 14
+    static Int CTRL_W = 15
+    static Int CTRL_K = 16
+    static Int WORD_RIGHT = 17
+    static Int WORD_LEFT = 18
+    static Int CTRL_L = 19
+}
+
+// `code` e o codepoint Unicode quando kind == K.CHAR.
+class Key(Int kind, Int code)
+
+// Guarda sequencias incompletas entre leituras (um read pode cortar um ESC [ ... no meio).
+class KeyDecoder {
+    List<Int> pending = listOf<Int>()
+
+    List<Key> decode(List<Int> bytes) {
+        var all = listOf<Int>()
+        for (var b in pending) {
+            all.add(b)
+        }
+        for (var b in bytes) {
+            all.add(b)
+        }
+        pending = listOf<Int>()
+        var out = listOf<Key>()
+        var i = 0
+        while (i < all.size) {
+            var b = all.get(i)
+            if (b == 27) {
+                var used = escape(all, i, out)
+                if (used == 0) {
+                    // sequencia incompleta: espera o resto no proximo read
+                    while (i < all.size) {
+                        pending.add(all.get(i))
+                        i = i + 1
+                    }
+                    return out
+                }
+                i = i + used
+            } else if (b >= 128) {
+                var used = utf8(all, i, out)
+                if (used == 0) {
+                    while (i < all.size) {
+                        pending.add(all.get(i))
+                        i = i + 1
+                    }
+                    return out
+                }
+                i = i + used
+            } else {
+                out.add(control(b))
+                i = i + 1
+            }
+        }
+        return out
+    }
+
+    Key control(Int b) {
+        if (b == 13 || b == 10) { return Key(K.ENTER, 0) }
+        if (b == 9) { return Key(K.TAB, 0) }
+        if (b == 127 || b == 8) { return Key(K.BACKSPACE, 0) }
+        if (b == 1) { return Key(K.HOME, 0) }
+        if (b == 5) { return Key(K.END, 0) }
+        if (b == 2) { return Key(K.LEFT, 0) }
+        if (b == 6) { return Key(K.RIGHT, 0) }
+        if (b == 16) { return Key(K.UP, 0) }
+        if (b == 14) { return Key(K.DOWN, 0) }
+        if (b == 3) { return Key(K.CTRL_C, 0) }
+        if (b == 4) { return Key(K.CTRL_D, 0) }
+        if (b == 21) { return Key(K.CTRL_U, 0) }
+        if (b == 23) { return Key(K.CTRL_W, 0) }
+        if (b == 11) { return Key(K.CTRL_K, 0) }
+        if (b == 12) { return Key(K.CTRL_L, 0) }
+        if (b >= 32) { return Key(K.CHAR, b) }
+        return Key(K.IGNORE, b)
+    }
+
+    // ESC [ params final  |  ESC O x  |  ESC b / ESC f (Alt). Retorna bytes usados, 0 se incompleta.
+    Int escape(List<Int> all, Int i, List<Key> out) {
+        if (i + 1 >= all.size) {
+            return 0
+        }
+        var b1 = all.get(i + 1)
+        if (b1 == 79) { // 'O'
+            if (i + 2 >= all.size) {
+                return 0
+            }
+            out.add(finalKey(all.get(i + 2), ""))
+            return 3
+        }
+        if (b1 == 98) { // Alt-b
+            out.add(Key(K.WORD_LEFT, 0))
+            return 2
+        }
+        if (b1 == 102) { // Alt-f
+            out.add(Key(K.WORD_RIGHT, 0))
+            return 2
+        }
+        if (b1 != 91) { // nao e CSI: ignora o ESC sozinho
+            out.add(Key(K.IGNORE, 27))
+            return 1
+        }
+        var params = ""
+        var j = i + 2
+        while (j < all.size) {
+            var c = all.get(j)
+            if (c >= 64 && c <= 126) {
+                out.add(finalKey(c, params))
+                return j - i + 1
+            }
+            if (c == 59) {
+                params = params + ";"
+            } else if (c >= 48 && c <= 57) {
+                params = params + (c - 48)
+            }
+            j = j + 1
+        }
+        return 0
+    }
+
+    Key finalKey(Int c, String params) {
+        var ctrl = params.endsWith(";5")
+        if (c == 65) { return Key(K.UP, 0) }
+        if (c == 66) { return Key(K.DOWN, 0) }
+        if (c == 67) {
+            if (ctrl) { return Key(K.WORD_RIGHT, 0) }
+            return Key(K.RIGHT, 0)
+        }
+        if (c == 68) {
+            if (ctrl) { return Key(K.WORD_LEFT, 0) }
+            return Key(K.LEFT, 0)
+        }
+        if (c == 72) { return Key(K.HOME, 0) }
+        if (c == 70) { return Key(K.END, 0) }
+        if (c == 126) { // ~
+            if (params == "3") { return Key(K.DELETE, 0) }
+            if (params == "1" || params == "7") { return Key(K.HOME, 0) }
+            if (params == "4" || params == "8") { return Key(K.END, 0) }
+        }
+        return Key(K.IGNORE, c)
+    }
+
+    // UTF-8 de 2 a 4 bytes -> um codepoint. Retorna bytes usados, 0 se incompleto.
+    Int utf8(List<Int> all, Int i, List<Key> out) {
+        var b = all.get(i)
+        var n = 0
+        var cp = 0
+        if (b >= 240) {
+            n = 3
+            cp = b - 240
+        } else if (b >= 224) {
+            n = 2
+            cp = b - 224
+        } else if (b >= 192) {
+            n = 1
+            cp = b - 192
+        } else {
+            out.add(Key(K.IGNORE, b)) // byte de continuacao solto
+            return 1
+        }
+        if (i + n >= all.size) {
+            return 0
+        }
+        var k = 1
+        while (k <= n) {
+            cp = cp * 64 + (all.get(i + k) - 128)
+            k = k + 1
+        }
+        out.add(Key(K.CHAR, cp))
+        return n + 1
+    }
+}
+
+test "ascii vira CHAR" {
+    var d = KeyDecoder()
+    var ks = d.decode(listOf(108, 115))
+    assert(ks.size == 2, "duas teclas")
+    assert(ks.get(0).kind == K.CHAR && ks.get(0).code == 108, "l")
+}
+
+test "setas e Enter" {
+    var d = KeyDecoder()
+    var ks = d.decode(listOf(27, 91, 65, 27, 91, 68, 13))
+    assert(ks.size == 3, "tres teclas")
+    assert(ks.get(0).kind == K.UP, "seta cima")
+    assert(ks.get(1).kind == K.LEFT, "seta esquerda")
+    assert(ks.get(2).kind == K.ENTER, "enter")
+}
+
+test "ctrl+seta direita e delete" {
+    var d = KeyDecoder()
+    var ks = d.decode(listOf(27, 91, 49, 59, 53, 67, 27, 91, 51, 126))
+    assert(ks.get(0).kind == K.WORD_RIGHT, "ctrl+direita")
+    assert(ks.get(1).kind == K.DELETE, "delete")
+}
+
+test "sequencia cortada entre dois reads" {
+    var d = KeyDecoder()
+    var a = d.decode(listOf(27, 91))
+    assert(a.size == 0, "espera o resto")
+    var b = d.decode(listOf(66))
+    assert(b.size == 1 && b.get(0).kind == K.DOWN, "seta baixo")
+}
+
+test "utf8 de dois bytes" {
+    var d = KeyDecoder()
+    var ks = d.decode(listOf(195, 167)) // c cedilha
+    assert(ks.size == 1 && ks.get(0).code == 231, "codepoint 231")
+}
+
+test "tab, backspace, ctrl-c" {
+    var d = KeyDecoder()
+    var ks = d.decode(listOf(9, 127, 3))
+    assert(ks.get(0).kind == K.TAB, "tab")
+    assert(ks.get(1).kind == K.BACKSPACE, "backspace")
+    assert(ks.get(2).kind == K.CTRL_C, "ctrl-c")
+}
