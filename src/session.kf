@@ -16,6 +16,27 @@ class Session {
     String draftAfterClear = ""
     Int lastStatus = 0
     String cwd = ""
+    IndexTab tab = IndexTab()
+    Int rows = 24
+    Int cols = 80
+
+    onResize(Int r, Int c) {
+        rows = r
+        cols = c
+        tab.resize(r, c)
+    }
+
+    // F1 / Ctrl+T: abre a aba do indice na tela alternativa. O cursor volta antes ao inicio
+    // da linha porque a troca de tela salva a posicao do cursor no mesmo lugar que o \e7.
+    openTab() {
+        print(esc() + "8" + esc() + "[?1049h")
+        tab.show(ed.line, rows, cols)
+    }
+
+    closeTab() {
+        print(esc() + "[?1049l")
+        render()
+    }
 
     String esc() {
         return "\u001b"
@@ -97,8 +118,17 @@ class Session {
             forwardKey(k)
             return
         }
+        if (tab.open) {
+            if (!tab.onKey(k)) {
+                closeTab()
+            }
+            return
+        }
         var kind = k.kind
-        if (kind == K.CHAR) {
+        if (kind == K.F1 || kind == K.CTRL_T) {
+            openTab()
+            return
+        } else if (kind == K.CHAR) {
             ed.insert(codepointToString(k.code))
             hist.resetBrowse()
         } else if (kind == K.ENTER) {

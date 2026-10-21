@@ -1,0 +1,357 @@
+// Indice offline de comandos: formato do arquivo, busca e leitura da linha digitada.
+// Modulo puro (sem libc), testado com `kof test src/index.kf`.
+//
+// Formato do arquivo (index/pt_BR.txt), uma entrada por bloco:
+//   # ls                      nome do comando (ou "git commit", "|", ">"...)
+//   > Lista arquivos.         resumo de uma linha
+//   - -l | Formato longo.     opcao (varios nomes separados por virgula) | explicacao
+//   $ ls -la | O que faz.     exemplo | explicacao
+//   @ https://...             link de leitura (so exibido, nunca aberto pelo kofterm)
+//   ; comentario              ignorado
+
+class Opt(String names, String text)
+
+class Example(String cmd, String text)
+
+class Entry {
+    String name = ""
+    String summary = ""
+    List<Opt> options = listOf<Opt>()
+    List<Example> examples = listOf<Example>()
+    List<String> links = listOf<String>()
+
+    // A opcao cujo nome (entre os separados por virgula) e exatamente `flag`, ou null.
+    Opt? option(String flag) {
+        for (var o in options) {
+            for (var n in splitOn(o.names, ",")) {
+                if (n.trim() == flag) {
+                    return o
+                }
+            }
+        }
+        return null
+    }
+}
+
+class CommandIndex {
+    List<Entry> entries = listOf<Entry>()
+
+    load(List<String> lines) {
+        var cur = Entry()
+        var has = false
+        for (var raw in lines) {
+            var line = raw.trim()
+            if (line.length() < 2 || line.startsWith(";")) {
+                continue
+            }
+            var tag = line.substring(0, 1)
+            var body = line.substring(1, line.length()).trim()
+            if (tag == "#") {
+                if (has) {
+                    entries.add(cur)
+                }
+                cur = Entry()
+                cur.name = body
+                has = true
+            } else if (tag == ">") {
+                cur.summary = body
+            } else if (tag == "-") {
+                cur.options.add(Opt(beforeLast(body, " | ").trim(), afterLast(body, " | ").trim()))
+            } else if (tag == "$") {
+                // o comando do exemplo pode ter pipe; a explicacao vem depois do ULTIMO " | "
+                cur.examples.add(Example(beforeLast(body, " | ").trim(), afterLast(body, " | ").trim()))
+            } else if (tag == "@") {
+                cur.links.add(body)
+            }
+        }
+        if (has) {
+            entries.add(cur)
+        }
+    }
+
+    Entry? find(String name) {
+        for (var e in entries) {
+            if (e.name == name) {
+                return e
+            }
+        }
+        return null
+    }
+
+    // Busca para a aba: primeiro os nomes que comecam com a consulta, depois os que contem
+    // a consulta no nome ou no resumo. Consulta vazia: tudo, na ordem do arquivo.
+    List<Entry> search(String query) {
+        var q = query.trim().toLowerCase()
+        if (q.length() == 0) {
+            return entries
+        }
+        var first = listOf<Entry>()
+        var rest = listOf<Entry>()
+        for (var e in entries) {
+            var n = e.name.toLowerCase()
+            if (n.startsWith(q)) {
+                first.add(e)
+            } else if (n.contains(q) || e.summary.toLowerCase().contains(q)) {
+                rest.add(e)
+            }
+        }
+        for (var e in rest) {
+            first.add(e)
+        }
+        return first
+    }
+
+    // A entrada que explica a linha digitada: o ultimo comando da linha (depois de |, &&, ;),
+    // pulando sudo/env/time e VAR=valor. Tenta "git commit" antes de "git".
+    Entry? forLine(String line) {
+        var words = commandWords(line)
+        if (words.size == 0) {
+            return null
+        }
+        if (words.size >= 2) {
+            var sub = find(words.get(0) + " " + words.get(1))
+            if (sub != null) {
+                return sub
+            }
+        }
+        return find(words.get(0))
+    }
+
+    // As opcoes da linha que a entrada conhece. "-ld" vira "-l" e "-d", a menos que a
+    // propria entrada tenha "-ld" (como o "-name" do find).
+    List<Opt> optionsInLine(Entry e, String line) {
+        var out = listOf<Opt>()
+        for (var w in commandWords(line)) {
+            if (!w.startsWith("-") || w == "-" || w == "--") {
+                continue
+            }
+            var flag = before(w, "=")
+            var exact = e.option(flag)
+            if (exact != null) {
+                addOnce(out, exact)
+            } else if (!flag.startsWith("--")) {
+                var i = 1
+                while (i < flag.length()) {
+                    var single = e.option("-" + flag.substring(i, i + 1))
+                    if (single != null) {
+                        addOnce(out, single)
+                    }
+                    i = i + 1
+                }
+            }
+        }
+        return out
+    }
+}
+
+addOnce(List<Opt> list, Opt o) {
+    for (var x in list) {
+        if (x.names == o.names) {
+            return
+        }
+    }
+    list.add(o)
+}
+
+// As palavras do ultimo comando da linha, sem prefixos como sudo.
+List<String> commandWords(String line) {
+    var segment = line
+    for (var sep in listOf("|", "&&", "||", ";")) {
+        var parts = splitOn(segment, sep)
+        if (parts.size > 1) {
+            segment = parts.get(parts.size - 1)
+        }
+    }
+    var words = listOf<String>()
+    var started = false
+    for (var w in splitOn(segment, " ")) {
+        var t = w.trim()
+        if (t.length() == 0) {
+            continue
+        }
+        if (!started && (t == "sudo" || t == "env" || t == "time" || t == "nohup" || (t.contains("=") && !t.startsWith("-")))) {
+            continue
+        }
+        started = true
+        words.add(t)
+    }
+    return words
+}
+
+List<String> splitOn(String s, String sep) {
+    var out = listOf<String>()
+    var start = 0
+    var i = 0
+    while (i + sep.length() <= s.length()) {
+        if (s.substring(i, i + sep.length()) == sep) {
+            out.add(s.substring(start, i))
+            i = i + sep.length()
+            start = i
+        } else {
+            i = i + 1
+        }
+    }
+    out.add(s.substring(start, s.length()))
+    return out
+}
+
+String before(String s, String sep) {
+    return splitOn(s, sep).get(0)
+}
+
+String after(String s, String sep) {
+    var parts = splitOn(s, sep)
+    if (parts.size < 2) {
+        return ""
+    }
+    return s.substring(parts.get(0).length() + sep.length(), s.length())
+}
+
+String beforeLast(String s, String sep) {
+    var parts = splitOn(s, sep)
+    if (parts.size < 2) {
+        return s
+    }
+    return s.substring(0, s.length() - parts.get(parts.size - 1).length() - sep.length())
+}
+
+String afterLast(String s, String sep) {
+    var parts = splitOn(s, sep)
+    if (parts.size < 2) {
+        return ""
+    }
+    return parts.get(parts.size - 1)
+}
+
+// Quebra um texto em linhas de no maximo `width` caracteres, nos espacos.
+List<String> wrapText(String text, Int width) {
+    var lines = listOf<String>()
+    var cur = ""
+    for (var w in splitOn(text, " ")) {
+        if (cur.length() == 0) {
+            cur = w
+        } else if (cur.length() + 1 + w.length() <= width) {
+            cur = cur + " " + w
+        } else {
+            lines.add(cur)
+            cur = w
+        }
+    }
+    if (cur.length() > 0) {
+        lines.add(cur)
+    }
+    return lines
+}
+
+// Entrada ou uma entrada vazia (o KOF exige checar null antes de usar um Entry?).
+Entry must(Entry? e) {
+    if (e != null) {
+        return e
+    }
+    return Entry()
+}
+
+String nameOf(Entry? e) {
+    if (e != null) {
+        return e.name
+    }
+    return ""
+}
+
+List<String> sampleIndex() {
+    return listOf(
+        "; teste",
+        "# ls",
+        "> Lista arquivos e pastas.",
+        "- -l | Formato longo.",
+        "- -d | A propria pasta.",
+        "- -a, --all | Inclui ocultos.",
+        "$ ls -la | Tudo, em formato longo.",
+        "$ ls -l | less | Com rolagem.",
+        "@ https://ss64.com/bash/ls.html",
+        "# find",
+        "> Procura arquivos.",
+        "- -name | Pelo nome.",
+        "# git",
+        "> Controle de versao.",
+        "# git commit",
+        "> Grava as mudancas.",
+        "- -m | Mensagem do commit."
+    )
+}
+
+test "le o formato do arquivo" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    assert(idx.entries.size == 4, "quatro entradas")
+    var ls = must(idx.find("ls"))
+    assert(ls.name == "ls", "ls existe")
+    assert(ls.summary == "Lista arquivos e pastas.", "resumo")
+    assert(ls.options.size == 3 && ls.examples.size == 2 && ls.links.size == 1, "partes")
+    assert(ls.examples.get(0).cmd == "ls -la", "exemplo")
+}
+
+test "exemplo com pipe no comando" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var ex = must(idx.find("ls")).examples.get(1)
+    assert(ex.cmd == "ls -l | less", "comando com pipe")
+    assert(ex.text == "Com rolagem.", "explicacao")
+}
+
+test "o indice real carrega sem erro de formato" {
+    var idx = CommandIndex()
+    idx.load(listOf("# ps", "> Processos.", "$ ps aux | grep python | Procura um processo pelo nome."))
+    var ex = must(idx.find("ps")).examples.get(0)
+    assert(ex.cmd == "ps aux | grep python", "pipe no meio")
+}
+
+test "separa -ld em -l e -d" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var ls = must(idx.find("ls"))
+    var used = idx.optionsInLine(ls, "ls -ld /etc")
+    assert(used.size == 2, "duas opcoes")
+    assert(used.get(0).names == "-l" && used.get(1).names == "-d", "ordem")
+}
+
+test "opcao longa e nome alternativo" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var ls = must(idx.find("ls"))
+    var used = idx.optionsInLine(ls, "ls --all")
+    assert(used.size == 1 && used.get(0).text == "Inclui ocultos.", "--all")
+}
+
+test "find -name nao vira -n -a -m -e" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var f = must(idx.find("find"))
+    var used = idx.optionsInLine(f, "find . -name x")
+    assert(used.size == 1 && used.get(0).names == "-name", "-name inteiro")
+}
+
+test "a linha escolhe o comando certo" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    assert(nameOf(idx.forLine("sudo ls -l")) == "ls", "pula sudo")
+    assert(nameOf(idx.forLine("git commit -m x")) == "git commit", "subcomando")
+    assert(nameOf(idx.forLine("git push")) == "git", "cai no git")
+    assert(nameOf(idx.forLine("cat x | ls")) == "ls", "ultimo do pipe")
+    assert(nameOf(idx.forLine("zzz")) == "", "desconhecido")
+}
+
+test "busca por comeco, depois por conteudo" {
+    var idx = CommandIndex()
+    idx.load(sampleIndex())
+    var r = idx.search("gi")
+    assert(r.size == 2 && r.get(0).name == "git", "git primeiro")
+    var p = idx.search("procura")
+    assert(p.size == 1 && p.get(0).name == "find", "pelo resumo")
+}
+
+test "quebra de texto" {
+    var w = wrapText("um dois tres quatro", 9)
+    assert(w.size == 3, "tres linhas")
+    assert(w.get(0) == "um dois", "primeira")
+}

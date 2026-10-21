@@ -111,6 +111,35 @@ String codepointToString(Int cp) {
     return bytesToString(b)
 }
 
+// Pasta onde esta o executavel (via /proc/self/exe).
+String exeDir() {
+    var buf = malloc(4096L)
+    var n = readlink("/proc/self/exe", buf, 4095L)
+    var path = ""
+    if (n > 0L) {
+        path = strndup(buf, n)
+    }
+    free(buf)
+    var cut = path.length()
+    while (cut > 0 && path.substring(cut - 1, cut) != "/") {
+        cut = cut - 1
+    }
+    if (cut <= 1) {
+        return "/"
+    }
+    return path.substring(0, cut - 1)
+}
+
+// O indice: primeiro o instalado em ~/.local/share/kofterm/index, depois o do repositorio
+// (o binario fica em <repo>/build/kofterm/Default/Main).
+String findIndex(String dataDirPath) {
+    var installed = dataDirPath + "/index/pt_BR.txt"
+    if (access(installed, 0) == 0) {
+        return installed
+    }
+    return exeDir() + "/../../../index/pt_BR.txt"
+}
+
 // bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel
 // (ESC ] 7770 ; status ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
 // o \[ \] do PS1 nao e necessario.

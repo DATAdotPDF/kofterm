@@ -33,6 +33,15 @@ winsizeSet(Int fd, Long ws) {
     ioctl(fd, Sys.TIOCSWINSZ, ws)
 }
 
+// struct winsize { u16 ws_row; u16 ws_col; ... }
+Int winRows(Long ws) {
+    return buffer.peek8(ws) + buffer.peek8(ws + 1L) * 256
+}
+
+Int winCols(Long ws) {
+    return buffer.peek8(ws + 2L) + buffer.peek8(ws + 3L) * 256
+}
+
 // write pode ser parcial: repete ate tudo sair.
 writeAll(Int fd, Long buf, Long n) {
     var done = 0L

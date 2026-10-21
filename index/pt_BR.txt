@@ -1,0 +1,408 @@
+; KofTerm — índice offline de comandos (português do Brasil)
+; Texto escrito pelo projeto KofTerm, licença GPLv3. Nenhum trecho copiado do SS64 ou de outras fontes;
+; os links (@) apontam para leitura complementar e nunca são abertos pelo KofTerm.
+;
+; Formato:  # nome   > resumo   - opção | explicação   $ exemplo | explicação   @ link
+; Para contribuir: mantenha frases curtas, pensadas para quem está aprendendo.
+
+; ───────────── Navegação e arquivos ─────────────
+
+# ls
+> Lista os arquivos e pastas de um diretório.
+- -l | Formato longo: permissões, dono, grupo, tamanho e data de cada item.
+- -a, --all | Mostra também os itens ocultos (os que começam com ponto, como .bashrc).
+- -A | Como -a, mas sem as entradas . (pasta atual) e .. (pasta de cima).
+- -d | Mostra a própria pasta, não o que tem dentro dela. Útil com -l para ver as permissões de uma pasta.
+- -h | Tamanhos legíveis (K, M, G) em vez de bytes. Funciona junto com -l.
+- -t | Ordena pela data de modificação, mais recentes primeiro.
+- -r | Inverte a ordem.
+- -S | Ordena pelo tamanho, maiores primeiro.
+- -R | Entra nas subpastas (recursivo).
+- -1 | Um item por linha.
+$ ls -la | Tudo, inclusive ocultos, em formato longo.
+$ ls -lh | Formato longo com tamanhos em K, M, G.
+$ ls -ld /etc | Permissões da própria pasta /etc.
+$ ls -lt | Os modificados por último aparecem primeiro.
+@ https://ss64.com/bash/ls.html
+@ https://man7.org/linux/man-pages/man1/ls.1.html
+
+# cd
+> Muda a pasta atual.
+- - | Volta para a pasta em que você estava antes (cd -).
+$ cd /etc | Vai para /etc (caminho absoluto, começa com /).
+$ cd .. | Sobe uma pasta.
+$ cd ~ | Vai para a sua pasta pessoal (também funciona só cd).
+$ cd - | Volta para a pasta anterior.
+@ https://ss64.com/bash/cd.html
+@ https://www.gnu.org/software/bash/manual/bash.html#Bourne-Shell-Builtins
+
+# pwd
+> Mostra o caminho completo da pasta atual.
+$ pwd | Exibe algo como /home/voce/projetos.
+@ https://ss64.com/bash/pwd.html
+
+# mkdir
+> Cria pastas.
+- -p | Cria as pastas do caminho que faltarem e não reclama se a pasta já existe.
+- -v | Mostra cada pasta criada.
+$ mkdir fotos | Cria a pasta fotos dentro da pasta atual.
+$ mkdir -p projetos/kof/src | Cria as três pastas de uma vez.
+@ https://ss64.com/bash/mkdir.html
+@ https://man7.org/linux/man-pages/man1/mkdir.1.html
+
+# touch
+> Cria um arquivo vazio ou atualiza a data de um arquivo existente.
+$ touch notas.txt | Cria notas.txt se não existir.
+@ https://ss64.com/bash/touch.html
+
+# cp
+> Copia arquivos e pastas.
+- -r, -R | Copia pastas com tudo o que tem dentro (recursivo).
+- -i | Pergunta antes de sobrescrever um arquivo.
+- -v | Mostra cada arquivo copiado.
+- -p | Mantém permissões, dono e datas.
+$ cp a.txt b.txt | Copia a.txt para b.txt.
+$ cp -r fotos backup/ | Copia a pasta fotos inteira para dentro de backup.
+@ https://ss64.com/bash/cp.html
+@ https://man7.org/linux/man-pages/man1/cp.1.html
+
+# mv
+> Move ou renomeia arquivos e pastas.
+- -i | Pergunta antes de sobrescrever.
+- -v | Mostra cada item movido.
+- -n | Nunca sobrescreve um arquivo que já existe.
+$ mv velho.txt novo.txt | Renomeia o arquivo.
+$ mv foto.jpg ~/Imagens/ | Move o arquivo para outra pasta.
+@ https://ss64.com/bash/mv.html
+
+# rm
+> Apaga arquivos e pastas. Não existe lixeira: o que é apagado some.
+- -r | Apaga pastas com tudo o que tem dentro (recursivo).
+- -f | Não pergunta nada e não reclama de arquivos que não existem. Cuidado.
+- -i | Pergunta antes de apagar cada arquivo. Bom para quem está começando.
+- -v | Mostra cada item apagado.
+$ rm notas.txt | Apaga um arquivo.
+$ rm -ri pasta | Apaga a pasta, perguntando item por item.
+@ https://ss64.com/bash/rm.html
+@ https://man7.org/linux/man-pages/man1/rm.1.html
+
+# ln
+> Cria atalhos (links) para arquivos e pastas.
+- -s | Link simbólico, o atalho comum. Sem -s, cria um link físico.
+$ ln -s /caminho/real atalho | Cria atalho apontando para /caminho/real.
+@ https://ss64.com/bash/ln.html
+
+; ───────────── Ler e procurar ─────────────
+
+# cat
+> Mostra o conteúdo de arquivos (ou junta vários).
+- -n | Numera as linhas.
+$ cat notas.txt | Mostra o arquivo inteiro na tela.
+$ cat a.txt b.txt > tudo.txt | Junta dois arquivos em um.
+@ https://ss64.com/bash/cat.html
+
+# less
+> Abre um arquivo para ler com rolagem. q sai, / procura.
+- -N | Mostra o número das linhas.
+$ less /var/log/syslog | Lê um arquivo grande sem encher a tela.
+@ https://man7.org/linux/man-pages/man1/less.1.html
+
+# head
+> Mostra o começo de um arquivo (10 linhas por padrão).
+- -n | Quantas linhas mostrar.
+$ head -n 5 notas.txt | As 5 primeiras linhas.
+@ https://ss64.com/bash/head.html
+
+# tail
+> Mostra o fim de um arquivo (10 linhas por padrão).
+- -n | Quantas linhas mostrar.
+- -f | Continua mostrando as linhas novas que chegarem. Ctrl-C sai. Ótimo para logs.
+$ tail -f /var/log/syslog | Acompanha o log ao vivo.
+@ https://ss64.com/bash/tail.html
+
+# grep
+> Procura um texto dentro de arquivos ou da saída de outro comando.
+- -i | Ignora maiúsculas e minúsculas.
+- -r | Procura em todos os arquivos das subpastas.
+- -n | Mostra o número da linha de cada resultado.
+- -v | Inverte: mostra as linhas que NÃO têm o texto.
+- -l | Mostra só o nome dos arquivos que têm o texto.
+- -c | Conta quantas linhas têm o texto.
+- -w | Só palavras inteiras.
+- -E | Usa expressões regulares estendidas (|, +, ? sem barra invertida).
+$ grep -rn "TODO" . | Procura TODO em todos os arquivos, com o número da linha.
+$ ps aux | grep firefox | Filtra a lista de processos.
+@ https://ss64.com/bash/grep.html
+@ https://man7.org/linux/man-pages/man1/grep.1.html
+
+# find
+> Procura arquivos e pastas pelo nome, tipo, tamanho ou data.
+- -name | Pelo nome. Use aspas com curingas: -name "*.txt".
+- -iname | Pelo nome, sem diferenciar maiúsculas.
+- -type | Pelo tipo: f arquivo, d pasta, l link.
+- -size | Pelo tamanho: +100M é maior que 100 MB.
+- -mtime | Pela data: -7 é modificado nos últimos 7 dias.
+- -maxdepth | Até quantos níveis de subpastas descer.
+$ find . -name "*.log" | Todos os .log a partir da pasta atual.
+$ find /home -type d -name kof | Pastas chamadas kof.
+@ https://ss64.com/bash/find.html
+@ https://man7.org/linux/man-pages/man1/find.1.html
+
+# wc
+> Conta linhas, palavras e bytes.
+- -l | Só as linhas.
+- -w | Só as palavras.
+$ wc -l notas.txt | Quantas linhas o arquivo tem.
+@ https://ss64.com/bash/wc.html
+
+# sort
+> Ordena linhas.
+- -n | Ordem numérica (2 antes de 10).
+- -r | Ordem inversa.
+- -u | Remove linhas repetidas.
+$ sort -u nomes.txt | Ordena e tira as repetições.
+@ https://ss64.com/bash/sort.html
+
+; ───────────── Permissões e usuários ─────────────
+
+# chmod
+> Muda as permissões de leitura (r), escrita (w) e execução (x).
+- -R | Aplica em tudo dentro da pasta (recursivo).
+$ chmod +x script.sh | Torna o script executável.
+$ chmod 600 segredo.txt | Só o dono lê e escreve (6 = r+w, 0 = nada).
+$ chmod 755 pasta | Dono faz tudo; grupo e outros leem e entram.
+@ https://ss64.com/bash/chmod.html
+@ https://man7.org/linux/man-pages/man1/chmod.1.html
+
+# chown
+> Muda o dono (e o grupo) de arquivos. Normalmente precisa de sudo.
+- -R | Aplica em tudo dentro da pasta.
+$ sudo chown voce:voce arquivo | Passa o arquivo para o seu usuário.
+@ https://ss64.com/bash/chown.html
+
+# sudo
+> Roda um comando como administrador (root). Pede a SUA senha.
+- -i | Abre um shell de root. Use só quando precisar.
+- -k | Esquece a senha digitada; a próxima vez vai pedir de novo.
+- -u | Roda como outro usuário: sudo -u nome comando.
+$ sudo apt update | Atualiza a lista de pacotes como administrador.
+$ sudo !! | Repete o último comando com sudo (quando deu "Permission denied").
+@ https://ss64.com/bash/sudo.html
+@ https://man7.org/linux/man-pages/man8/sudo.8.html
+
+# whoami
+> Mostra o nome do seu usuário.
+$ whoami | Exibe algo como datadotpdf.
+@ https://ss64.com/bash/whoami.html
+
+; ───────────── Pacotes ─────────────
+
+# apt
+> Instala, remove e atualiza programas no Debian, Ubuntu e Kali.
+$ sudo apt update | Baixa a lista de versões disponíveis. Não instala nada.
+$ sudo apt upgrade | Atualiza os programas instalados. Rode depois do update.
+$ sudo apt install htop | Instala o programa htop.
+$ sudo apt remove htop | Remove o programa.
+$ apt search editor | Procura programas pelo nome ou descrição.
+@ https://manpages.debian.org/apt
+
+# apt install
+> Instala um ou mais programas.
+- -y | Responde "sim" para a confirmação automaticamente.
+$ sudo apt install -y git curl | Instala git e curl sem perguntar.
+@ https://manpages.debian.org/apt
+
+; ───────────── Processos e sistema ─────────────
+
+# ps
+> Lista os processos (programas rodando).
+- aux | Todos os processos de todos os usuários, com uso de CPU e memória.
+$ ps aux | Lista completa.
+$ ps aux | grep python | Procura um processo pelo nome.
+@ https://ss64.com/bash/ps.html
+
+# kill
+> Envia um sinal para um processo, normalmente para encerrar.
+- -9 | SIGKILL: encerra na força, sem o programa poder salvar nada. Último recurso.
+- -15 | SIGTERM: pede para encerrar (é o padrão).
+$ kill 1234 | Pede ao processo 1234 para encerrar.
+@ https://ss64.com/bash/kill.html
+
+# top
+> Mostra os processos ao vivo, com uso de CPU e memória. q sai.
+$ top | Abre o monitor. Experimente também o htop, mais amigável.
+@ https://ss64.com/bash/top.html
+
+# df
+> Mostra o espaço livre nos discos.
+- -h | Tamanhos legíveis (G, M).
+$ df -h | Espaço de cada disco.
+@ https://ss64.com/bash/df.html
+
+# du
+> Mostra quanto espaço pastas e arquivos ocupam.
+- -h | Tamanhos legíveis.
+- -s | Só o total de cada item, sem detalhar subpastas.
+$ du -sh * | Quanto ocupa cada item da pasta atual.
+@ https://ss64.com/bash/du.html
+
+; ───────────── Compactar, rede e acesso remoto ─────────────
+
+# tar
+> Junta e compacta arquivos (.tar, .tar.gz).
+- -c | Criar um arquivo novo.
+- -x | Extrair.
+- -t | Listar o conteúdo sem extrair.
+- -z | Usa gzip (.tar.gz).
+- -v | Mostra cada arquivo.
+- -f | O nome do arquivo .tar vem logo em seguida. Quase sempre necessário.
+$ tar -czvf backup.tar.gz pasta | Compacta a pasta.
+$ tar -xzvf backup.tar.gz | Extrai na pasta atual.
+@ https://ss64.com/bash/tar.html
+
+# ping
+> Testa se um computador responde pela rede. Ctrl-C para parar.
+- -c | Quantos pacotes enviar.
+$ ping -c 4 kali.org | Envia 4 pacotes e para.
+@ https://ss64.com/bash/ping.html
+
+# ip
+> Mostra e configura a rede (substitui o antigo ifconfig).
+$ ip a | Endereços de cada placa de rede.
+$ ip r | Rotas (por onde sai o tráfego).
+@ https://man7.org/linux/man-pages/man8/ip.8.html
+
+# ssh
+> Acessa outro computador pelo terminal, com conexão criptografada.
+- -p | Porta, se não for a 22.
+- -i | Arquivo de chave privada a usar.
+$ ssh usuario@servidor | Entra no servidor.
+$ ssh -p 2222 usuario@127.0.0.1 | Usa a porta 2222.
+@ https://ss64.com/bash/ssh.html
+@ https://man7.org/linux/man-pages/man1/ssh.1.html
+
+# curl
+> Baixa ou envia dados por HTTP e outros protocolos.
+- -O | Salva com o nome original do arquivo.
+- -L | Segue redirecionamentos.
+- -I | Mostra só os cabeçalhos da resposta.
+$ curl -LO https://exemplo.com/arquivo.zip | Baixa o arquivo.
+@ https://curl.se/docs/manpage.html
+
+; ───────────── Git ─────────────
+
+# git
+> Controle de versões: guarda o histórico das mudanças de um projeto.
+$ git status | O que mudou desde o último commit.
+$ git log --oneline | Histórico resumido.
+@ https://git-scm.com/docs
+
+# git add
+> Escolhe as mudanças que vão entrar no próximo commit.
+- -A | Todas as mudanças, inclusive arquivos apagados.
+- -p | Escolhe pedaço por pedaço, perguntando.
+$ git add . | Tudo o que mudou na pasta atual.
+@ https://git-scm.com/docs/git-add
+
+# git commit
+> Grava as mudanças escolhidas com uma mensagem.
+- -m | A mensagem vem em seguida, entre aspas.
+- -a | Inclui automaticamente os arquivos já conhecidos que mudaram.
+- -S | Assina o commit (aparece como Verified no GitHub).
+$ git commit -m "corrige bug" | Grava com a mensagem.
+@ https://git-scm.com/docs/git-commit
+
+# git push
+> Envia os commits para o repositório remoto (GitHub, por exemplo).
+- -u | Liga o branch local ao remoto; depois basta git push.
+$ git push -u origin main | Primeiro envio do branch main.
+@ https://git-scm.com/docs/git-push
+
+# git clone
+> Baixa um repositório inteiro, com o histórico.
+$ git clone https://github.com/DATAdotPDF/kofterm.git | Copia o KofTerm para a sua máquina.
+@ https://git-scm.com/docs/git-clone
+
+; ───────────── Shell ─────────────
+
+# echo
+> Escreve um texto na tela.
+- -n | Sem quebra de linha no final.
+- -e | Interpreta \n, \t etc.
+$ echo $HOME | Mostra o valor de uma variável.
+$ echo "oi" > arquivo.txt | Escreve no arquivo (apagando o conteúdo anterior).
+@ https://ss64.com/bash/echo.html
+
+# history
+> Mostra os comandos que você já digitou.
+$ history | Lista numerada.
+$ !42 | Repete o comando número 42.
+@ https://ss64.com/bash/history.html
+
+# man
+> Abre o manual de um comando. q sai, / procura.
+$ man ls | Manual do ls.
+@ https://man7.org/linux/man-pages/man1/man.1.html
+
+# which
+> Mostra onde está o programa que roda quando você digita um nome.
+$ which python3 | Exibe algo como /usr/bin/python3.
+@ https://ss64.com/bash/which.html
+
+# clear
+> Limpa a tela. No KofTerm, Ctrl-L faz o mesmo e mantém o que você está digitando.
+@ https://man7.org/linux/man-pages/man1/clear.1.html
+
+# nano
+> Editor de texto simples no terminal. Ctrl-O salva, Ctrl-X sai.
+$ nano notas.txt | Abre (ou cria) o arquivo para editar.
+@ https://www.nano-editor.org/dist/latest/nano.html
+
+; ───────────── Operadores do shell ─────────────
+
+# |
+> Pipe: manda a saída de um comando para a entrada do próximo.
+$ ls -l | less | Lê uma listagem grande com rolagem.
+$ cat log.txt | grep erro | wc -l | Conta as linhas com "erro".
+@ https://www.gnu.org/software/bash/manual/bash.html#Pipelines
+
+# >
+> Redireciona a saída para um arquivo, apagando o que havia nele.
+$ ls > lista.txt | Salva a listagem no arquivo.
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# >>
+> Redireciona a saída para o fim de um arquivo, sem apagar o que havia.
+$ echo "nova linha" >> notas.txt | Acrescenta ao final.
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# 2>
+> Redireciona as mensagens de erro (stderr) para um arquivo.
+$ find / -name x 2> /dev/null | Esconde os erros de "Permission denied".
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# &&
+> Roda o próximo comando só se o anterior deu certo (código de saída 0).
+$ sudo apt update && sudo apt upgrade | Só atualiza se a lista baixou.
+@ https://www.gnu.org/software/bash/manual/bash.html#Lists
+
+# ||
+> Roda o próximo comando só se o anterior falhou.
+$ ping -c1 site || echo "fora do ar" | Avisa se o site não responde.
+@ https://www.gnu.org/software/bash/manual/bash.html#Lists
+
+# $?
+> O código de saída do último comando: 0 deu certo, outro número falhou.
+$ echo $? | Mostra o código do comando anterior.
+@ https://www.gnu.org/software/bash/manual/bash.html#Special-Parameters
+
+# ~
+> Atalho para a sua pasta pessoal (/home/seu-usuario).
+$ cd ~/Downloads | Vai para Downloads.
+@ https://www.gnu.org/software/bash/manual/bash.html#Tilde-Expansion
+
+# *
+> Curinga: qualquer sequência de caracteres em nomes de arquivos.
+$ ls *.txt | Todos os .txt da pasta.
+$ rm *.tmp | Apaga todos os .tmp. Rode ls *.tmp antes para conferir.
+@ https://www.gnu.org/software/bash/manual/bash.html#Pattern-Matching

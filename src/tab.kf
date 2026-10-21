@@ -1,0 +1,277 @@
+// Aba do indice em tela cheia (F1 ou Ctrl+T), na tela alternativa do terminal:
+// ao fechar com Esc, a tela de antes volta intacta, como acontece com less e vim.
+// Duas vistas: lista com busca e detalhes de um comando.
+
+class IndexTab {
+    CommandIndex index = CommandIndex()
+    Boolean open = false
+    Boolean detailView = false
+    Entry? detail = null
+    String query = ""
+    String userLine = ""     // a linha que o usuario estava digitando, para "Na sua linha"
+    Int selected = 0
+    Int listTop = 0
+    Int scroll = 0
+    Int rows = 24
+    Int cols = 80
+
+    String esc() {
+        return "\u001b"
+    }
+
+    // Abre direto nos detalhes do comando da linha, se o indice conhecer; senao, na lista.
+    show(String line, Int r, Int c) {
+        open = true
+        rows = r
+        cols = c
+        userLine = line
+        query = ""
+        selected = 0
+        listTop = 0
+        var e = index.forLine(line)
+        if (e != null) {
+            openDetail(e)
+        } else {
+            var words = commandWords(line)
+            if (words.size > 0) {
+                query = words.get(0)
+            }
+            detailView = false
+        }
+        draw()
+    }
+
+    openDetail(Entry e) {
+        detail = e
+        detailView = true
+        scroll = 0
+    }
+
+    resize(Int r, Int c) {
+        rows = r
+        cols = c
+        if (open) {
+            draw()
+        }
+    }
+
+    // Retorna false quando a aba fecha.
+    Boolean onKey(Key k) {
+        var kind = k.kind
+        if (detailView) {
+            if (kind == K.ESC || kind == K.LEFT || kind == K.BACKSPACE) {
+                detailView = false
+                if (query.length() == 0) {
+                    query = nameOf(detail)
+                }
+            } else if (kind == K.UP) {
+                if (scroll > 0) {
+                    scroll = scroll - 1
+                }
+            } else if (kind == K.DOWN) {
+                scroll = scroll + 1
+            } else if (kind == K.PAGE_UP) {
+                scroll = scroll - (rows - 3)
+                if (scroll < 0) {
+                    scroll = 0
+                }
+            } else if (kind == K.PAGE_DOWN || kind == K.CHAR && k.code == 32) {
+                scroll = scroll + rows - 3
+            } else if (kind == K.F1 || kind == K.CTRL_T || kind == K.CTRL_C) {
+                open = false
+                return false
+            }
+            draw()
+            return true
+        }
+        var found = index.search(query)
+        if (kind == K.ESC || kind == K.F1 || kind == K.CTRL_T || kind == K.CTRL_C) {
+            open = false
+            return false
+        } else if (kind == K.CHAR) {
+            query = query + codepointToString(k.code)
+            selected = 0
+        } else if (kind == K.BACKSPACE) {
+            if (query.length() > 0) {
+                query = query.substring(0, query.length() - 1)
+            }
+            selected = 0
+        } else if (kind == K.CTRL_U) {
+            query = ""
+            selected = 0
+        } else if (kind == K.UP) {
+            if (selected > 0) {
+                selected = selected - 1
+            }
+        } else if (kind == K.DOWN) {
+            if (selected < found.size - 1) {
+                selected = selected + 1
+            }
+        } else if (kind == K.ENTER || kind == K.RIGHT) {
+            if (found.size > 0) {
+                openDetail(found.get(selected))
+            }
+        }
+        draw()
+        return true
+    }
+
+    draw() {
+        var lines = listOf<String>()
+        if (detailView && detail != null) {
+            lines = detailLines(must(detail))
+        } else {
+            lines = listLines()
+        }
+        var out = esc() + "[H" + esc() + "[2J"
+        var i = 0
+        while (i < lines.size && i < rows) {
+            if (i > 0) {
+                out = out + "\r\n"
+            }
+            out = out + lines.get(i)
+            i = i + 1
+        }
+        if (!detailView) {
+            // cursor no fim da busca
+            out = out + esc() + "[2;" + (11 + query.length()) + "H"
+        }
+        print(out)
+    }
+
+    String bar(String text) {
+        return esc() + "[7m" + pad(clip(text, cols), cols) + esc() + "[0m"
+    }
+
+    List<String> listLines() {
+        var found = index.search(query)
+        var out = listOf<String>()
+        out.add(bar(" KofTerm · Índice offline · " + index.entries.size + " comandos"))
+        out.add(" Buscar: " + esc() + "[1m" + clip(query, cols - 12) + esc() + "[0m")
+        out.add("")
+        var visible = rows - 4
+        if (selected < listTop) {
+            listTop = selected
+        }
+        if (selected >= listTop + visible) {
+            listTop = selected - visible + 1
+        }
+        var nameW = 12
+        var i = listTop
+        while (i < found.size && i < listTop + visible) {
+            var e = found.get(i)
+            var text = " " + pad(clip(e.name, nameW), nameW) + "  " + clip(e.summary, cols - nameW - 4)
+            if (i == selected) {
+                out.add(esc() + "[7m" + pad(text, cols) + esc() + "[0m")
+            } else {
+                out.add(esc() + "[33m" + text.substring(0, nameW + 1) + esc() + "[0m" + text.substring(nameW + 1, text.length()))
+            }
+            i = i + 1
+        }
+        if (found.size == 0) {
+            out.add(" Nada encontrado. Tente outra palavra (ex.: copiar, apagar, rede).")
+        }
+        while (out.size < rows - 1) {
+            out.add("")
+        }
+        out.add(bar(" Digite para buscar · ↑↓ escolher · Enter abrir · Esc fechar"))
+        return out
+    }
+
+    List<String> detailLines(Entry e) {
+        var body = listOf<String>()
+        var w = cols - 2
+        body.add("")
+        var head = wrapText(e.name + " — " + e.summary, w)
+        for (var h in head) {
+            body.add(" " + esc() + "[1m" + h + esc() + "[0m")
+        }
+        var used = index.optionsInLine(e, userLine)
+        if (used.size > 0) {
+            body.add("")
+            body.add(" " + esc() + "[1;32mNA SUA LINHA" + esc() + "[0m  " + clip(userLine, w - 15))
+            optionRows(body, used, w)
+        }
+        if (e.options.size > 0) {
+            body.add("")
+            body.add(" " + esc() + "[1;36mOPÇÕES" + esc() + "[0m")
+            optionRows(body, e.options, w)
+        }
+        if (e.examples.size > 0) {
+            body.add("")
+            body.add(" " + esc() + "[1;36mEXEMPLOS" + esc() + "[0m")
+            for (var x in e.examples) {
+                body.add("   " + esc() + "[33m" + clip(x.cmd, w - 3) + esc() + "[0m")
+                for (var t in wrapText(x.text, w - 7)) {
+                    body.add("       " + t)
+                }
+            }
+        }
+        if (e.links.size > 0) {
+            body.add("")
+            body.add(" " + esc() + "[1;36mLEIA MAIS" + esc() + "[0m" + esc() + "[90m  (abra no navegador; o KofTerm não acessa a internet)" + esc() + "[0m")
+            for (var l in e.links) {
+                body.add("   " + esc() + "[4m" + clip(l, w - 3) + esc() + "[0m")
+            }
+        }
+        // rolagem: so o corpo rola; o titulo e o rodape ficam
+        var visible = rows - 2
+        var maxScroll = body.size - visible
+        if (maxScroll < 0) {
+            maxScroll = 0
+        }
+        if (scroll > maxScroll) {
+            scroll = maxScroll
+        }
+        var out = listOf<String>()
+        out.add(bar(" KofTerm · " + e.name))
+        var i = scroll
+        while (i < body.size && out.size < rows - 1) {
+            out.add(body.get(i))
+            i = i + 1
+        }
+        while (out.size < rows - 1) {
+            out.add("")
+        }
+        var more = ""
+        if (maxScroll > 0) {
+            more = " · ↑↓ rolar"
+        }
+        out.add(bar(" Esc voltar para a lista" + more + " · F1 fechar"))
+        return out
+    }
+
+    optionRows(List<String> body, List<Opt> opts, Int w) {
+        var nameW = 12
+        for (var o in opts) {
+            var text = wrapText(o.text, w - nameW - 5)
+            var first = true
+            for (var t in text) {
+                if (first) {
+                    body.add("   " + esc() + "[33m" + pad(clip(o.names, nameW), nameW) + esc() + "[0m  " + t)
+                    first = false
+                } else {
+                    body.add("   " + pad("", nameW) + "  " + t)
+                }
+            }
+        }
+    }
+}
+
+String clip(String s, Int n) {
+    if (n <= 0) {
+        return ""
+    }
+    if (s.length() <= n) {
+        return s
+    }
+    return s.substring(0, n)
+}
+
+String pad(String s, Int n) {
+    var out = s
+    while (out.length() < n) {
+        out = out + " "
+    }
+    return out
+}
