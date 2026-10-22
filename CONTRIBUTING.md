@@ -46,7 +46,7 @@ receitas do modo `?` e entradas do índice, escritas em português simples.
 | 🟢 Fácil | **Entrada nova ou melhor** no índice (o que o comando faz, opções, exemplos) | [`index/pt_BR.txt`](index/pt_BR.txt) | O comando |
 | 🟢 Fácil | **Testar** numa distribuição ou terminal diferente e contar o que aconteceu | Issue com o modelo "Bug" | Usar o terminal |
 | 🟢 Fácil | **Seguir o roteiro** de teste humano e devolver as linhas ⚠️ e ❌ | [`docs/TESTE_HUMANO.md`](docs/TESTE_HUMANO.md) | Usar o terminal |
-| 🟡 Médio | **Contribuir com o seu aprendizado** anonimizado (o modelo fica mais esperto) | `kofterm contribute` → `datasets/contrib/` | Nada; veja a seção no README |
+| 🟡 Médio | **Contribuir com o seu aprendizado** anonimizado (o modelo fica mais esperto) | `kofterm contribute` → `datasets/contrib/` | Nada; veja [datasets/contrib](datasets/contrib/README.md) |
 | 🟡 Médio | **Traduzir** entradas e receitas para inglês | `index/en.txt`, `recipes/en.txt` (novos) | Inglês |
 | 🔴 Técnico | **Código em KOF**: editor, modelo, emulador de terminal, painel | [`src/`](src) | KOF (parecido com Kotlin/Java) |
 | 🔴 Técnico | **Biblioteca KOF paralela** para algo que falta na linguagem | Repositório próprio | KOF |

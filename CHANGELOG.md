@@ -2,6 +2,18 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.6] - 21/10/2026
+
+A README that gets straight to the point, and the Kali prompt fixed.
+
+### Changed
+- README (English and Portuguese) rewritten to be short and direct, like the clinews README: what KofTerm is, a real screen, how to install right away, first steps, what it does, why it exists, safety, KOF, how to help and contributors; the process and audit trail come at the end
+- The technical sections (status, features, architecture, repository map, roadmap, end-to-end process, developer notes) moved to `docs/COMO_FOI_FEITO.md` and `docs/HOW_IT_WAS_BUILT.md`, with an up-to-date architecture diagram
+
+### Fixed
+- Double-width characters such as the `㉿` in Kali's default prompt (and CJK text) now take two columns in the emulator. Before, the prompt line was one column too long on screen and erased the index column's separator, which looked like a dotted line
+- 76 unit tests
+
 ## [0.6.5] - 21/10/2026
 
 Open to contributors: guide, code of conduct, templates and a project site.
