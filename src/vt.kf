@@ -373,8 +373,35 @@ class Vt {
             put(ascii.get(cp))
         } else if (cp > 65535) {
             put("�")
+        } else if (vtWide(cp)) {
+            putWide("" + (cp as Char))
         } else {
             put("" + (cp as Char))
+        }
+    }
+
+    // Caractere de largura dupla (o ㉿ do prompt do Kali, CJK): ocupa duas celulas. A segunda
+    // fica vazia (EMPTY) e nao gera nada ao desenhar, entao a linha tem a mesma largura aqui e
+    // no terminal de verdade (antes ela passava uma coluna e apagava a barra do indice).
+    putWide(String s) {
+        if (wrapPending || cx >= cols - 1) {
+            // sem espaco para as duas metades: vai para a proxima linha, como o xterm
+            if (!wrapPending && autowrap) {
+                put(SPACE)
+            }
+            wrapPending = true
+        }
+        put(s)
+        if (wrapPending) {
+            return // terminal de uma coluna so
+        }
+        var row = screen().get(cy)
+        row.ch.set(cx, EMPTY)
+        row.at.set(cx, attr)
+        if (cx >= cols - 1) {
+            wrapPending = true
+        } else {
+            cx = cx + 1
         }
     }
 
@@ -387,6 +414,13 @@ class Vt {
             }
         }
         var row = screen().get(cy)
+        // sobrescrever metade de um caractere largo: a outra metade vira espaco
+        if (row.ch.get(cx) == EMPTY && cx > 0) {
+            row.ch.set(cx - 1, SPACE)
+        }
+        if (cx + 1 < cols && row.ch.get(cx + 1) == EMPTY) {
+            row.ch.set(cx + 1, SPACE)
+        }
         row.ch.set(cx, s)
         row.at.set(cx, attr)
         dirty.set(cy, true)
@@ -944,6 +978,20 @@ String vtChar(Int b) {
     return "" + (b as Char)
 }
 
+// Largura dupla (East Asian Wide/Fullwidth) nas faixas comuns do plano basico.
+Boolean vtWide(Int cp) {
+    return cp >= 4352 && cp <= 4447 ||      // Hangul Jamo
+        cp >= 11904 && cp <= 12350 ||       // radicais CJK, pontuacao CJK
+        cp >= 12353 && cp <= 13311 ||       // kana, ... caracteres circulados (inclui o ㉿ U+327F)
+        cp >= 13312 && cp <= 19903 ||       // CJK extensao A
+        cp >= 19968 && cp <= 42191 ||       // CJK unificado, Yi
+        cp >= 44032 && cp <= 55203 ||       // Hangul
+        cp >= 63744 && cp <= 64255 ||       // CJK de compatibilidade
+        cp >= 65072 && cp <= 65103 ||       // formas verticais CJK
+        cp >= 65280 && cp <= 65376 ||       // formas de largura total
+        cp >= 65504 && cp <= 65510
+}
+
 Int clampInt(Int v, Int lo, Int hi) {
     if (v < lo) {
         return lo
@@ -1120,4 +1168,20 @@ test "redimensionar mantem o conteudo e o cursor" {
     assert(v.rows == 2 && v.cols == 6, "tamanho")
     assert(v.trimmed(1) == "d", "a linha do cursor continua visivel")
     assert(v.cy == 1, "cursor na ultima linha")
+}
+
+test "caractere largo ocupa duas colunas (o ㉿ do prompt do Kali)" {
+    var v = vtNew(3, 6)
+    // "a" + ㉿ (U+327F, UTF-8 E3 89 BF) + "b"
+    v.feedAll(listOf(97, 227, 137, 191, 98))
+    var row = v.screen().get(0)
+    assert(row.ch.get(0) == "a" && row.ch.get(2) == "" && row.ch.get(3) == "b", "metade vazia depois do largo")
+    assert(v.cx == 4, "cursor andou tres colunas e mais uma")
+    // escrever por cima da segunda metade apaga a primeira
+    v.feedAll(vtBytes("\r\u001b[2Cx"))
+    assert(row.ch.get(1) == " " && row.ch.get(2) == "x", "metade orfa vira espaco")
+    // sem espaco no fim da linha: vai inteiro para a linha de baixo
+    var w = vtNew(3, 4)
+    w.feedAll(listOf(97, 98, 99, 227, 137, 191))
+    assert(w.screen().get(0).ch.get(3) == " " && w.screen().get(1).ch.get(1) == "", "quebra antes do largo")
 }
