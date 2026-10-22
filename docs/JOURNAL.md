@@ -163,3 +163,10 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 ### Still to verify by hand
 - Everything above in a real QTerminal window, by Pedro (script in `docs/TESTE_HUMANO.md`).
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).
+
+### Opening the project to contributors (0.6.5)
+- Pedro's plan: make it easy for new people to join (README, CONTRIBUTING, CODE_OF_CONDUCT, `good first issue` / `help wanted`, quick and kind reviews, public credit), a project site in the palette of dotpdf.dev, a presentation video like the portfolio making-of, and a post in the Énóis community.
+- Added CONTRIBUTING.md (from "write a recipe" to KOF code, with the project rules), a code of conduct written for KofTerm (inspired by the Contributor Covenant 2.1), SECURITY.md, issue forms and a PR template, and README sections "How to help" and "Contributors". Eight first issues are drafted in `docs/issues/primeiras-issues.md`, each checked against the code (one draft about plurals was dropped: recipes already match word prefixes).
+- Site in `site/`: static HTML and CSS, palette and fonts read from dotpdf.dev (navy `#1d2537`, cream `#efe4cc`, gold `#e7a44a`, red `#9e1b2b`; IM Fell English, Inter, JetBrains Mono). The demo terminal reproduces screens captured in tmux. `cover.png` (1200×630) is rendered from `cover.html` with headless Edge.
+- Pedro's test of 0.6.4 showed the index column frozen on "script": `script -c kofterm` had been typed inside KofTerm, nesting one KofTerm in another. KofTerm now detects `KOFTERM` (via `secure_getenv`, which returns a pointer, so a missing variable is a clean 0) and explains instead of nesting. `script` got an index entry and a recipe.
+- Drafts for the presentation video (`docs/divulgacao/video-roteiro.md`) and the Énóis post (`docs/divulgacao/post-enois.md`).

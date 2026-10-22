@@ -1,0 +1,50 @@
+name: "🐞 Bug"
+description: Algo não funcionou como o esperado
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! Quanto mais detalhes, mais rápido a gente resolve.
+        **Falha de segurança?** Não use este formulário: veja o SECURITY.md.
+  - type: textarea
+    id: passos
+    attributes:
+      label: O que você fez
+      description: Os comandos ou teclas, na ordem.
+      placeholder: "1. Abri o kofterm\n2. Digitei sudo -i\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que esperava que acontecesse
+    validations:
+      required: true
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu
+      description: Cole a mensagem de erro ou arraste um print para cá.
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão
+      description: Saída de `kofterm version`
+      placeholder: KofTerm 0.6.4
+    validations:
+      required: true
+  - type: input
+    id: sistema
+    attributes:
+      label: Distribuição e terminal
+      placeholder: Kali 2026.3 no VirtualBox, QTerminal
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Algo mais?
+      description: Se gravou com `script -I/-O`, diga aqui (não cole senhas!).

@@ -1,4 +1,4 @@
-# Roteiro de teste humano — KofTerm 0.6.4
+# Roteiro de teste humano — KofTerm 0.6.5
 
 Roteiro completo para uma **pessoa de verdade, numa janela de terminal de verdade**, conferir
 cada funcionalidade do KofTerm como um aluno usaria. Cada passo diz o que fazer e o que deve
@@ -33,9 +33,9 @@ script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|
-| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.6.4 instalado" | |
-| 0.2 ★ | `kofterm version` | `KofTerm 0.6.4` | |
-| 0.3 | `kofterm doctor` | `indice: 147 entradas`, pasta de dados `(pasta 0700, arquivos 0600)`, `bash: true` | |
+| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.6.5 instalado" | |
+| 0.2 ★ | `kofterm version` | `KofTerm 0.6.5` | |
+| 0.3 | `kofterm doctor` | `indice: 148 entradas`, pasta de dados `(pasta 0700, arquivos 0600)`, `bash: true` | |
 | 0.4 | `kofterm help` | Lista os subcomandos e as teclas | |
 | 0.5 | `kofterm --qualquer-coisa` | Mostra a ajuda; nada quebra | |
 

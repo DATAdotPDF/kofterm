@@ -1,0 +1,23 @@
+name: "📖 Entrada no índice"
+description: Um comando ou caminho que o índice não explica (ou explica mal)
+labels: ["index", "good first issue"]
+body:
+  - type: input
+    id: nome
+    attributes:
+      label: Comando ou caminho
+      placeholder: "tracepath, /etc/network/interfaces..."
+    validations:
+      required: true
+  - type: textarea
+    id: falta
+    attributes:
+      label: O que falta ou está confuso
+      description: Opções, exemplos ou uma explicação mais simples.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link de leitura aberto (opcional)
+      placeholder: https://manpages.debian.org/tracepath

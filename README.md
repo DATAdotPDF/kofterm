@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.4-8b5cf6?style=flat-square" alt="Release v0.6.4"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.5-8b5cf6?style=flat-square" alt="Release v0.6.5"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
@@ -19,6 +19,8 @@
   <a href="README.pt_BR.md">Português</a> ·
   <a href="docs/PLAN.md">Plan</a> ·
   <a href="docs/JOURNAL.md">Dev journal</a> ·
+  <a href="https://datadotpdf.github.io/kofterm/">Website</a> ·
+  <a href="CONTRIBUTING.md">How to contribute</a> ·
   <a href="spikes/README.md">Phase 0 results</a>
 </p>
 
@@ -38,6 +40,25 @@
 
 ###
 
+<h3 align="left">HOW TO HELP:</h3>
+
+###
+
+<p align="left">
+  KofTerm is <b>open source</b> and built to <b>add up</b>: every recipe, explanation or test helps someone else learn. <b>You don't need to know KOF</b> to start: the most valuable contributions are plain-language text.
+</p>
+
+| I want to... | Start with |
+| --- | --- |
+| Teach the `?` mode a new request | [New recipe](CONTRIBUTING.md#receita-nova-o-caminho-mais-rápido-para-o-seu-primeiro-pr) in `recipes/pt_BR.txt` |
+| Explain a command better | [Index entry](CONTRIBUTING.md#entrada-no-índice) in `index/pt_BR.txt` |
+| Test it and report back | [Test script](docs/TESTE_HUMANO.md) and an [issue](https://github.com/DATAdotPDF/kofterm/issues/new/choose) |
+| Write KOF code | [`good first issue`](https://github.com/DATAdotPDF/kofterm/labels/good%20first%20issue) and [`help wanted`](https://github.com/DATAdotPDF/kofterm/labels/help%20wanted) issues |
+
+Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md) · [Security](SECURITY.md)
+
+###
+
 <h3 align="left">CURRENT STATUS:</h3>
 
 ###
@@ -49,7 +70,7 @@
 - **Phase 4 (the context-aware model): done.** The grey suggestion now comes from a local model that learns from every command you run: it uses what you typed, the previous command, the kind of folder you are in and how recent each command is. On an empty line it predicts your next command, offers `sudo` after "Permission denied" and fixes typos after "command not found". It also completes files, folders and options, and never suggests dangerous commands.
 - **Phase 5 (contribution, installer, first release): done.** `kofterm contribute` exports what your model learned, anonymized on your machine, for you to review and send by pull request; CI validates every contribution and the next release learns from it. One-command install from the release or from the source. **First release: v0.5.0.**
 - **Phase 6 (KofTerm draws its own screen): done.** A terminal emulator written in KOF (`vt.kf`) interprets everything Bash and programs write, so the index lives in a **column on the right** that programs never touch: Bash, `vim`, `top` and `less` see only the left area. Works inside any Linux terminal.
-- **Phase 7 (human mode): done.** Type `?` and what you want to do, in your own words. KofTerm finds the closest of 123 recipes (353 ways of asking) written by people, fills in the gaps and shows the command in grey; TAB puts it on the line, nothing runs by itself, and the side column explains each part.
+- **Phase 7 (human mode): done.** Type `?` and what you want to do, in your own words. KofTerm finds the closest of 124 recipes (357 ways of asking) written by people, fills in the gaps and shows the command in grey; TAB puts it on the line, nothing runs by itself, and the side column explains each part.
 - **Next:** your feedback as the first human tester, more recipes and index entries, an English index, candidate list for file completion, optional neural model in pure KOF (`kof-nn`).
 
 ###
@@ -98,10 +119,10 @@
 | Fixes after errors: `sudo` after "Permission denied", typo after "command not found" | ✅ Phase 4 |
 | Completes files, folders (`/etc/hostn` → `ame`) and options (`ls --a` → `ll`) | ✅ Phase 4 |
 | Dangerous commands (`rm -rf /`, `mkfs`, `dd of=/dev/sd…`, fork bomb) in red and never suggested | ✅ Phase 4 |
-| Full-screen index tab with search (**F1** / **Ctrl+T**), 147 entries in Portuguese (commands, networking, users, services and important paths) | ✅ Phase 3 |
+| Full-screen index tab with search (**F1** / **Ctrl+T**), 148 entries in Portuguese (commands, networking, users, services and important paths) | ✅ Phase 3 |
 | Index **column on the right** with a live explanation of the current line (**F2**, remembered) | ✅ Phase 6 |
 | Own terminal emulator: Bash and full-screen programs never write over the index | ✅ Phase 6 |
-| Human mode: `? what you want` → a real command from 123 reviewed recipes | ✅ Phase 7 |
+| Human mode: `? what you want` → a real command from 124 reviewed recipes | ✅ Phase 7 |
 | Each option explained on its own (`-ld` → `-l` + `-d`), with examples and reading links | ✅ Phase 3 |
 | Opt-in, anonymized contribution of your learning back to the project via Git | ✅ Phase 5 |
 | Optional tiny neural model, trained and run in pure KOF (`kof-nn`) | Phase 6 |
@@ -184,13 +205,13 @@ kofterm/
 
 **Requirements:** Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). The binary depends only on the system's `libc`.
 
-**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.4-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
+**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.5-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-tar -xzf kofterm-0.6.4-linux-x86_64.tar.gz && ./kofterm-0.6.4-linux-x86_64/kofterm install
+tar -xzf kofterm-0.6.5-linux-x86_64.tar.gz && ./kofterm-0.6.5-linux-x86_64/kofterm install
 ```
 
 **Option B: from the source.** `install.sh` compiles KofTerm with KOF 0.6.6. If KOF is missing, it asks before downloading the official release (about 370 MB) and checks its SHA-256, which is pinned in the script.
@@ -305,7 +326,7 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **13. Phase 7: human mode.** `? instalar o htop` searches 63 recipes written by people (164 ways of asking), tolerant to accents and one-letter typos, and fills the gaps with the words of the request. It is retrieval, not generation: KofTerm never invents a command, words from the request never carry shell characters into it, dangerous results are dropped, and the command only runs after the person reads it and presses Enter again.
 
-**14. Root and network studies (0.6.2).** The third human test found that the index did not say what `sudo` does, and that KofTerm stopped working after `sudo -i`, because the root shell did not load its hook. Now the column explains every part of the line, including the `sudo` prefix and file paths such as `/etc/shadow`, and `sudo -i`, `sudo -s`, `sudo su` and a plain `bash` open the inner shell with KofTerm's hook. The index grew to 147 entries and the recipes to 122, aimed at people studying Linux, networking and security in their own labs: routes, DNS, ports, packet capture, firewall, SSH keys, users, logs, hashes and the important paths of the system, all checked against a Kali VM.
+**14. Root and network studies (0.6.2).** The third human test found that the index did not say what `sudo` does, and that KofTerm stopped working after `sudo -i`, because the root shell did not load its hook. Now the column explains every part of the line, including the `sudo` prefix and file paths such as `/etc/shadow`, and `sudo -i`, `sudo -s`, `sudo su` and a plain `bash` open the inner shell with KofTerm's hook. The index grew to 148 entries and the recipes to 122, aimed at people studying Linux, networking and security in their own labs: routes, DNS, ports, packet capture, firewall, SSH keys, users, logs, hashes and the important paths of the system, all checked against a Kali VM.
 
 **15. What is missing, KofTerm points to (0.6.3 and 0.6.4).** As root, recipes drop `sudo` and stop offering `sudo -i`. When a program is not installed, the column says so while you type and shows "to download what is missing, use » `sudo apt install x`"; after "command not found" the empty line already holds that command. The package comes from the index or from what the system itself said, and a one-letter typo of a known command (`gti`, `sl`) is still fixed instead of installing a joke package. KofTerm never installs anything by itself: what is missing inside KOF becomes a parallel KOF project, and system tools are installed by the person, with KofTerm explaining how.
 
@@ -336,7 +357,7 @@ If you agree, `kofterm contribute` writes `kofterm-contrib.kofdata`. Copy it to 
 - The index column needs at least 40 columns left for Bash; on a narrow window F2 beeps and keeps it hidden.
 - Full-width characters (CJK, some emoji) count as one column; emoji above U+FFFF show as `�`.
 - Performance is measured, not assumed: with `top` redrawing 5 times a second and the index column on, KofTerm stayed at 7.9 MB for 6 minutes and used 0.2% CPU. Getting there meant working around how KOF 0.6.6 native handles temporary strings (see [docs/JOURNAL.md](docs/JOURNAL.md)).
-- The index is in Portuguese only for now, with 147 entries.
+- The index is in Portuguese only for now, with 148 entries.
 - Full-width characters (CJK, some emoji) count as one column.
 
 ###
@@ -388,6 +409,17 @@ $ ls -la | Tudo, inclusive ocultos, em formato longo.
 
 ###
 
+<h3 align="left">CONTRIBUTORS:</h3>
+
+###
+
+People who helped build KofTerm, beyond code: tests, recipes, explanations and ideas. Every accepted contribution is listed here and in the [CHANGELOG](CHANGELOG.md).
+
+- **Pedro D. Ferreira** ([@DATAdotPDF](https://github.com/DATAdotPDF)): author and first human tester.
+- **You?** See [how to help](CONTRIBUTING.md). 💙
+
+###
+
 <h3 align="left">CREDITS:</h3>
 
 - **KOF language:** created by **Mel Santos** ([@melmonfre](https://github.com/melmonfre) · [LinkedIn](https://www.linkedin.com/in/aminadojava/)) and maintained with the KOF contributors in the central repository **[KofLang/Kof4j](https://github.com/KofLang/Kof4j)**, licensed GPL-3.0. Site: [koflang.github.io](https://koflang.github.io). The KOF logo shown above belongs to the KOF project.
@@ -413,7 +445,7 @@ GNU General Public License v3.0, the same license as KOF. See [LICENSE](LICENSE)
 
 ## Connect
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-111827?style=for-the-badge&logo=cloudflare&logoColor=white)](https://portfolio-data-cybersecurity.data-pedutraferreira.workers.dev)
+[![Portfolio](https://img.shields.io/badge/Portfolio-111827?style=for-the-badge&logo=cloudflare&logoColor=white)](https://dotpdf.dev)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/data-pdf/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DATAdotPDF)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:data.pedutraferreira@gmail.com)

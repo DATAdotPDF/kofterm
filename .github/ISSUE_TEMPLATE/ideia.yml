@@ -1,0 +1,26 @@
+name: "💡 Ideia"
+description: Uma funcionalidade nova ou melhoria
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema isso resolve para quem está aprendendo?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Como você imagina
+    validations:
+      required: true
+  - type: checkboxes
+    id: regras
+    attributes:
+      label: Regras do projeto
+      description: Veja a seção 6 do CONTRIBUTING.md.
+      options:
+        - label: Continua 100% offline e escrito em KOF
+          required: true
+        - label: Nada roda sem o Enter da pessoa
+          required: true

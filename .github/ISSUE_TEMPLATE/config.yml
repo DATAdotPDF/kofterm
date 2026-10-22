@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "🔒 Falha de segurança (relato privado)"
+    url: https://github.com/DATAdotPDF/kofterm/security/advisories/new
+    about: Não abra issue pública para vulnerabilidades.
+  - name: "📘 Guia de contribuição"
+    url: https://github.com/DATAdotPDF/kofterm/blob/main/CONTRIBUTING.md
+    about: Como rodar o projeto, escrever receitas e enviar um PR.

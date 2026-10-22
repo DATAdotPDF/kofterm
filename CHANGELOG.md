@@ -2,6 +2,19 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.5] - 21/10/2026
+
+Open to contributors: guide, code of conduct, templates and a project site.
+
+### Added
+- `CONTRIBUTING.md` (ways to help from easiest to most technical, local setup, issues, pull requests, project rules, recognition), `CODE_OF_CONDUCT.md` (written for KofTerm, inspired by the Contributor Covenant 2.1), `SECURITY.md`
+- Issue forms (bug, recipe, index entry, idea) and a pull request template; README sections "How to help" and "Contributors"
+- Project site in `site/` (static HTML and CSS in the portfolio palette) with a cover image, published by `.github/workflows/pages.yml`
+- Index entry `script` (record a terminal session) and recipe `? gravar a aula em {arquivo}` (148 entries, 124 recipes)
+
+### Fixed
+- Running `kofterm` inside KofTerm (for example `script -c kofterm` typed in it) opened a second KofTerm in the left area while the outer column froze. It now explains and exits; subcommands such as `kofterm contribute` still work inside
+
 ## [0.6.4] - 21/10/2026
 
 "What is missing, KofTerm points to", and a full test script.

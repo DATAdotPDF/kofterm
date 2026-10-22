@@ -1,0 +1,34 @@
+name: "🧭 Receita para o modo ?"
+description: Um pedido em português que o KofTerm não entendeu (ou entendeu errado)
+labels: ["recipes", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        O modo `?` transforma "quero fazer X" num comando. Conte o que você pediu e o comando
+        que esperava. Quer escrever a receita você mesmo? O formato está no CONTRIBUTING.md.
+  - type: textarea
+    id: pedidos
+    attributes:
+      label: Como você pediu
+      description: Um pedido por linha, exatamente como digitou depois do `?`.
+      placeholder: "? qual o gateway da rede\n? ver as rotas"
+    validations:
+      required: true
+  - type: input
+    id: veio
+    attributes:
+      label: O que apareceu em cinza
+      placeholder: "nenhuma receita ainda"
+  - type: input
+    id: comando
+    attributes:
+      label: Comando que você esperava
+      placeholder: ip r
+    validations:
+      required: true
+  - type: input
+    id: contexto
+    attributes:
+      label: Onde você aprendeu ou precisou disso (opcional)
+      placeholder: "Curso Cisco, módulo de roteamento"
