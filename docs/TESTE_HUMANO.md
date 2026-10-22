@@ -1,4 +1,4 @@
-# Roteiro de teste humano — KofTerm 0.6.2
+# Roteiro de teste humano — KofTerm 0.6.3
 
 Este roteiro é para uma **pessoa de verdade, numa janela de terminal de verdade**, usar o
 KofTerm como um cliente usaria e dizer o que funcionou, o que estranhou e o que faltou.
@@ -32,8 +32,8 @@ cd ~/kofterm && git pull && ./install.sh
 
 | # | Verificar | Resultado |
 |---|---|---|
-| 0.1 | O `install.sh` termina com "KofTerm 0.6.2 instalado" | |
-| 0.2 | `kofterm version` mostra `KofTerm 0.6.2` | |
+| 0.1 | O `install.sh` termina com "KofTerm 0.6.3 instalado" | |
+| 0.2 | `kofterm version` mostra `KofTerm 0.6.3` | |
 | 0.3 | `kofterm doctor` mostra 146 entradas no índice e nenhum erro | |
 
 ## 1. Primeira impressão
@@ -97,6 +97,7 @@ olhe o texto em cinza e a coluna da direita.
 | 4b.3 | Digite `sudo cat /etc/shadow` (sem Enter) | A coluna mostra `cat` e, em "TAMBÉM NA LINHA", o `sudo` e o `/etc/shadow` | |
 | 4b.4 | Rode `sudo -i` e a sua senha | O prompt vira de root (`#`) e você está em `/root` | |
 | 4b.5 | Ainda como root: `? ver as pastas dentro do root` e depois `? quanto espaço sobrou` | O cinza e a coluna continuam funcionando (antes dava "?: comando não encontrado") | |
+| 4b.5b | Ainda como root: `? acessar .cache na pasta root` e `? instalar nmap` | `cd /root/.cache` e `apt update && apt install -y nmap` (sem sudo: você já é root) | |
 | 4b.6 | `exit` | Volta ao seu usuário, com o KofTerm ainda funcionando | |
 | 4b.7 | Rode `bash`, teste um `?` e saia com `exit` | Funciona também num bash dentro do bash | |
 

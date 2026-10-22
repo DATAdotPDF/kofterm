@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.2-8b5cf6?style=flat-square" alt="Release v0.6.2"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.3-8b5cf6?style=flat-square" alt="Release v0.6.3"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
@@ -49,7 +49,7 @@
 - **Phase 4 (the context-aware model): done.** The grey suggestion now comes from a local model that learns from every command you run: it uses what you typed, the previous command, the kind of folder you are in and how recent each command is. On an empty line it predicts your next command, offers `sudo` after "Permission denied" and fixes typos after "command not found". It also completes files, folders and options, and never suggests dangerous commands.
 - **Phase 5 (contribution, installer, first release): done.** `kofterm contribute` exports what your model learned, anonymized on your machine, for you to review and send by pull request; CI validates every contribution and the next release learns from it. One-command install from the release or from the source. **First release: v0.5.0.**
 - **Phase 6 (KofTerm draws its own screen): done.** A terminal emulator written in KOF (`vt.kf`) interprets everything Bash and programs write, so the index lives in a **column on the right** that programs never touch: Bash, `vim`, `top` and `less` see only the left area. Works inside any Linux terminal.
-- **Phase 7 (human mode): done.** Type `?` and what you want to do, in your own words. KofTerm finds the closest of 122 recipes (348 ways of asking) written by people, fills in the gaps and shows the command in grey; TAB puts it on the line, nothing runs by itself, and the side column explains each part.
+- **Phase 7 (human mode): done.** Type `?` and what you want to do, in your own words. KofTerm finds the closest of 123 recipes (353 ways of asking) written by people, fills in the gaps and shows the command in grey; TAB puts it on the line, nothing runs by itself, and the side column explains each part.
 - **Next:** your feedback as the first human tester, more recipes and index entries, an English index, candidate list for file completion, optional neural model in pure KOF (`kof-nn`).
 
 ###
@@ -101,7 +101,7 @@
 | Full-screen index tab with search (**F1** / **Ctrl+T**), 146 entries in Portuguese (commands, networking, users, services and important paths) | ✅ Phase 3 |
 | Index **column on the right** with a live explanation of the current line (**F2**, remembered) | ✅ Phase 6 |
 | Own terminal emulator: Bash and full-screen programs never write over the index | ✅ Phase 6 |
-| Human mode: `? what you want` → a real command from 122 reviewed recipes | ✅ Phase 7 |
+| Human mode: `? what you want` → a real command from 123 reviewed recipes | ✅ Phase 7 |
 | Each option explained on its own (`-ld` → `-l` + `-d`), with examples and reading links | ✅ Phase 3 |
 | Opt-in, anonymized contribution of your learning back to the project via Git | ✅ Phase 5 |
 | Optional tiny neural model, trained and run in pure KOF (`kof-nn`) | Phase 6 |
@@ -184,13 +184,13 @@ kofterm/
 
 **Requirements:** Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). The binary depends only on the system's `libc`.
 
-**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.2-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
+**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.3-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-tar -xzf kofterm-0.6.2-linux-x86_64.tar.gz && ./kofterm-0.6.2-linux-x86_64/kofterm install
+tar -xzf kofterm-0.6.3-linux-x86_64.tar.gz && ./kofterm-0.6.3-linux-x86_64/kofterm install
 ```
 
 **Option B: from the source.** `install.sh` compiles KofTerm with KOF 0.6.6. If KOF is missing, it asks before downloading the official release (about 370 MB) and checks its SHA-256, which is pinned in the script.
@@ -232,7 +232,7 @@ To open KofTerm automatically in every new terminal, add this to the end of `~/.
 | **?** + what you want | Human mode: `? quanto espaço sobrou` suggests `df -h`. **TAB** or **Enter** puts the command on the line; Enter again runs it |
 | **Ctrl-L** | Clears the screen and keeps what you were typing |
 
-**For developers.** Build and run from the repository without installing, and run the unit tests (70 tests, one file at a time):
+**For developers.** Build and run from the repository without installing, and run the unit tests (72 tests, one file at a time):
 
 ```bash
 kof build src --target native --output build/kofterm && ./build/kofterm/Default/Main
@@ -351,7 +351,7 @@ $ tar -czvf {pasta}.tar.gz {pasta}
 > Junta e compacta {pasta} em {pasta}.tar.gz.
 ```
 
-`#` names the recipe, each `?` is one way people ask (in their own words), `{name}` is a gap filled with the words of the request, `$` is the command and `>` the explanation for learners. Commands that delete must ask first (`rm -i`). Words from the request never bring shell characters (`;`, `|`, `$`…) into the command.
+`#` names the recipe, each `?` is one way people ask (in their own words), `{name}` is a gap filled with the words of the request, `$` is the command and `>` the explanation for learners. An optional `%` line is the command for someone who is already root (`% -` hides the recipe for root); without it, root gets the command without `sudo`. Commands that delete must ask first (`rm -i`). Words from the request never bring shell characters (`;`, `|`, `$`…) into the command.
 
 ###
 

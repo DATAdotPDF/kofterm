@@ -148,6 +148,12 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Verified in tmux with a fresh HOME: 30 requests (gateway, MAC, DNS, ports, `nmap -sn`, capture, firewall, SSH keys, failed logins, SUID, hashes, Base64…) give the expected command; the column shows `sudo` and `/etc/shadow` for `sudo cat /etc/shadow`, the four options of `ss -tuln`, and `~/.ssh/authorized_keys`. A nested `bash` keeps `?` working and `type sudo` reports a function. All 155 reading links answer. 70 unit tests pass.
 - `sudo -i` itself needs Pedro's password, so it is checked by hand (roteiro 4b).
 
+### Third human test, continued (0.6.2 as root) and 0.6.3
+- Confirmed by Pedro: after `sudo -i` the prompt is root, `pwd` is `/root`, `type sudo` shows KofTerm's function, and the recipe column keeps working.
+- But `? acessar .cache na pasta root` suggested `sudo -i` to someone already root, and the generic recipe gave `cd .cache root`. KofTerm did not know the shell's user. The marker is now `ESC ] 7770 ; status ; EUID ; PWD BEL`; as root, recipe commands drop `sudo`, a recipe can give its own root command (`% ...`) or hide itself (`% -`), and a new recipe enters a folder inside `/root`.
+- Verified in tmux, as root through `unshare -r` (EUID 0 without a password): `cd /root/.cache`, `apt update && apt install -y nmap`, `ls -la /root`, `lsof -i :22`; as a normal user `sudo ls -la /root/.cache` and `sudo -i` stay. 72 unit tests pass.
+- The `bash: alias: ls -alF : não encontrado` lines at startup came from Pedro's own `~/.bashrc` (`alias ll= ' ls -alF '`, spaces around `=`), not from KofTerm.
+
 ### Still to verify by hand
 - Everything above in a real QTerminal window, by Pedro (script in `docs/TESTE_HUMANO.md`).
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).

@@ -2,6 +2,14 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.3] - 21/10/2026
+
+From the third human test of 0.6.2 (as root after `sudo -i`).
+
+### Fixed
+- Recipes know when the shell is root: the prompt marker now carries `$EUID`; as root, commands drop `sudo`, and "become root" / "repeat with sudo" are hidden. `? acessar .cache na pasta root` gave `sudo -i` to someone already root; now it gives `cd /root/.cache` (and `sudo ls -la /root/.cache` for a normal user)
+- New recipe format line `% command` for the root version of a recipe (`% -` hides it for root); 123 recipes, 353 ways of asking
+
 ## [0.6.2] - 21/10/2026
 
 Fixes from the second human test of 0.6.1, plus content for people studying networking and security.
