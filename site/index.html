@@ -10,163 +10,116 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://datadotpdf.github.io/kofterm/">
 <meta property="og:image" content="https://datadotpdf.github.io/kofterm/cover.png">
-<meta name="theme-color" content="#1a2130">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d2537'/%3E%3Ctext x='5' y='22' font-family='monospace' font-size='16' fill='%23e7a44a'%3E%3E_%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#0b1020">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1020'/%3E%3Ctext x='4' y='22' font-family='monospace' font-size='16' font-weight='bold' fill='%23f59e0b'%3E%3E_%3C/text%3E%3C/svg%3E">
 <style>
-/* Simples e rápido: só fontes do sistema, nenhuma requisição externa, modo claro automático. */
+/* Identidade do banner do README: fundo quase preto, âmbar, degradê âmbar→vermelho, terminal.
+   Só fontes do sistema e nenhuma requisição externa: abre na hora. */
 :root {
-  --bg: #1a2130;
-  --bg-2: #212a3c;
-  --line: #34405a;
-  --text: #ece6d8;
-  --muted: #b3bccd;
-  --accent: #e7a44a;      /* destaque, usado com parcimônia */
-  --link: #7cc7c2;        /* links: verde-água */
-  --danger: #e8707b;
-  --term-bg: #10151f;
-  --term-text: #d8dde8;
-  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --bg: #0b1020; --bg-2: #111827; --panel: #0a0a0f; --line: #1f2937; --line-2: #374151;
+  --text: #f9fafb; --soft: #d1d5db; --muted: #9ca3af; --dim: #6b7280;
+  --amber: #f59e0b; --red: #ef4444; --green: #22c55e;
+  --grad: linear-gradient(90deg, #f59e0b, #ef4444);
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
-  --mono: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
-}
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #fbf8f1; --bg-2: #f2ede1; --line: #ddd5c3;
-    --text: #1f2633; --muted: #4f5a6d;
-    --accent: #a8620b; --link: #0f6e69; --danger: #9e1b2b;
-  }
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 18px/1.7 var(--sans); }
-a { color: var(--link); text-underline-offset: 3px; }
-a:hover { text-decoration-thickness: 2px; }
-:focus-visible { outline: 3px solid var(--link); outline-offset: 3px; border-radius: 4px; }
-code { font-family: var(--mono); font-size: .88em; background: var(--bg-2); padding: .1em .35em; border-radius: 4px; white-space: nowrap; }
-.list code { white-space: normal; }
-.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
-.skip { position: absolute; left: -999px; top: 8px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; }
-.skip:focus { left: 8px; z-index: 20; }
-
-/* cabeçalho */
-header.top { border-bottom: 1px solid var(--line); }
-header.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 60px; flex-wrap: wrap; }
-.brand { font: 600 17px var(--mono); color: var(--text); }
-.brand b { color: var(--accent); font-weight: 600; }
-nav.links { display: flex; gap: 20px; margin-left: auto; font-size: 15px; flex-wrap: wrap; }
-nav.links a { color: var(--muted); text-decoration: none; }
-nav.links a:hover { color: var(--text); text-decoration: underline; }
-.btn {
-  display: inline-block; padding: 11px 20px; border-radius: 8px;
-  font: 600 16px/1.2 var(--sans); text-decoration: none;
-  border: 1px solid var(--line); color: var(--text); background: var(--bg-2); cursor: pointer;
+body {
+  margin: 0; color: var(--soft); font: 17px/1.65 var(--sans);
+  background: radial-gradient(1200px 600px at 75% -10%, rgba(245,158,11,.08), transparent 60%),
+              linear-gradient(180deg, var(--bg), var(--bg-2));
+  background-color: var(--bg);
+  min-height: 100vh;
 }
-.btn:hover { border-color: var(--muted); }
-.btn.gold { background: var(--accent); border-color: var(--accent); color: #1a1408; }
-@media (prefers-color-scheme: light) { .btn.gold { color: #fff; } }
+a { color: var(--amber); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: .9em; color: var(--text); white-space: nowrap; }
+.wrap { width: min(1440px, 100% - 96px); margin: 0 auto; }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 12px; top: 12px; background: var(--amber); color: #111; padding: 8px 12px; border-radius: 6px; z-index: 9; }
 
-/* textos */
-.eyebrow { font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 12px; }
-.eyebrow .dot { display: none; }
-h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.15; margin: 0; }
-h1 { font-size: clamp(38px, 6vw, 58px); }
-h1 em, h2 em { color: var(--accent); }
-h2 { font-size: clamp(28px, 4vw, 36px); }
-h3 { font-size: 21px; margin-bottom: 6px; }
-.lead { font-size: 20px; max-width: 34em; }
-.small { font: 14px var(--mono); color: var(--muted); }
-section { padding: 72px 0; border-top: 1px solid var(--line); }
-.section-head { max-width: 40em; margin-bottom: 32px; }
-.section-head p { color: var(--muted); margin: 12px 0 0; }
-p { max-width: 40em; }
+/* topo */
+header .wrap { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+.logo { font: 700 22px var(--mono); color: var(--text); text-decoration: none; letter-spacing: -.01em; }
+.logo b { color: var(--amber); font-weight: 700; }
+header nav { display: flex; gap: 26px; align-items: center; font-size: 15px; }
+header nav a { color: var(--muted); text-decoration: none; }
+header nav a:hover { color: var(--text); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px; font: 600 15px var(--sans); text-decoration: none; border: 1px solid var(--line-2); color: var(--text); background: transparent; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.go { background: var(--amber); border-color: var(--amber); color: #111; }
+.btn.go:hover { filter: brightness(1.08); }
 
 /* herói */
-.hero { padding: 56px 0 64px; border-top: 0; }
-.hero .wrap { display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; align-items: center; }
-.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 14px; }
-.facts { display: flex; gap: 32px; margin: 28px 0 0; padding: 0; }
-.facts dt { font: 600 30px var(--sans); color: var(--accent); line-height: 1; }
-.facts dd { margin: 6px 0 0; font-size: 14px; color: var(--muted); line-height: 1.4; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; padding: 48px 0 88px; }
+.eyebrow { display: flex; align-items: center; gap: 12px; font: 700 12px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--amber); margin: 0 0 18px; }
+.eyebrow::before { content: ""; width: 24px; height: 2px; background: var(--grad); }
+h1, h2 { color: var(--text); margin: 0; letter-spacing: -.02em; }
+h1 { font: 800 clamp(40px, 5.2vw, 66px)/1.03 var(--sans); }
+h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+h2 { font: 800 clamp(28px, 3vw, 38px)/1.12 var(--sans); }
+.lead { font-size: 19px; color: var(--soft); margin: 22px 0 30px; max-width: 32em; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.fine { margin-top: 16px; font-size: 14px; color: var(--dim); }
 
-/* terminal de demonstração (sempre escuro, como um terminal de verdade) */
-.term { background: var(--term-bg); border: 1px solid #2a3346; border-radius: 10px; overflow: hidden; color: var(--term-text); }
-.term .bar { display: none; }
-.tabs { display: flex; gap: 6px; padding: 10px; flex-wrap: wrap; border-bottom: 1px solid #2a3346; }
-.tabs button { font: 14px var(--sans); color: #b3bccd; background: transparent; border: 1px solid #2a3346; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.tabs button[aria-selected="true"] { color: #10151f; background: #e7a44a; border-color: #e7a44a; }
-.screen { display: grid; grid-template-columns: 1.2fr 1fr; font: 14px/1.6 var(--mono); min-height: 320px; }
+/* terminal */
+.term { background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.term .bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.term .bar i { width: 12px; height: 12px; border-radius: 50%; }
+.term .bar i:nth-child(1) { background: #ef4444; } .term .bar i:nth-child(2) { background: #f59e0b; } .term .bar i:nth-child(3) { background: #22c55e; }
+.term .bar span { flex: 1; text-align: center; font: 13px var(--mono); color: var(--muted); margin-right: 52px; }
+.screen { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); font: 14px/1.6 var(--mono); min-height: 330px; }
 .screen[hidden] { display: none; }
-.screen .left { padding: 14px 16px; white-space: pre-wrap; word-break: break-word; }
-.screen .right { padding: 0 14px 14px; border-left: 1px solid #2f7f86; white-space: pre-wrap; color: #cfd6e4; }
-.screen .right .head { display: block; margin: 0 -14px 10px; padding: 4px 14px; background: #ece6d8; color: #1a2130; }
-.p-user { color: #6aa3ff; } .ghost { color: #7a869c; }
-.k-gold { color: #e7a44a; } .k-green { color: #7bc98f; } .k-cyan { color: #7cc7c2; }
-.k-warn { color: #f0c35a; } .k-red { color: #e8707b; } .k-b { color: #fff; font-weight: 600; } .k-dim { color: #8a95ab; }
-.caption { margin: 10px auto 0; font-size: 14px; color: var(--muted); text-align: center; }
+.screen .l { padding: 16px 18px; white-space: pre-wrap; word-break: break-word; color: #e5e7eb; }
+.screen .r { padding: 0 16px 16px; border-left: 1px solid #1f6f78; white-space: pre-wrap; color: #d1d5db; }
+.screen .r .h { display: block; margin: 0 -16px 10px; padding: 4px 16px; background: #e5e7eb; color: #0a0a0f; }
+.u { color: #60a5fa; } .g { color: var(--dim); } .a { color: var(--amber); } .ok { color: var(--green); }
+.w { color: #fbbf24; } .b { color: #fff; font-weight: 700; } .p { color: var(--green); }
+.tabs { display: flex; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
+.tabs button { font: 600 13px var(--sans); color: var(--muted); background: transparent; border: 1px solid var(--line-2); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: #111; background: var(--amber); border-color: var(--amber); }
+.caption { margin: 10px 0 0; font-size: 13px; color: var(--dim); }
 
-/* cartões */
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.card, .card.paper { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 22px; color: var(--text); }
-.card .ic { display: none; }
-.card p, .card.paper p { margin: 0; color: var(--muted); font-size: 16px; }
-.card.paper code { color: inherit; }
+/* seções */
+section { padding: 88px 0; border-top: 1px solid var(--line); }
+.head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: end; margin-bottom: 40px; }
+.head p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 18px; }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.card { background: rgba(17,24,39,.6); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
+.card .k { display: inline-block; font: 700 13px var(--mono); color: var(--amber); border: 1px solid var(--amber); border-radius: 6px; padding: 2px 8px; margin-bottom: 14px; }
+.card h3 { color: var(--text); font: 700 19px var(--sans); margin: 0 0 8px; }
+.card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+.steps { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+.steps ol { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.steps li::before { content: counter(s); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--amber); color: var(--amber); font: 700 15px var(--mono); }
+.steps li b { color: var(--text); display: block; }
+.steps li span { color: var(--muted); font-size: 15.5px; }
+pre.code { position: relative; margin: 0; padding: 22px 24px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; font: 15px/1.9 var(--mono); color: #e5e7eb; overflow-x: auto; }
+pre.code .p { user-select: none; }
+.copy { position: absolute; top: 12px; right: 12px; padding: 7px 12px; font-size: 13px; }
+.join { text-align: center; }
+.join h2 { font-size: clamp(30px, 3.6vw, 46px); }
+.join h2 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.join p:not(.eyebrow) { color: var(--muted); font-size: 18px; max-width: 38em; margin: 16px auto 28px; }
+.join .cta { justify-content: center; }
+footer { border-top: 1px solid var(--line); padding: 28px 0; font-size: 14px; color: var(--dim); }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+footer a { color: var(--muted); }
 
-/* estudo */
-.split { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: start; }
-.list { list-style: none; padding: 0; margin: 0; }
-.list li { padding: 12px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 200px 1fr; gap: 14px; font-size: 16px; }
-.list li span:first-child { font-family: var(--mono); font-size: 15px; color: var(--accent); }
-.list li span:last-child { color: var(--muted); }
-.note { margin-top: 22px; padding: 14px 16px; border-left: 4px solid var(--danger); background: var(--bg-2); border-radius: 0 8px 8px 0; font-size: 16px; }
-
-/* regras */
-.rules { counter-reset: r; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 40px; }
-.rules div { padding: 16px 0; border-bottom: 1px solid var(--line); }
-.rules div::before { counter-increment: r; content: counter(r) "."; font: 600 15px var(--sans); color: var(--accent); margin-right: 6px; }
-.rules b { font-weight: 600; }
-.rules span { display: block; color: var(--muted); font-size: 16px; margin-top: 2px; }
-
-/* KOF */
-.kof { display: grid; grid-template-columns: 1.15fr 1fr; gap: 44px; align-items: center; }
-.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 0; }
-.stats div { padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); }
-.stats dt { font: 600 30px var(--sans); color: var(--accent); line-height: 1.1; }
-.stats dd { margin: 6px 0 0; color: var(--muted); font-size: 15px; line-height: 1.4; }
-
-/* passos */
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-.steps div { padding: 20px; border: 1px solid var(--line); border-top: 3px solid var(--accent); background: var(--bg-2); border-radius: 8px; }
-.steps i { font: 600 14px var(--sans); color: var(--accent); font-style: normal; }
-.steps h3 { margin: 4px 0; }
-.steps p { margin: 0; color: var(--muted); font-size: 16px; }
-pre.code { position: relative; margin: 0; padding: 18px 20px; overflow-x: auto; background: var(--term-bg); color: var(--term-text); border-radius: 10px; font: 15px/1.7 var(--mono); }
-pre.code .pr { color: #e7a44a; user-select: none; }
-pre.code .cm { color: #8a95ab; }
-.copy { position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 14px; background: #212a3c; color: #ece6d8; border-color: #34405a; }
-.contrib-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
-
-/* rodapé */
-footer { padding: 48px 0; border-top: 1px solid var(--line); text-align: center; font-size: 16px; }
-footer .sig { font: italic 26px var(--serif); }
-footer .role { color: var(--muted); }
-footer .flinks { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; margin: 16px 0; }
-footer .credit { max-width: 42em; margin: 0 auto; color: var(--muted); font-size: 15px; }
-.map { display: none; }
-
-@media (max-width: 900px) {
-  .hero .wrap, .split, .kof { grid-template-columns: 1fr; }
-  .grid, .steps { grid-template-columns: 1fr 1fr; }
-  .rules { grid-template-columns: 1fr; }
+@media (max-width: 1080px) {
+  .hero .wrap, .head, .steps { grid-template-columns: 1fr; gap: 32px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 620px) {
-  body { font-size: 17px; }
-  .wrap { padding: 0 16px; }
-  section { padding: 52px 0; }
-  .grid, .steps, .stats { grid-template-columns: 1fr; }
-  .screen { grid-template-columns: 1fr; font-size: 13px; }
-  .screen .right { border-left: 0; border-top: 1px solid #2f7f86; }
-  .list li { grid-template-columns: 1fr; gap: 2px; }
-  nav.links { margin-left: 0; width: 100%; padding-bottom: 10px; }
+@media (max-width: 640px) {
+  .wrap { width: calc(100% - 32px); }
+  header nav a:not(.btn) { display: none; }
+  .hero .wrap { padding: 24px 0 56px; }
+  section { padding: 56px 0; }
+  .cards { grid-template-columns: 1fr; }
+  .screen { grid-template-columns: 1fr; font-size: 12.5px; }
+  .screen .r { border-left: 0; border-top: 1px solid #1f6f78; }
+  .term .bar span { margin-right: 0; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
@@ -174,262 +127,149 @@ footer .credit { max-width: 42em; margin: 0 auto; color: var(--muted); font-size
 <body>
 <a class="skip" href="#conteudo">Pular para o conteúdo</a>
 
-<header class="top">
+<header>
   <div class="wrap">
-    <span class="brand">&gt;_ kof<b>term</b></span>
-    <nav class="links" aria-label="Seções">
+    <a class="logo" href="#">kof<b>term</b></a>
+    <nav aria-label="Principal">
       <a href="#recursos">Recursos</a>
-      <a href="#estudo">Para estudar</a>
-      <a href="#kof">Feito em KOF</a>
-      <a href="#comece">Comece</a>
-      <a href="#contribua">Contribua</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#contribuir">Contribuir</a>
+      <a class="btn" href="https://github.com/DATAdotPDF/kofterm">GitHub ↗</a>
     </nav>
-    <a class="btn" href="https://github.com/DATAdotPDF/kofterm">GitHub ↗</a>
   </div>
 </header>
 
 <main id="conteudo">
-  <section class="hero">
+  <div class="hero">
     <div class="wrap">
       <div>
-        <p class="eyebrow"><span class="dot"></span>Open source · para quem estuda Linux, redes e segurança</p>
-        <h1>Aprenda o terminal<br><em>enquanto usa.</em></h1>
-        <p class="lead" style="margin-top:22px">O KofTerm é um terminal para Linux que explica cada comando enquanto você digita, sugere o resto da linha em cinza e entende pedidos em português, como <code>? qual o gateway</code>.</p>
+        <p class="eyebrow">Terminal para quem estuda Linux</p>
+        <h1>Aprenda o terminal.<br><span>Enquanto usa.</span></h1>
+        <p class="lead">Enquanto você digita, o KofTerm explica cada comando, sugere o resto da linha e entende pedidos em português, como <code>? qual o gateway</code>.</p>
         <div class="cta">
-          <a class="btn gold" href="#comece">Instalar</a>
+          <a class="btn go" href="#instalar">Instalar</a>
           <a class="btn" href="https://github.com/DATAdotPDF/kofterm">Ver no GitHub ↗</a>
         </div>
-        <p class="small">Gratuito · GPLv3 · Linux x86_64 · 100% offline · feito em KOF</p>
-        <dl class="facts">
-          <div><dt>148</dt><dd>comandos e caminhos<br>explicados</dd></div>
-          <div><dt>124</dt><dd>receitas em<br>português</dd></div>
-          <div><dt>0</dt><dd>conexões<br>de rede</dd></div>
-        </dl>
+        <p class="fine">Gratuito · open source · Linux · 100% offline · feito em KOF</p>
       </div>
 
       <div>
-        <div class="term" role="figure" aria-label="Demonstração do KofTerm">
-          <div class="bar"><i></i><i></i><i></i><span>aluno@kali: ~</span></div>
-          <div class="tabs" role="tablist">
-            <button role="tab" aria-selected="true" data-tab="indice">coluna do índice</button>
-            <button role="tab" aria-selected="false" data-tab="pedido">modo ?</button>
-            <button role="tab" aria-selected="false" data-tab="falta">o que falta</button>
-            <button role="tab" aria-selected="false" data-tab="cinza">sugestão em cinza</button>
-          </div>
+        <div class="term" role="figure" aria-label="Tela do KofTerm">
+          <div class="bar"><i></i><i></i><i></i><span>kofterm — bash</span></div>
           <div class="screen" data-panel="indice">
-<div class="left"><span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> sudo cat /etc/shadow</div>
-<div class="right"><span class="head"> Índice · F2 fecha · F1 busca</span><span class="k-b">cat</span>
+<div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
+<span class="u">└─$</span> sudo cat /etc/shadow</div>
+<div class="r"><span class="h"> Índice · F2 fecha · F1 busca</span><span class="b">cat</span>
 Mostra o conteúdo de arquivos.
 
-<span class="k-green">TAMBÉM NA LINHA</span>
-<span class="k-b">sudo</span>
+<span class="ok">TAMBÉM NA LINHA</span>
+<span class="b">sudo</span>
   Roda UM comando como root.
   Pede a SUA senha.
-<span class="k-b">/etc/shadow</span>
-  Os hashes das senhas. Só o
-  root lê: sem sudo dá
-  "Permissão negada".</div>
+<span class="b">/etc/shadow</span>
+  Os hashes das senhas. Só o root
+  lê: sem sudo dá "Permissão
+  negada".</div>
           </div>
           <div class="screen" data-panel="pedido" hidden>
-<div class="left"><span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> ? qual o gateway<span class="ghost">  → ip r</span></div>
-<div class="right"><span class="head"> Receitas · TAB usa · F2 fecha</span><span class="k-green">RECEITA</span> ver o gateway
+<div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
+<span class="u">└─$</span> ? qual o gateway<span class="g">  → ip r</span></div>
+<div class="r"><span class="h"> Receitas · TAB usa · F2 fecha</span><span class="ok">RECEITA</span> ver o gateway
 
-<span class="k-gold">ip r</span>
+<span class="a">ip r</span>
 
 Mostra as rotas. A linha
 "default via X" diz qual é o
-gateway (o roteador).
-
-<span class="k-cyan">OUTRAS RECEITAS</span>
-ver ip resumido
-  <span class="k-dim">ip -br a</span></div>
+gateway (o roteador).</div>
           </div>
           <div class="screen" data-panel="falta" hidden>
-<div class="left"><span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> ufw status
-Comando 'ufw' não encontrado, mas
-pode ser instalado com:
-sudo apt install ufw
+<div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
+<span class="u">└─$</span> ufw status
+Comando 'ufw' não encontrado
 
-<span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> <span class="ghost">sudo apt install ufw</span></div>
-<div class="right"><span class="head"> Índice · F2 fecha · F1 busca</span><span class="k-warn">⚠ ufw não está instalado</span>
+<span class="u">┌──(aluno㉿kali)-[~]</span>
+<span class="u">└─$</span> <span class="g">sudo apt install ufw</span></div>
+<div class="r"><span class="h"> Índice · F2 fecha · F1 busca</span><span class="w">⚠ ufw não está instalado</span>
 Para baixar o que falta, use:
-<span class="k-gold">» sudo apt install ufw</span>
-<span class="k-dim">O apt baixa do repositório
-oficial e pede a sua senha.</span>
+<span class="a">» sudo apt install ufw</span>
 
-<span class="k-dim">TAB coloca o comando na
-linha; nada roda sem o
-seu Enter.</span></div>
-          </div>
-          <div class="screen" data-panel="cinza" hidden>
-<div class="left"><span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> cat /etc/shadow
-cat: /etc/shadow: Permissão negada
-
-<span class="p-user">┌──(aluno㉿kali)-[~]</span>
-<span class="p-user">└─$</span> <span class="ghost">sudo cat /etc/shadow</span>
-
-<span class="k-dim"># TAB aceita · erro de digitação
-# como "gti" vira "git"</span></div>
-<div class="right"><span class="head"> Índice · F2 fecha · F1 busca</span><span class="k-b">O QUE DÁ PARA FAZER</span>
-<span class="k-gold">TAB</span>  aceita o cinza
-<span class="k-gold">↑ ↓</span>  comandos anteriores
-<span class="k-gold">F1</span>   busca no índice
-<span class="k-gold">F2</span>   esta coluna
-<span class="k-gold">?</span>    peça do seu jeito:
-      <span class="k-dim">? instalar o htop</span>
-      <span class="k-dim">? qual meu ip</span></div>
+<span class="g">TAB coloca o comando na linha;
+nada roda sem o seu Enter.</span></div>
           </div>
         </div>
-        <p class="caption">reprodução de telas reais do KofTerm 0.6.6 no Kali Linux</p>
+        <div class="tabs" role="tablist" aria-label="Telas">
+          <button role="tab" aria-selected="true" data-tab="indice">Explica a linha</button>
+          <button role="tab" aria-selected="false" data-tab="pedido">Peça do seu jeito</button>
+          <button role="tab" aria-selected="false" data-tab="falta">Aponta o que falta</button>
+        </div>
+        <p class="caption">Telas reais do KofTerm no Kali Linux.</p>
       </div>
     </div>
-  </section>
+  </div>
 
   <section id="recursos">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">01 / O que ele faz</p>
-        <h2>Um professor paciente <em>ao lado do seu prompt.</em></h2>
-        <p>Você continua no seu Bash de sempre. O KofTerm só acrescenta o que faltava para quem está aprendendo.</p>
+      <div class="head">
+        <div><p class="eyebrow">O problema</p><h2>Um cursor piscando e nenhuma pista.</h2></div>
+        <p>Quem começa no Linux decora <code>--help</code>, sai do terminal para pesquisar e trava num "Permissão negada". O KofTerm fica ao lado do seu prompt e ensina enquanto você usa. Nada roda sem o seu Enter.</p>
       </div>
-      <div class="grid">
-        <div class="card"><span class="ic">▍▍</span><h3>Coluna do índice</h3><p>Enquanto você digita, a coluna à direita explica o comando, cada opção usada, o <code>sudo</code> e os caminhos da linha. <code>F2</code> mostra ou esconde.</p></div>
-        <div class="card"><span class="ic">?</span><h3>Peça do seu jeito</h3><p><code>? quanto espaço sobrou</code> vira <code>df -h</code>. Tolera acentos, sinônimos e erros de digitação, e nunca inventa comando.</p></div>
-        <div class="card"><span class="ic">⇥</span><h3>Sugestão em cinza</h3><p>O resto da linha aparece em cinza, como no VS Code. <code>TAB</code> aceita. Ele aprende com o que você digita.</p></div>
-        <div class="card"><span class="ic">↺</span><h3>Lê o contexto</h3><p>"Permissão negada" sugere o mesmo comando com <code>sudo</code>. <code>grpe</code> vira <code>grep</code>. Pacote inexistente vira <code>apt search</code>.</p></div>
-        <div class="card"><span class="ic">⚠</span><h3>Aponta o que falta</h3><p>Programa não instalado? A coluna avisa e mostra <code>sudo apt install</code> com o pacote certo, e explica o que o apt faz.</p></div>
-        <div class="card"><span class="ic">#</span><h3>Funciona como root</h3><p>Depois de <code>sudo -i</code>, tudo continua funcionando, e as sugestões saem sem <code>sudo</code>.</p></div>
+      <div class="cards">
+        <div class="card"><span class="k">F2</span><h3>Explica a linha</h3><p>A coluna à direita explica o comando, cada opção, o <code>sudo</code> e os caminhos que você digita.</p></div>
+        <div class="card"><span class="k">?</span><h3>Peça do seu jeito</h3><p><code>? quanto espaço sobrou</code> vira <code>df -h</code>. São 124 receitas revisadas; ele nunca inventa comando.</p></div>
+        <div class="card"><span class="k">TAB</span><h3>Sugere o resto</h3><p>O resto da linha aparece em cinza e aprende com você, só na sua máquina.</p></div>
+        <div class="card"><span class="k">!</span><h3>Corrige e orienta</h3><p>"Permissão negada" sugere <code>sudo</code>; <code>gti</code> vira <code>git</code>; programa que falta mostra como instalar.</p></div>
       </div>
     </div>
   </section>
 
-  <section id="estudo">
-    <div class="wrap split">
+  <section id="instalar">
+    <div class="wrap steps">
       <div>
-        <p class="eyebrow">02 / Para estudar</p>
-        <h2>Feito para o <em>laboratório</em>, não para o atalho.</h2>
-        <p class="lead" style="margin-top:18px;font-size:17px;color:var(--muted)">Nasceu de quem estuda redes na Cisco e precisava aprender Bash numa VM Kali. Serve para cursos de Linux, redes e cibersegurança, e para plataformas como Codecademy e Hack The Box.</p>
-        <div class="note">Ferramentas de varredura e captura vêm sempre com o aviso: use só na sua rede de laboratório ou com autorização por escrito.</div>
+        <p class="eyebrow">Em poucos minutos</p>
+        <h2>Instale e comece a perguntar.</h2>
+        <ol style="margin-top:24px">
+          <li><div><b>Clone o projeto</b><span>Qualquer Linux x86_64 com Bash. Uma VM serve.</span></div></li>
+          <li><div><b>Rode o instalador</b><span>Ele pergunta antes de baixar o KOF e confere o SHA-256.</span></div></li>
+          <li><div><b>Abra e peça</b><span>Digite <code>kofterm</code> e tente <code>? qual meu ip</code>.</span></div></li>
+        </ol>
       </div>
-      <ul class="list">
-        <li><span>? qual o gateway</span><span><code>ip r</code>: a rota "default via" é o roteador</span></li>
-        <li><span>? quem usa a porta 22</span><span><code>sudo lsof -i :22</code></span></li>
-        <li><span>? escanear a rede…</span><span><code>nmap -sn 10.0.2.0/24</code> no seu lab</span></li>
-        <li><span>? capturar tráfego</span><span><code>sudo tcpdump -i any -n</code></span></li>
-        <li><span>? tentativas de login falhas</span><span><code>journalctl -u ssh | grep -i failed</code></span></li>
-        <li><span>? arquivos suid</span><span><code>find / -perm -4000 -type f</code></span></li>
-        <li><span>/etc/shadow</span><span>o índice explica caminhos, não só comandos</span></li>
-      </ul>
+<pre class="code"><button class="btn copy" type="button" data-copy>copiar</button><span class="p">$ </span>git clone https://github.com/DATAdotPDF/kofterm
+<span class="p">$ </span>cd kofterm &amp;&amp; ./install.sh
+<span class="p">$ </span>kofterm</pre>
     </div>
   </section>
 
-  <section id="regras">
+  <section id="contribuir" class="join">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">03 / Seguro por regra</p>
-        <h2>Ele vê o que você digita. <em>Por isso tem regras.</em></h2>
-      </div>
-      <div class="rules">
-        <div><b>100% offline</b><span>O programa não abre conexão de rede. O CI recusa código de rede. Confira: <code>ls -l /proc/$PPID/fd | grep -c socket</code> dá 0.</span></div>
-        <div><b>Nada roda sozinho</b><span>Sugestões e receitas só preenchem a linha. Quem roda é você, com Enter.</span></div>
-        <div><b>Perigo em vermelho</b><span><code>rm -rf /</code>, <code>mkfs</code>, <code>dd</code> em disco: nunca sugeridos, sempre destacados.</span></div>
-        <div><b>Seus dados ficam com você</b><span>Histórico e aprendizado em <code>~/.local/share/kofterm</code>, pasta 0700.</span></div>
-        <div><b>Aprendizado compartilhado, anonimizado</b><span><code>kofterm contribute --preview</code> mostra tudo antes de sair da máquina. Sem caminhos, nomes, IPs ou segredos.</span></div>
-        <div><b>Não instala nada</b><span>Quando falta uma ferramenta, ele explica como instalar. A decisão é sua.</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="kof">
-    <div class="wrap kof">
-      <div>
-        <p class="eyebrow">04 / Feito em KOF</p>
-        <h2>Uma linguagem <em>brasileira</em> no coração.</h2>
-        <p class="lead" style="margin-top:18px;font-size:17px;color:var(--muted)">O terminal, o emulador, o modelo que aprende, o instalador e os testes são escritos em <a href="https://koflang.github.io">KOF</a>, linguagem criada por Mel Santos. O que falta na linguagem vira uma biblioteca KOF paralela, nunca outra linguagem. A única fronteira é a libc do sistema.</p>
-        <p class="lead" style="font-size:17px;color:var(--muted)">No caminho, quatro bugs do compilador foram encontrados e reportados ao <a href="https://github.com/KofLang/Kof4j">KofLang/Kof4j</a>. Usar é também ajudar a linguagem a crescer.</p>
-      </div>
-      <dl class="stats">
-        <div><dt>7,9 MB</dt><dd>de memória, estável com <code>top</code> redesenhando</dd></div>
-        <div><dt>76</dt><dd>testes unitários em KOF</dd></div>
-        <div><dt>4</dt><dd>bugs reportados ao compilador KOF</dd></div>
-        <div><dt>1</dt><dd>dependência: a libc do Linux</dd></div>
-      </dl>
-    </div>
-  </section>
-
-  <section id="comece">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">05 / Comece</p>
-        <h2>Três passos, <em>um terminal.</em></h2>
-      </div>
-      <div class="steps">
-        <div><i>01</i><h3>Clone</h3><p>Em qualquer Linux x86_64 com Bash. Uma VM serve.</p></div>
-        <div><i>02</i><h3>Instale</h3><p>O instalador pergunta antes de baixar o KOF e confere o SHA-256.</p></div>
-        <div><i>03</i><h3>Abra</h3><p>Digite <code>kofterm</code>. Comece com <code>? instalar o htop</code>.</p></div>
-      </div>
-<pre class="code"><button class="btn copy" type="button" data-copy>copiar</button><span class="pr">$ </span>git clone https://github.com/DATAdotPDF/kofterm
-<span class="pr">$ </span>cd kofterm &amp;&amp; ./install.sh
-<span class="pr">$ </span>kofterm
-<span class="cm"># sem o KOF: baixe a release pronta em github.com/DATAdotPDF/kofterm/releases</span></pre>
-    </div>
-  </section>
-
-  <section id="contribua">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">06 / Contribua</p>
-        <h2>Feito para <em>ajudar, cooperar e somar.</em></h2>
-        <p>Cada receita, explicação ou teste ajuda outra pessoa a dar o próximo passo no terminal. Você não precisa saber KOF: as contribuições mais valiosas são texto em português simples.</p>
-      </div>
-      <div class="grid">
-        <div class="card paper"><span class="ic" style="color:var(--red)">?</span><h3>Escreva uma receita</h3><p>Ensine um pedido novo ao modo <code>?</code> em <code>recipes/pt_BR.txt</code>. É o caminho mais rápido para o primeiro PR.</p></div>
-        <div class="card paper"><span class="ic" style="color:var(--red)">¶</span><h3>Explique um comando</h3><p>Uma entrada nova no índice, com as suas palavras, em <code>index/pt_BR.txt</code>.</p></div>
-        <div class="card paper"><span class="ic" style="color:var(--red)">✓</span><h3>Teste e conte</h3><p>Siga o roteiro de teste na sua distribuição e abra uma issue com o que achou.</p></div>
-      </div>
-      <div class="contrib-cta">
-        <a class="btn gold" href="https://github.com/DATAdotPDF/kofterm/blob/main/CONTRIBUTING.md">Guia de contribuição ↗</a>
+      <p class="eyebrow" style="justify-content:center">Open source</p>
+      <h2>Feito para <span>ajudar, cooperar e somar.</span></h2>
+      <p>100% offline, sem conexões de rede, escrito em KOF, uma linguagem brasileira. Você não precisa saber KOF para ajudar: uma receita ou uma explicação em português já ajuda alguém a dar o próximo passo.</p>
+      <div class="cta">
+        <a class="btn go" href="https://github.com/DATAdotPDF/kofterm/blob/main/CONTRIBUTING.md">Como contribuir ↗</a>
         <a class="btn" href="https://github.com/DATAdotPDF/kofterm/labels/good%20first%20issue">good first issue ↗</a>
-        <a class="btn" href="https://github.com/DATAdotPDF/kofterm/blob/main/CODE_OF_CONDUCT.md">Código de Conduta ↗</a>
       </div>
     </div>
   </section>
 </main>
 
 <footer>
-  <svg class="map" viewBox="0 0 260 40" aria-hidden="true">
-    <path d="M10 30 C 60 0, 90 40, 130 18 S 200 4, 250 26" fill="none" stroke="#e7a44a" stroke-width="1.5" stroke-dasharray="3 5"/>
-    <g stroke="#e2626f" stroke-width="2"><path d="M5 25 l10 10 M15 25 l-10 10"/><path d="M245 21 l10 10 M255 21 l-10 10"/></g>
-  </svg>
-  <div class="sig">Pedro D. Ferreira</div>
-  <div class="role">Data Engineer &amp; Cybersecurity Student</div>
-  <div class="flinks">
-    <a href="https://dotpdf.dev">dotpdf.dev ↗</a>
-    <a href="https://github.com/DATAdotPDF">github.com/DATAdotPDF ↗</a>
-    <a href="https://www.linkedin.com/in/data-pdf/">LinkedIn ↗</a>
+  <div class="wrap">
+    <span>KofTerm · GPLv3 · por <a href="https://dotpdf.dev">Pedro D. Ferreira</a></span>
+    <span>KOF por <a href="https://github.com/melmonfre">Mel Santos</a> · <a href="https://github.com/KofLang/Kof4j">KofLang/Kof4j</a></span>
   </div>
-  <p class="credit">KofTerm é open source sob GPLv3. KOF é criada por Mel Santos (<a href="https://github.com/melmonfre">@melmonfre</a>) e mantida em <a href="https://github.com/KofLang/Kof4j">KofLang/Kof4j</a>. Assistência de IA declarada em cada commit.</p>
 </footer>
 
 <script>
-  // abas da demonstração
   const tabs = document.querySelectorAll('.tabs button');
   const panels = document.querySelectorAll('.screen');
   tabs.forEach(b => b.addEventListener('click', () => {
     tabs.forEach(t => t.setAttribute('aria-selected', String(t === b)));
     panels.forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
   }));
-  // copiar os comandos de instalação
   document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', async () => {
     const text = [...btn.parentElement.childNodes].filter(n => n !== btn).map(n => n.textContent).join('')
       .split('\n').filter(l => l.startsWith('$ ')).map(l => l.slice(2)).join('\n');
-    try { await navigator.clipboard.writeText(text); btn.textContent = 'copiado'; }
-    catch (e) { btn.textContent = 'selecione e copie'; }
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'copiado'; } catch (e) { btn.textContent = 'selecione e copie'; }
     setTimeout(() => { btn.textContent = 'copiar'; }, 1800);
   }));
 </script>

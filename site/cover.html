@@ -3,57 +3,47 @@
 <head>
 <meta charset="utf-8">
 <title>KofTerm · capa</title>
-<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* capa 1200x630 (cartões de redes sociais e da Énóis); gerada em cover.png */
-  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #1d2537; }
-  body { font-family: Inter, sans-serif; color: #efe4cc; position: relative; }
-  .grid { position: absolute; inset: 0; background-image:
-      linear-gradient(rgba(169,179,199,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(169,179,199,.05) 1px, transparent 1px);
-    background-size: 40px 40px; }
-  .left { position: absolute; left: 72px; top: 88px; width: 540px; }
-  .eyebrow { font-size: 14px; letter-spacing: .22em; text-transform: uppercase; color: #a9b3c7; display: flex; gap: 12px; align-items: center; }
-  .eyebrow i { width: 9px; height: 9px; border-radius: 50%; background: #6cc28b; }
-  .brand { font: 500 26px "JetBrains Mono", monospace; margin: 26px 0 10px; }
-  .brand b { color: #e7a44a; font-weight: 500; }
-  h1 { font: 400 76px/1.02 "IM Fell English", serif; margin: 0; }
-  h1 em { color: #e7a44a; }
-  p { font-size: 21px; line-height: 1.5; color: #a9b3c7; margin: 26px 0 0; }
-  .tags { position: absolute; left: 72px; bottom: 64px; font: 15px "JetBrains Mono", monospace; color: #a9b3c7; }
-  .tags span { color: #e7a44a; }
-  .term { position: absolute; right: 64px; top: 120px; width: 470px; background: #0f1420; border: 1px solid #2c3650; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.5); font: 15px/1.6 "JetBrains Mono", monospace; }
-  .bar { padding: 11px 14px; background: #141a28; border-bottom: 1px solid #2c3650; display: flex; gap: 7px; }
-  .bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a4560; }
-  .body { padding: 16px 18px; color: #d9dde7; white-space: pre; }
-  .u { color: #6aa3ff; } .g { color: #66748f; } .k { color: #e7a44a; } .gr { color: #6cc28b; }
-  .map { position: absolute; right: 70px; bottom: 54px; }
+  /* capa 1200x630 (cartões de redes sociais e da Énóis); gerada em cover.png com a identidade do banner */
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; color: #f9fafb; position: relative;
+    background: radial-gradient(700px 400px at 85% 0%, rgba(245,158,11,.12), transparent 60%), linear-gradient(135deg, #0b1020, #111827); }
+  .dots { position: absolute; inset: 0; background-image: radial-gradient(rgba(156,163,175,.12) 1px, transparent 1px); background-size: 22px 22px; }
+  .left { position: absolute; left: 72px; top: 110px; width: 520px; }
+  .logo { font: 700 84px "Cascadia Mono", Consolas, monospace; letter-spacing: -.02em; }
+  .logo b { color: #f59e0b; font-weight: 700; }
+  .bar { width: 170px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #f59e0b, #ef4444); margin: 12px 0 34px; }
+  h1 { font: 800 46px/1.1 system-ui, "Segoe UI", sans-serif; margin: 0; letter-spacing: -.02em; }
+  h1 span { background: linear-gradient(90deg, #f59e0b, #ef4444); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { font-size: 22px; color: #9ca3af; margin: 18px 0 0; }
+  .url { position: absolute; left: 72px; bottom: 56px; font: 17px "Cascadia Mono", Consolas, monospace; color: #6b7280; }
+  .term { position: absolute; right: 64px; top: 120px; width: 500px; background: #0a0a0f; border: 1px solid #374151; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.5); font: 18px/1.7 "Cascadia Mono", Consolas, monospace; }
+  .term .t { display: flex; gap: 8px; padding: 13px 16px; border-bottom: 1px solid #1f2937; }
+  .term .t i { width: 12px; height: 12px; border-radius: 50%; }
+  .body { padding: 18px 22px 22px; white-space: pre; color: #e5e7eb; }
+  .p { color: #22c55e; } .g { color: #6b7280; } .a { color: #f59e0b; }
+  .key { display: inline-block; border: 2px solid #f59e0b; color: #f59e0b; border-radius: 6px; padding: 0 12px; font-size: 16px; line-height: 1.6; margin-right: 10px; }
 </style>
 </head>
 <body>
-  <div class="grid"></div>
+  <div class="dots"></div>
   <div class="left">
-    <div class="eyebrow"><i></i>open source · feito em KOF</div>
-    <div class="brand">&gt;_ kof<b>term</b></div>
-    <h1>Aprenda o terminal<br><em>enquanto usa.</em></h1>
-    <p>Explica cada comando, sugere o resto da linha e entende pedidos em português. 100% offline.</p>
+    <div class="logo">kof<b>term</b></div>
+    <div class="bar"></div>
+    <h1>Aprenda o terminal.<br><span>Enquanto usa.</span></h1>
+    <p>Explica cada comando, sugere o resto da linha e entende pedidos em português. 100% offline, feito em KOF.</p>
   </div>
-  <div class="tags"><span>#</span>linux <span>#</span>redes <span>#</span>cibersegurança <span>#</span>bash</div>
+  <div class="url">github.com/DATAdotPDF/kofterm</div>
   <div class="term">
-    <div class="bar"><i></i><i></i><i></i></div>
-<div class="body"><span class="u">┌──(aluno㉿kali)-[~]</span>
-<span class="u">└─$</span> ? qual o gateway<span class="g">  → ip r</span>
+    <div class="t"><i style="background:#ef4444"></i><i style="background:#f59e0b"></i><i style="background:#22c55e"></i></div>
+<div class="body"><span class="p">$</span> ? qual o gateway<span class="g">  → ip r</span>
 
-<span class="gr">RECEITA</span> ver o gateway
-<span class="k">ip r</span>
-A linha "default via X"
-é o roteador da rede.
+<span class="p">$</span> cat /etc/shadow
+<span class="g">cat: /etc/shadow: Permissão negada</span>
 
-<span class="u">└─$</span> sudo apt up<span class="g">date</span></div>
+<span class="p">$</span> <span class="g">sudo cat /etc/shadow</span>
+
+<span class="key">TAB</span><span class="g">aceita · contexto: erro anterior</span></div>
   </div>
-  <svg class="map" width="300" height="44" viewBox="0 0 300 44" aria-hidden="true">
-    <path d="M10 32 C 70 0, 110 44, 150 20 S 230 4, 290 28" fill="none" stroke="#e7a44a" stroke-width="1.6" stroke-dasharray="3 6"/>
-    <g stroke="#e2626f" stroke-width="2.2"><path d="M4 26 l12 12 M16 26 l-12 12"/><path d="M284 22 l12 12 M296 22 l-12 12"/></g>
-  </svg>
 </body>
 </html>
