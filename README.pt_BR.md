@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.svg" alt="Banner do KofTerm: terminal Linux com autocomplete por IA offline, escrito em KOF">
+  <img src="docs/images/banner.png" width="100%" alt="KOFTERM: seus problemas com o terminal acabaram! Terminal Linux que explica cada comando, 100% offline, feito em KOF. Grátis e open source.">
 </p>
 
 <h1 align="center">KOFTERM</h1>
@@ -149,6 +149,7 @@ Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_O
 Quem ajudou a construir o KofTerm, além do código: testes, receitas, explicações e ideias. Toda contribuição aceita entra aqui e no [CHANGELOG](CHANGELOG.md).
 
 - **Pedro D. Ferreira** ([@DATAdotPDF](https://github.com/DATAdotPDF)): autor e primeiro testador humano.
+- **Mariana** ([@marianabsctba](https://github.com/marianabsctba)): revisão técnica. Apontou a classificação de comandos perigosos pelo contexto, os testes de segurança do PTY e a proteção de segredos no histórico, que agora guiam a próxima versão de segurança.
 - **Você?** Veja [como ajudar](CONTRIBUTING.md). 💙
 
 ## Como foi feito (processo e auditoria)

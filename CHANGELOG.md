@@ -2,6 +2,14 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [Unreleased]
+
+### Changed
+- New "100% brasileiro" identity, inspired by Brazilian TV commercials of the early 2000s: blue TV background with soft rays, chrome KOFTERM lettering with a yellow outline, the slogan "Seus problemas com o terminal acabaram!", a green-yellow-blue stripe and a round seal pinned to the terminal's corner. Applied to the README banner (now `docs/images/banner.png`, rendered from `site/banner.html`), the site and the cover image; the rest of the site stays short on a plain background
+
+### Thanks
+- Mariana ([@marianabsctba](https://github.com/marianabsctba)) for the technical review: context-aware danger checks, PTY security tests and keeping secrets out of the history
+
 ## [0.6.6] - 21/10/2026
 
 A README that gets straight to the point, and the Kali prompt fixed.

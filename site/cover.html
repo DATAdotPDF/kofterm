@@ -3,47 +3,50 @@
 <head>
 <meta charset="utf-8">
 <title>KofTerm · capa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,500;1,900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  /* capa 1200x630 (cartões de redes sociais e da Énóis); gerada em cover.png com a identidade do banner */
+  /* Capa 1200 × 630 (cartões de redes sociais e da Énóis), gerada em cover.png. Grade de 64 px; selo no canto do terminal. */
+  :root { --verde: #009c3b; --amarelo: #ffdf00; --azul: #002776; }
+  * { box-sizing: border-box; }
   html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
-  body { font-family: system-ui, "Segoe UI", sans-serif; color: #f9fafb; position: relative;
-    background: radial-gradient(700px 400px at 85% 0%, rgba(245,158,11,.12), transparent 60%), linear-gradient(135deg, #0b1020, #111827); }
-  .dots { position: absolute; inset: 0; background-image: radial-gradient(rgba(156,163,175,.12) 1px, transparent 1px); background-size: 22px 22px; }
-  .left { position: absolute; left: 72px; top: 110px; width: 520px; }
-  .logo { font: 700 84px "Cascadia Mono", Consolas, monospace; letter-spacing: -.02em; }
-  .logo b { color: #f59e0b; font-weight: 700; }
-  .bar { width: 170px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #f59e0b, #ef4444); margin: 12px 0 34px; }
-  h1 { font: 800 46px/1.1 system-ui, "Segoe UI", sans-serif; margin: 0; letter-spacing: -.02em; }
-  h1 span { background: linear-gradient(90deg, #f59e0b, #ef4444); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  p { font-size: 22px; color: #9ca3af; margin: 18px 0 0; }
-  .url { position: absolute; left: 72px; bottom: 56px; font: 17px "Cascadia Mono", Consolas, monospace; color: #6b7280; }
-  .term { position: absolute; right: 64px; top: 120px; width: 500px; background: #0a0a0f; border: 1px solid #374151; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.5); font: 18px/1.7 "Cascadia Mono", Consolas, monospace; }
-  .term .t { display: flex; gap: 8px; padding: 13px 16px; border-bottom: 1px solid #1f2937; }
-  .term .t i { width: 12px; height: 12px; border-radius: 50%; }
-  .body { padding: 18px 22px 22px; white-space: pre; color: #e5e7eb; }
-  .p { color: #22c55e; } .g { color: #6b7280; } .a { color: #f59e0b; }
-  .key { display: inline-block; border: 2px solid #f59e0b; color: #f59e0b; border-radius: 6px; padding: 0 12px; font-size: 16px; line-height: 1.6; margin-right: 10px; }
+  body { position: relative; font-family: Inter, sans-serif; color: #fff; background: radial-gradient(ellipse at 30% 50%, #1f4fd1 0%, #0a1650 70%); }
+  .rays { position: absolute; left: -500px; top: -600px; width: 1600px; height: 1600px; border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.10) 0 6deg, transparent 6deg 12deg);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 60%); mask-image: radial-gradient(circle, #000 0%, transparent 60%); }
+  .flag { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: linear-gradient(90deg, var(--verde) 0 33.33%, var(--amarelo) 33.33% 66.66%, #2563eb 66.66%); }
+  .chrome { font: 900 italic 108px/1 Inter, sans-serif; letter-spacing: -.01em; text-transform: uppercase; padding: 0 .1em;
+    background: linear-gradient(180deg, #ffffff 0%, #e8eefc 44%, #8a97b8 50%, #dfe6f5 58%, #ffffff 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(2px 0 0 var(--amarelo)) drop-shadow(-2px 0 0 var(--amarelo)) drop-shadow(0 2px 0 var(--amarelo)) drop-shadow(0 -2px 0 var(--amarelo)) drop-shadow(0 6px 0 #04103a) drop-shadow(0 0 16px rgba(255,223,0,.35)); }
+  .text { position: absolute; left: 64px; top: 60px; height: 260px; display: flex; flex-direction: column; justify-content: center; }
+  .slogan { font: 900 italic 28px/1.1 Inter, sans-serif; color: var(--amarelo); margin-top: 24px; white-space: nowrap; }
+  .sub { font: 500 20px Inter, sans-serif; color: #dbe4ff; margin-top: 12px; }
+  .term { position: absolute; right: 80px; top: 360px; width: 460px; height: 222px; background: #0a0a0f; border: 2px solid rgba(255,255,255,.85); border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.45); }
+  .bar { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #1f2937; }
+  .bar i { width: 12px; height: 12px; border-radius: 50%; }
+  pre { margin: 0; padding: 16px 20px; font: 500 20px/1.75 "JetBrains Mono", monospace; color: #e5e7eb; }
+  .g { color: #22c55e; } .gh { color: #64748b; } .y { color: var(--amarelo); }
+  .seal { position: absolute; left: 1120px; top: 360px; width: 132px; height: 132px; border-radius: 50%; transform: translate(-50%, -50%) rotate(-10deg);
+    background: var(--amarelo); color: var(--azul); border: 4px solid var(--azul); box-shadow: 0 6px 0 rgba(0,0,0,.25);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .seal b { font: 900 italic 30px/1 Inter, sans-serif; }
+  .seal span { font: 500 13px/1 Inter, sans-serif; font-weight: 700; margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
 </style>
 </head>
 <body>
-  <div class="dots"></div>
-  <div class="left">
-    <div class="logo">kof<b>term</b></div>
-    <div class="bar"></div>
-    <h1>Aprenda o terminal.<br><span>Enquanto usa.</span></h1>
-    <p>Explica cada comando, sugere o resto da linha e entende pedidos em português. 100% offline, feito em KOF.</p>
+  <div class="rays"></div>
+  <div class="text">
+    <div class="chrome">Kofterm</div>
+    <div class="slogan">Seus problemas com o terminal acabaram!</div>
+    <div class="sub">Explica cada comando · 100% offline · feito em KOF</div>
   </div>
-  <div class="url">github.com/DATAdotPDF/kofterm</div>
   <div class="term">
-    <div class="t"><i style="background:#ef4444"></i><i style="background:#f59e0b"></i><i style="background:#22c55e"></i></div>
-<div class="body"><span class="p">$</span> ? qual o gateway<span class="g">  → ip r</span>
-
-<span class="p">$</span> cat /etc/shadow
-<span class="g">cat: /etc/shadow: Permissão negada</span>
-
-<span class="p">$</span> <span class="g">sudo cat /etc/shadow</span>
-
-<span class="key">TAB</span><span class="g">aceita · contexto: erro anterior</span></div>
+    <div class="bar"><i style="background:#ef4444"></i><i style="background:#f59e0b"></i><i style="background:#22c55e"></i></div>
+<pre><span class="g">$</span> ? qual o gateway<span class="gh">  → ip r</span>
+<span class="g">$</span> sudo apt up<span class="gh">date</span>
+<span class="y">TAB</span> <span class="gh">aceita a sugestão</span></pre>
   </div>
+  <div class="seal"><b>Grátis</b><span>open source</span></div>
+  <div class="flag"></div>
 </body>
 </html>

@@ -3,123 +3,133 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KofTerm · aprenda o terminal enquanto usa</title>
-<meta name="description" content="Terminal para Linux que explica cada comando enquanto você digita, sugere o resto da linha e entende pedidos em português. Open source, 100% offline, feito em KOF.">
-<meta property="og:title" content="KofTerm · aprenda o terminal enquanto usa">
-<meta property="og:description" content="Open source, 100% offline, feito em KOF. Para quem estuda Linux, redes e cibersegurança.">
+<title>KofTerm · seus problemas com o terminal acabaram!</title>
+<meta name="description" content="Terminal para Linux que explica cada comando enquanto você digita, sugere o resto da linha e entende pedidos em português. Grátis, open source, 100% offline, feito em KOF.">
+<meta property="og:title" content="KOFTERM · seus problemas com o terminal acabaram!">
+<meta property="og:description" content="Grátis, open source, 100% offline e feito em KOF, uma linguagem brasileira. Para quem estuda Linux, redes e cibersegurança.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://datadotpdf.github.io/kofterm/">
 <meta property="og:image" content="https://datadotpdf.github.io/kofterm/cover.png">
-<meta name="theme-color" content="#0b1020">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1020'/%3E%3Ctext x='4' y='22' font-family='monospace' font-size='16' font-weight='bold' fill='%23f59e0b'%3E%3E_%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#0a1650">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1650'/%3E%3Ctext x='4' y='22' font-family='monospace' font-size='16' font-weight='bold' fill='%23ffdf00'%3E%3E_%3C/text%3E%3C/svg%3E">
 <style>
-/* Identidade do banner do README: fundo quase preto, âmbar, degradê âmbar→vermelho, terminal.
-   Só fontes do sistema e nenhuma requisição externa: abre na hora. */
+/* Identidade "100% brasileira": fundo azul de TV, letreiro cromado, amarelo, faixa verde-amarelo-azul.
+   Só o topo tem raios e selo; o resto é fundo liso para a leitura. Só fontes do sistema, nenhuma requisição externa. */
 :root {
-  --bg: #0b1020; --bg-2: #111827; --panel: #0a0a0f; --line: #1f2937; --line-2: #374151;
-  --text: #f9fafb; --soft: #d1d5db; --muted: #9ca3af; --dim: #6b7280;
-  --amber: #f59e0b; --red: #ef4444; --green: #22c55e;
-  --grad: linear-gradient(90deg, #f59e0b, #ef4444);
+  --tv1: #1f4fd1; --tv2: #0a1650; --bg: #0b1230; --bg-2: #101a40; --panel: #0a0a0f; --line: #23305f; --line-2: #3a4a85;
+  --text: #ffffff; --soft: #dbe4ff; --muted: #a9b6dd; --dim: #7c8ab8;
+  --amarelo: #ffdf00; --verde: #009c3b; --azul: #002776; --green: #22c55e;
+  --flag: linear-gradient(90deg, #009c3b 0 33.33%, #ffdf00 33.33% 66.66%, #2563eb 66.66%);
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
   --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  margin: 0; color: var(--soft); font: 17px/1.65 var(--sans);
-  background: radial-gradient(1200px 600px at 75% -10%, rgba(245,158,11,.08), transparent 60%),
-              linear-gradient(180deg, var(--bg), var(--bg-2));
-  background-color: var(--bg);
-  min-height: 100vh;
-}
-a { color: var(--amber); text-underline-offset: 3px; }
-:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+body { margin: 0; color: var(--soft); font: 17px/1.65 var(--sans); background: var(--bg); }
+a { color: var(--amarelo); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--amarelo); outline-offset: 3px; border-radius: 4px; }
 code { font-family: var(--mono); font-size: .9em; color: var(--text); white-space: nowrap; }
 .wrap { width: min(1440px, 100% - 96px); margin: 0 auto; }
-.skip { position: absolute; left: -999px; } .skip:focus { left: 12px; top: 12px; background: var(--amber); color: #111; padding: 8px 12px; border-radius: 6px; z-index: 9; }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 12px; top: 12px; background: var(--amarelo); color: var(--azul); padding: 8px 12px; border-radius: 6px; z-index: 9; }
 
-/* topo */
-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 72px; }
-.logo { font: 700 22px var(--mono); color: var(--text); text-decoration: none; letter-spacing: -.01em; }
-.logo b { color: var(--amber); font-weight: 700; }
-header nav { display: flex; gap: 26px; align-items: center; font-size: 15px; }
-header nav a { color: var(--muted); text-decoration: none; }
+/* letreiro cromado: contorno amarelo só por fora */
+.chrome { font: italic 900 1em/1 var(--sans); text-transform: uppercase; letter-spacing: -.01em; padding: 0 .1em;
+  background: linear-gradient(180deg, #ffffff 0%, #e8eefc 44%, #8a97b8 50%, #dfe6f5 58%, #ffffff 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(1.5px 0 0 var(--amarelo)) drop-shadow(-1.5px 0 0 var(--amarelo)) drop-shadow(0 1.5px 0 var(--amarelo)) drop-shadow(0 -1.5px 0 var(--amarelo)) drop-shadow(0 3px 0 #04103a); }
+
+/* topo (fundo de TV) */
+.top { position: relative; overflow: hidden; background: radial-gradient(ellipse at 28% 55%, var(--tv1) 0%, var(--tv2) 72%); }
+.top::before { content: ""; position: absolute; left: -30%; top: -60%; width: 110vw; height: 110vw; max-width: 1700px; max-height: 1700px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.09) 0 6deg, transparent 6deg 12deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 60%); mask-image: radial-gradient(circle, #000 0%, transparent 60%); pointer-events: none; }
+.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: var(--flag); }
+header { position: relative; border-bottom: 1px solid rgba(255,255,255,.14); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+.logo { font: italic 900 28px/1 var(--sans); color: #fff; text-transform: uppercase; letter-spacing: -.01em; text-decoration: none; text-shadow: 0 2px 0 #04103a, 0 0 1px var(--amarelo); }
+.logo b { color: var(--amarelo); font-weight: 900; }
+header nav { display: flex; gap: 26px; align-items: center; font: 600 15px var(--sans); }
+header nav a { color: var(--soft); text-decoration: none; }
 header nav a:hover { color: var(--text); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px; font: 600 15px var(--sans); text-decoration: none; border: 1px solid var(--line-2); color: var(--text); background: transparent; cursor: pointer; }
-.btn:hover { border-color: var(--muted); }
-.btn.go { background: var(--amber); border-color: var(--amber); color: #111; }
-.btn.go:hover { filter: brightness(1.08); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 22px; border-radius: 10px; font: 700 16px var(--sans); text-decoration: none; border: 2px solid rgba(255,255,255,.8); color: var(--text); background: transparent; cursor: pointer; }
+.btn:hover { background: rgba(255,255,255,.08); }
+.btn.go { background: var(--amarelo); border-color: var(--amarelo); color: var(--azul); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
+.btn.go:hover { filter: brightness(1.05); }
+header .btn { height: 42px; padding: 0 16px; font-size: 15px; }
 
-/* herói */
-.hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; padding: 48px 0 88px; }
-.eyebrow { display: flex; align-items: center; gap: 12px; font: 700 12px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--amber); margin: 0 0 18px; }
-.eyebrow::before { content: ""; width: 24px; height: 2px; background: var(--grad); }
-h1, h2 { color: var(--text); margin: 0; letter-spacing: -.02em; }
-h1 { font: 800 clamp(40px, 5.2vw, 66px)/1.03 var(--sans); }
-h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-h2 { font: 800 clamp(28px, 3vw, 38px)/1.12 var(--sans); }
-.lead { font-size: 19px; color: var(--soft); margin: 22px 0 30px; max-width: 32em; }
-.cta { display: flex; gap: 12px; flex-wrap: wrap; }
-.fine { margin-top: 16px; font-size: 14px; color: var(--dim); }
+.hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 80px; align-items: center; padding: 64px 0 96px; }
+.eyebrow { font: 800 13px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--amarelo); margin: 0 0 16px; }
+h1 { margin: 0; color: var(--text); font: italic 900 clamp(40px, 4.6vw, 68px)/1.02 var(--sans); text-transform: uppercase; letter-spacing: -.015em; }
+h1 span { color: var(--amarelo); }
+.lead { font-size: 20px; color: var(--soft); margin: 22px 0 30px; max-width: 32em; }
+.cta { display: flex; gap: 14px; flex-wrap: wrap; }
+.fine { margin-top: 16px; font-size: 14px; color: var(--muted); }
 
-/* terminal */
-.term { background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-.term .bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+/* terminal com o selo preso no canto */
+.shot { position: relative; }
+.term { background: var(--panel); border: 2px solid rgba(255,255,255,.85); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.term .bar { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-bottom: 1px solid #1f2937; }
 .term .bar i { width: 12px; height: 12px; border-radius: 50%; }
 .term .bar i:nth-child(1) { background: #ef4444; } .term .bar i:nth-child(2) { background: #f59e0b; } .term .bar i:nth-child(3) { background: #22c55e; }
-.term .bar span { flex: 1; text-align: center; font: 13px var(--mono); color: var(--muted); margin-right: 52px; }
-.screen { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); font: 14px/1.6 var(--mono); min-height: 330px; }
+.seal { position: absolute; right: 0; top: 0; width: 120px; height: 120px; border-radius: 50%; transform: translate(50%, -50%) rotate(-10deg);
+  background: var(--amarelo); color: var(--azul); border: 4px solid var(--azul); box-shadow: 0 6px 0 rgba(0,0,0,.25);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 2; }
+.seal b { font: italic 900 27px/1 var(--sans); }
+.seal span { font: 800 11px/1.1 var(--sans); margin-top: 6px; letter-spacing: .05em; text-transform: uppercase; }
+.screen { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); font: 14px/1.6 var(--mono); min-height: 320px; }
 .screen[hidden] { display: none; }
 .screen .l { padding: 16px 18px; white-space: pre-wrap; word-break: break-word; color: #e5e7eb; }
 .screen .r { padding: 0 16px 16px; border-left: 1px solid #1f6f78; white-space: pre-wrap; color: #d1d5db; }
 .screen .r .h { display: block; margin: 0 -16px 10px; padding: 4px 16px; background: #e5e7eb; color: #0a0a0f; }
-.u { color: #60a5fa; } .g { color: var(--dim); } .a { color: var(--amber); } .ok { color: var(--green); }
-.w { color: #fbbf24; } .b { color: #fff; font-weight: 700; } .p { color: var(--green); }
-.tabs { display: flex; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
-.tabs button { font: 600 13px var(--sans); color: var(--muted); background: transparent; border: 1px solid var(--line-2); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
-.tabs button[aria-selected="true"] { color: #111; background: var(--amber); border-color: var(--amber); }
-.caption { margin: 10px 0 0; font-size: 13px; color: var(--dim); }
+.u { color: #60a5fa; } .g { color: #6b7280; } .a { color: var(--amarelo); } .ok { color: var(--green); } .w { color: #fbbf24; } .b { color: #fff; font-weight: 700; }
+.tabs { display: flex; gap: 8px; margin: 16px 0 0; flex-wrap: wrap; }
+.tabs button { font: 700 13px var(--sans); color: var(--soft); background: rgba(10,22,80,.5); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--azul); background: var(--amarelo); border-color: var(--amarelo); }
+.caption { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
-/* seções */
+/* seções em fundo liso */
 section { padding: 88px 0; border-top: 1px solid var(--line); }
-.head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: end; margin-bottom: 40px; }
+.head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 80px; align-items: end; margin-bottom: 40px; }
 .head p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 18px; }
+h2 { margin: 0; color: var(--text); font: italic 900 clamp(28px, 3vw, 40px)/1.1 var(--sans); text-transform: uppercase; letter-spacing: -.01em; }
+h2 span { color: var(--amarelo); }
 .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-.card { background: rgba(17,24,39,.6); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
-.card .k { display: inline-block; font: 700 13px var(--mono); color: var(--amber); border: 1px solid var(--amber); border-radius: 6px; padding: 2px 8px; margin-bottom: 14px; }
-.card h3 { color: var(--text); font: 700 19px var(--sans); margin: 0 0 8px; }
+.card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.card .k { display: inline-block; font: 800 13px var(--mono); color: var(--azul); background: var(--amarelo); border-radius: 6px; padding: 3px 9px; margin-bottom: 14px; }
+.card h3 { color: var(--text); font: 800 19px var(--sans); margin: 0 0 8px; }
 .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
-.steps { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
-.steps ol { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+.steps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 80px; align-items: center; }
+.steps ol { list-style: none; counter-reset: s; padding: 0; margin: 24px 0 0; }
 .steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-.steps li::before { content: counter(s); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--amber); color: var(--amber); font: 700 15px var(--mono); }
+.steps li::before { content: counter(s); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--amarelo); color: var(--azul); font: 900 15px var(--mono); }
 .steps li b { color: var(--text); display: block; }
 .steps li span { color: var(--muted); font-size: 15.5px; }
-pre.code { position: relative; margin: 0; padding: 22px 24px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; font: 15px/1.9 var(--mono); color: #e5e7eb; overflow-x: auto; }
-pre.code .p { user-select: none; }
-.copy { position: absolute; top: 12px; right: 12px; padding: 7px 12px; font-size: 13px; }
+pre.code { position: relative; margin: 0; padding: 22px 24px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; font: 15px/1.9 var(--mono); color: #e5e7eb; overflow-x: auto; }
+pre.code .p { color: var(--green); user-select: none; }
+.copy { position: absolute; top: 12px; right: 12px; height: 34px; padding: 0 12px; font-size: 13px; border-width: 1px; }
 .join { text-align: center; }
-.join h2 { font-size: clamp(30px, 3.6vw, 46px); }
-.join h2 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.join p:not(.eyebrow) { color: var(--muted); font-size: 18px; max-width: 38em; margin: 16px auto 28px; }
+.join h2 { font-size: clamp(30px, 3.6vw, 48px); }
+.join p:not(.eyebrow) { color: var(--muted); font-size: 18px; max-width: 40em; margin: 16px auto 28px; }
 .join .cta { justify-content: center; }
-footer { border-top: 1px solid var(--line); padding: 28px 0; font-size: 14px; color: var(--dim); }
+footer { border-top: 1px solid var(--line); padding: 28px 0 36px; font-size: 14px; color: var(--dim); position: relative; }
+footer::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--flag); }
 footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 footer a { color: var(--muted); }
 
 @media (max-width: 1080px) {
-  .hero .wrap, .head, .steps { grid-template-columns: 1fr; gap: 32px; }
+  .hero .wrap, .head, .steps { grid-template-columns: 1fr; gap: 40px; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .wrap { width: calc(100% - 32px); }
   header nav a:not(.btn) { display: none; }
-  .hero .wrap { padding: 24px 0 56px; }
+  .hero .wrap { padding: 32px 0 72px; }
   section { padding: 56px 0; }
   .cards { grid-template-columns: 1fr; }
   .screen { grid-template-columns: 1fr; font-size: 12.5px; }
   .screen .r { border-left: 0; border-top: 1px solid #1f6f78; }
-  .term .bar span { margin-right: 0; }
+  .seal { width: 96px; height: 96px; transform: translate(25%, -50%) rotate(-10deg); }
+  .seal b { font-size: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
@@ -127,36 +137,38 @@ footer a { color: var(--muted); }
 <body>
 <a class="skip" href="#conteudo">Pular para o conteúdo</a>
 
-<header>
-  <div class="wrap">
-    <a class="logo" href="#">kof<b>term</b></a>
-    <nav aria-label="Principal">
-      <a href="#recursos">Recursos</a>
-      <a href="#instalar">Instalar</a>
-      <a href="#contribuir">Contribuir</a>
-      <a class="btn" href="https://github.com/DATAdotPDF/kofterm">GitHub ↗</a>
-    </nav>
-  </div>
-</header>
+<div class="top">
+  <header>
+    <div class="wrap">
+      <a class="logo" href="#">Kof<b>term</b></a>
+      <nav aria-label="Principal">
+        <a href="#recursos">Recursos</a>
+        <a href="#instalar">Instalar</a>
+        <a href="#contribuir">Contribuir</a>
+        <a class="btn" href="https://github.com/DATAdotPDF/kofterm">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
 
-<main id="conteudo">
-  <div class="hero">
+  <div class="hero" id="conteudo">
     <div class="wrap">
       <div>
-        <p class="eyebrow">Terminal para quem estuda Linux</p>
-        <h1>Aprenda o terminal.<br><span>Enquanto usa.</span></h1>
-        <p class="lead">Enquanto você digita, o KofTerm explica cada comando, sugere o resto da linha e entende pedidos em português, como <code>? qual o gateway</code>.</p>
+        <p class="eyebrow">Para quem estuda Linux, redes e segurança</p>
+        <h1>Seus problemas com o terminal <span>acabaram!</span></h1>
+        <p class="lead">O KofTerm explica cada comando enquanto você digita, sugere o resto da linha e entende pedidos em português, como <code>? qual o gateway</code>.</p>
         <div class="cta">
-          <a class="btn go" href="#instalar">Instalar</a>
+          <a class="btn go" href="#instalar">Instale já</a>
           <a class="btn" href="https://github.com/DATAdotPDF/kofterm">Ver no GitHub ↗</a>
         </div>
-        <p class="fine">Gratuito · open source · Linux · 100% offline · feito em KOF</p>
+        <p class="fine">Grátis · open source · Linux · 100% offline · feito em KOF, uma linguagem brasileira</p>
       </div>
 
       <div>
-        <div class="term" role="figure" aria-label="Tela do KofTerm">
-          <div class="bar"><i></i><i></i><i></i><span>kofterm — bash</span></div>
-          <div class="screen" data-panel="indice">
+        <div class="shot">
+          <div class="seal"><b>R$ 0,00</b><span>100% offline</span></div>
+          <div class="term" role="figure" aria-label="Tela do KofTerm">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="screen" data-panel="indice">
 <div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
 <span class="u">└─$</span> sudo cat /etc/shadow</div>
 <div class="r"><span class="h"> Índice · F2 fecha · F1 busca</span><span class="b">cat</span>
@@ -170,8 +182,8 @@ Mostra o conteúdo de arquivos.
   Os hashes das senhas. Só o root
   lê: sem sudo dá "Permissão
   negada".</div>
-          </div>
-          <div class="screen" data-panel="pedido" hidden>
+            </div>
+            <div class="screen" data-panel="pedido" hidden>
 <div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
 <span class="u">└─$</span> ? qual o gateway<span class="g">  → ip r</span></div>
 <div class="r"><span class="h"> Receitas · TAB usa · F2 fecha</span><span class="ok">RECEITA</span> ver o gateway
@@ -181,8 +193,8 @@ Mostra o conteúdo de arquivos.
 Mostra as rotas. A linha
 "default via X" diz qual é o
 gateway (o roteador).</div>
-          </div>
-          <div class="screen" data-panel="falta" hidden>
+            </div>
+            <div class="screen" data-panel="falta" hidden>
 <div class="l"><span class="u">┌──(aluno㉿kali)-[~]</span>
 <span class="u">└─$</span> ufw status
 Comando 'ufw' não encontrado
@@ -195,6 +207,7 @@ Para baixar o que falta, use:
 
 <span class="g">TAB coloca o comando na linha;
 nada roda sem o seu Enter.</span></div>
+            </div>
           </div>
         </div>
         <div class="tabs" role="tablist" aria-label="Telas">
@@ -206,11 +219,13 @@ nada roda sem o seu Enter.</span></div>
       </div>
     </div>
   </div>
+</div>
 
+<main>
   <section id="recursos">
     <div class="wrap">
       <div class="head">
-        <div><p class="eyebrow">O problema</p><h2>Um cursor piscando e nenhuma pista.</h2></div>
+        <div><p class="eyebrow">O problema</p><h2>Um cursor piscando e <span>nenhuma pista.</span></h2></div>
         <p>Quem começa no Linux decora <code>--help</code>, sai do terminal para pesquisar e trava num "Permissão negada". O KofTerm fica ao lado do seu prompt e ensina enquanto você usa. Nada roda sem o seu Enter.</p>
       </div>
       <div class="cards">
@@ -226,8 +241,8 @@ nada roda sem o seu Enter.</span></div>
     <div class="wrap steps">
       <div>
         <p class="eyebrow">Em poucos minutos</p>
-        <h2>Instale e comece a perguntar.</h2>
-        <ol style="margin-top:24px">
+        <h2>Instale já e <span>comece a perguntar.</span></h2>
+        <ol>
           <li><div><b>Clone o projeto</b><span>Qualquer Linux x86_64 com Bash. Uma VM serve.</span></div></li>
           <li><div><b>Rode o instalador</b><span>Ele pergunta antes de baixar o KOF e confere o SHA-256.</span></div></li>
           <li><div><b>Abra e peça</b><span>Digite <code>kofterm</code> e tente <code>? qual meu ip</code>.</span></div></li>
@@ -241,7 +256,7 @@ nada roda sem o seu Enter.</span></div>
 
   <section id="contribuir" class="join">
     <div class="wrap">
-      <p class="eyebrow" style="justify-content:center">Open source</p>
+      <p class="eyebrow">Open source</p>
       <h2>Feito para <span>ajudar, cooperar e somar.</span></h2>
       <p>100% offline, sem conexões de rede, escrito em KOF, uma linguagem brasileira. Você não precisa saber KOF para ajudar: uma receita ou uma explicação em português já ajuda alguém a dar o próximo passo.</p>
       <div class="cta">

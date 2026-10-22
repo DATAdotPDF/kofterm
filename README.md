@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.svg" alt="KofTerm banner: Linux terminal with offline AI autocomplete, written in KOF">
+  <img src="docs/images/banner.png" width="100%" alt="KOFTERM: your problems with the terminal are over! A Linux terminal that explains each command, 100% offline, written in KOF. Free and open source.">
 </p>
 
 <h1 align="center">KOFTERM</h1>
@@ -149,6 +149,7 @@ An English index and recipes, more networking recipes, history search with Ctrl+
 People who helped build KofTerm, beyond code: tests, recipes, explanations and ideas. Every accepted contribution is listed here and in the [CHANGELOG](CHANGELOG.md).
 
 - **Pedro D. Ferreira** ([@DATAdotPDF](https://github.com/DATAdotPDF)): author and first human tester.
+- **Mariana** ([@marianabsctba](https://github.com/marianabsctba)): technical review. Pointed out context-aware danger checks, PTY security tests and keeping secrets out of the history, which now guide the next security release.
 - **You?** See [how to help](CONTRIBUTING.md). 💙
 
 ## How it was built (process and audit trail)
