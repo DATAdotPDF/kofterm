@@ -154,6 +154,12 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - Verified in tmux, as root through `unshare -r` (EUID 0 without a password): `cd /root/.cache`, `apt update && apt install -y nmap`, `ls -la /root`, `lsof -i :22`; as a normal user `sudo ls -la /root/.cache` and `sudo -i` stay. 72 unit tests pass.
 - The `bash: alias: ls -alF : não encontrado` lines at startup came from Pedro's own `~/.bashrc` (`alias ll= ' ls -alF '`, spaces around `=`), not from KofTerm.
 
+### Full test script and missing programs (0.6.4)
+- Pedro asked for a robust test script. `docs/TESTE_HUMANO.md` now covers every feature in blocks (terminal, editing, ghost text, context, security, column, search, full-screen programs, human mode, root, networking, missing programs, learning, performance, exit, install), with ★ for the essentials. Network checks use `ls -l /proc/$PPID/fd` because Kali has no `strace`.
+- Pedro's rule, restated: what KOF lacks becomes a parallel KOF project; KofTerm must work in any Linux Bash terminal; when a system tool is missing, KofTerm says how to get it and explains in the column. Implemented: the column warns while typing (PATH lookup, cached per command name), and after exit 127 the empty line holds the install command. Package names come from a new `!` index line, or from Kali's command-not-found output ("pode ser instalado com: sudo apt install ufw"), or fall back to `apt search`.
+- Found while testing: Kali's command-not-found offers the joke package `gti` instead of saying "did you mean git", and `sl` was corrected to `nl` because plain Levenshtein counts a swap as two edits. The distance now counts adjacent swaps as one (restricted Damerau), ties go to the most used command, and a distance-1 typo of a known command wins over an offered package. The index-based install hint runs first only for programs in the index.
+- Verified in tmux without sudo: `ufw status` → `sudo apt install ufw` with the column block; as root (via `unshare -r`) → `apt install ufw` with "como root, não pede senha"; `gti status` → `git status`; `sl` → `ls`; `cowsay oi` → `apt search cowsay`; installed tools (`dig`, `tshark`) show no warning; recipes, completion and the sudo/path column unchanged. 75 unit tests pass.
+
 ### Still to verify by hand
 - Everything above in a real QTerminal window, by Pedro (script in `docs/TESTE_HUMANO.md`).
 - Typing in a real window to feel the ghost text, the tab and the panel (latency, colors).

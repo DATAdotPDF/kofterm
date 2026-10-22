@@ -2,6 +2,20 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.6.4] - 21/10/2026
+
+"What is missing, KofTerm points to", and a full test script.
+
+### Added
+- Missing programs: while typing, the index column warns "⚠ x não está instalado" and shows "Para baixar o que falta, use: » sudo apt install <pacote>"; after "command not found" the empty line suggests that command (without `sudo` as root). Nothing is installed without Enter
+- Index line `! package` for programs whose apt package has another name (57 entries: `dig` → `bind9-dnsutils`, `ss` → `iproute2`, `nc` → `netcat-traditional`…); new `htop` entry (147 entries)
+- Programs outside the index: the package named by the system's own command-not-found output; if there is none, `apt search <name>`
+- `docs/TESTE_HUMANO.md` rewritten as a full test script: blocks 0–Q covering every feature, ★ marks the 30-minute essentials
+
+### Fixed
+- Typo correction treats two swapped neighbor letters as one error: `sl` → `ls` (was `nl`), `gti` → `git`; a one-letter typo of a known command wins over a joke package offered by command-not-found (`gti`)
+- 75 unit tests
+
 ## [0.6.3] - 21/10/2026
 
 From the third human test of 0.6.2 (as root after `sudo -i`).

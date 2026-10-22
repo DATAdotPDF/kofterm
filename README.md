@@ -11,7 +11,7 @@
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.3-8b5cf6?style=flat-square" alt="Release v0.6.3"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.4-8b5cf6?style=flat-square" alt="Release v0.6.4"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
@@ -98,7 +98,7 @@
 | Fixes after errors: `sudo` after "Permission denied", typo after "command not found" | ✅ Phase 4 |
 | Completes files, folders (`/etc/hostn` → `ame`) and options (`ls --a` → `ll`) | ✅ Phase 4 |
 | Dangerous commands (`rm -rf /`, `mkfs`, `dd of=/dev/sd…`, fork bomb) in red and never suggested | ✅ Phase 4 |
-| Full-screen index tab with search (**F1** / **Ctrl+T**), 146 entries in Portuguese (commands, networking, users, services and important paths) | ✅ Phase 3 |
+| Full-screen index tab with search (**F1** / **Ctrl+T**), 147 entries in Portuguese (commands, networking, users, services and important paths) | ✅ Phase 3 |
 | Index **column on the right** with a live explanation of the current line (**F2**, remembered) | ✅ Phase 6 |
 | Own terminal emulator: Bash and full-screen programs never write over the index | ✅ Phase 6 |
 | Human mode: `? what you want` → a real command from 123 reviewed recipes | ✅ Phase 7 |
@@ -184,13 +184,13 @@ kofterm/
 
 **Requirements:** Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, Fedora 35+, Kali). The binary depends only on the system's `libc`.
 
-**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.3-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
+**Option A: ready-made release (no KOF needed).** Download `kofterm-0.6.4-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases), then:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 ```bash
-tar -xzf kofterm-0.6.3-linux-x86_64.tar.gz && ./kofterm-0.6.3-linux-x86_64/kofterm install
+tar -xzf kofterm-0.6.4-linux-x86_64.tar.gz && ./kofterm-0.6.4-linux-x86_64/kofterm install
 ```
 
 **Option B: from the source.** `install.sh` compiles KofTerm with KOF 0.6.6. If KOF is missing, it asks before downloading the official release (about 370 MB) and checks its SHA-256, which is pinned in the script.
@@ -232,7 +232,7 @@ To open KofTerm automatically in every new terminal, add this to the end of `~/.
 | **?** + what you want | Human mode: `? quanto espaço sobrou` suggests `df -h`. **TAB** or **Enter** puts the command on the line; Enter again runs it |
 | **Ctrl-L** | Clears the screen and keeps what you were typing |
 
-**For developers.** Build and run from the repository without installing, and run the unit tests (72 tests, one file at a time):
+**For developers.** Build and run from the repository without installing, and run the unit tests (75 tests, one file at a time):
 
 ```bash
 kof build src --target native --output build/kofterm && ./build/kofterm/Default/Main
@@ -305,7 +305,9 @@ Parallel KOF libraries that will be extracted along the way: `kof-tty` (terminal
 
 **13. Phase 7: human mode.** `? instalar o htop` searches 63 recipes written by people (164 ways of asking), tolerant to accents and one-letter typos, and fills the gaps with the words of the request. It is retrieval, not generation: KofTerm never invents a command, words from the request never carry shell characters into it, dangerous results are dropped, and the command only runs after the person reads it and presses Enter again.
 
-**14. Root and network studies (0.6.2).** The third human test found that the index did not say what `sudo` does, and that KofTerm stopped working after `sudo -i`, because the root shell did not load its hook. Now the column explains every part of the line, including the `sudo` prefix and file paths such as `/etc/shadow`, and `sudo -i`, `sudo -s`, `sudo su` and a plain `bash` open the inner shell with KofTerm's hook. The index grew to 146 entries and the recipes to 122, aimed at people studying Linux, networking and security in their own labs: routes, DNS, ports, packet capture, firewall, SSH keys, users, logs, hashes and the important paths of the system, all checked against a Kali VM.
+**14. Root and network studies (0.6.2).** The third human test found that the index did not say what `sudo` does, and that KofTerm stopped working after `sudo -i`, because the root shell did not load its hook. Now the column explains every part of the line, including the `sudo` prefix and file paths such as `/etc/shadow`, and `sudo -i`, `sudo -s`, `sudo su` and a plain `bash` open the inner shell with KofTerm's hook. The index grew to 147 entries and the recipes to 122, aimed at people studying Linux, networking and security in their own labs: routes, DNS, ports, packet capture, firewall, SSH keys, users, logs, hashes and the important paths of the system, all checked against a Kali VM.
+
+**15. What is missing, KofTerm points to (0.6.3 and 0.6.4).** As root, recipes drop `sudo` and stop offering `sudo -i`. When a program is not installed, the column says so while you type and shows "to download what is missing, use » `sudo apt install x`"; after "command not found" the empty line already holds that command. The package comes from the index or from what the system itself said, and a one-letter typo of a known command (`gti`, `sl`) is still fixed instead of installing a joke package. KofTerm never installs anything by itself: what is missing inside KOF becomes a parallel KOF project, and system tools are installed by the person, with KofTerm explaining how.
 
 The full, dated log is in [docs/JOURNAL.md](docs/JOURNAL.md); KOF findings are in [docs/KOF_FINDINGS.md](docs/KOF_FINDINGS.md).
 
@@ -334,7 +336,7 @@ If you agree, `kofterm contribute` writes `kofterm-contrib.kofdata`. Copy it to 
 - The index column needs at least 40 columns left for Bash; on a narrow window F2 beeps and keeps it hidden.
 - Full-width characters (CJK, some emoji) count as one column; emoji above U+FFFF show as `�`.
 - Performance is measured, not assumed: with `top` redrawing 5 times a second and the index column on, KofTerm stayed at 7.9 MB for 6 minutes and used 0.2% CPU. Getting there meant working around how KOF 0.6.6 native handles temporary strings (see [docs/JOURNAL.md](docs/JOURNAL.md)).
-- The index is in Portuguese only for now, with 146 entries.
+- The index is in Portuguese only for now, with 147 entries.
 - Full-width characters (CJK, some emoji) count as one column.
 
 ###
@@ -368,7 +370,7 @@ $ ls -la | Tudo, inclusive ocultos, em formato longo.
 @ https://ss64.com/bash/ls.html
 ```
 
-`#` starts a command, `>` is the one-line summary, `-` an option, `$` an example (the explanation goes after the last ` | `), `@` a reading link. Write in your own words for people who are learning; do not copy text from other sites.
+`#` starts a command, `>` is the one-line summary, `-` an option, `$` an example (the explanation goes after the last ` | `), `@` a reading link, and `!` the apt package that provides the program when its name is different (`dig` comes from `bind9-dnsutils`). Write in your own words for people who are learning; do not copy text from other sites.
 
 ###
 
