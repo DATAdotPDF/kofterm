@@ -235,7 +235,7 @@ List<String> commandArgs() {
 }
 
 // bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel
-// (ESC ] 7770 ; status ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
+// (ESC ] 7770 ; status ; uid ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
 // o \[ \] do PS1 nao e necessario.
 //
 // O gancho se reinstala a cada prompt: o ~/.bashrc do Kali faz
@@ -267,7 +267,7 @@ String shellRc(String dir, Boolean login) {
         "}\n" +
         "bash() { if [ $# -eq 0 ]; then command bash --noediting --rcfile \"$__kofterm_rc\" -i; else command bash \"$@\"; fi; }\n" +
         "[ -f ~/.bashrc ] && . ~/.bashrc\n" +
-        "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$PWD" + bel + "'\n" +
+        "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$EUID;$PWD" + bel + "'\n" +
         "__kofterm_pre() { __kofterm_s=$?; }\n" +
         "__kofterm_hook() {\n" +
         "  if [[ \"$(declare -p PROMPT_COMMAND 2>/dev/null)\" == \"declare -a\"* ]]; then\n" +

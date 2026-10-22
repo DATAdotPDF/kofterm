@@ -7,6 +7,7 @@
 //   # instalar programa              nome da receita
 //   ? instalar {pacote}              jeitos de pedir (varios); {nome} e uma lacuna
 //   $ sudo apt install -y {pacote}   o comando
+//   % apt install -y {pacote}        opcional: o comando no shell de root ("-" esconde)
 //   > Instala {pacote}.              explicacao para quem esta aprendendo
 
 class Recipe {
@@ -14,7 +15,17 @@ class Recipe {
     List<String> asks = listOf<String>()
     List<Ask> parsed = listOf<Ask>()
     String cmd = ""
+    String root = "" // comando para quem ja e root; "-" esconde a receita; vazio = cmd sem sudo
     String explain = ""
+}
+
+// "sudo apt update && sudo apt install x" -> "apt update && apt install x" (shell de root).
+String withoutSudo(String c) {
+    var out = c.replace(" && sudo ", " && ").replace("| sudo ", "| ")
+    if (out.startsWith("sudo ")) {
+        out = out.substring(5, out.length())
+    }
+    return out
 }
 
 // Um jeito de pedir ja quebrado em palavras (feito uma vez, ao carregar).
@@ -27,6 +38,7 @@ class RecipeMatch(Recipe recipe, Int score, String command, String explain)
 
 class RecipeBook {
     List<Recipe> recipes = listOf<Recipe>()
+    Boolean asRoot = false // o shell atual e de root (sudo -i): sem sudo nos comandos
 
     // Prepara cada jeito de pedir uma vez so: a busca roda a cada tecla.
     prepare() {
@@ -67,6 +79,8 @@ class RecipeBook {
                 cur.asks.add(body)
             } else if (tag == "$") {
                 cur.cmd = body
+            } else if (tag == "%") {
+                cur.root = body
             } else if (tag == ">") {
                 cur.explain = body
             }
@@ -77,6 +91,17 @@ class RecipeBook {
         prepare()
     }
 
+    // O comando da receita para este shell: como root, o "%" da receita ou o mesmo sem sudo.
+    String commandFor(Recipe r) {
+        if (!asRoot) {
+            return r.cmd
+        }
+        if (r.root.length() > 0) {
+            return r.root
+        }
+        return withoutSudo(r.cmd)
+    }
+
     // As melhores receitas para o pedido, da mais parecida para a menos (no maximo `limit`).
     List<RecipeMatch> search(String query, Int limit) {
         var found = listOf<RecipeMatch>()
@@ -85,6 +110,9 @@ class RecipeBook {
             return found
         }
         for (var r in recipes) {
+            if (asRoot && r.root == "-") {
+                continue // "virar root" para quem ja e root
+            }
             var best = RecipeMatch(r, 0, "", "")
             for (var ask in r.parsed) {
                 var m = matchAsk(r, ask, qw)
@@ -163,7 +191,7 @@ class RecipeBook {
             }
             i = i + 1
         }
-        var command = r.cmd
+        var command = commandFor(r)
         var explain = r.explain
         var filled = 0
         var s = 0
@@ -447,6 +475,36 @@ test "sinonimos, verbo conjugado e @ grudado" {
     assert(s.size >= 1 && s.get(0).recipe.name == "instalar programa", "verbo conjugado")
     var f = sampleBook().search("encontrar arquivo relatorio", 3)
     assert(f.size >= 1 && f.get(0).command == "find . -iname \"*relatorio*\"", "encontrar=procurar")
+}
+
+test "no shell de root: sem sudo, sem virar root, pasta do root" {
+    var b = RecipeBook()
+    b.load(listOf(
+        "# virar root",
+        "? acessar root",
+        "$ sudo -i",
+        "% -",
+        "# entrar numa pasta dentro do root",
+        "? entrar em {pasta} na pasta root",
+        "$ sudo ls -la /root/{pasta}",
+        "% cd /root/{pasta}",
+        "# entrar numa pasta",
+        "? entrar na pasta {pasta}",
+        "$ cd {pasta}",
+        "# instalar programa",
+        "? instalar {pacote}",
+        "$ sudo apt update && sudo apt install -y {pacote}"
+    ))
+    var u = b.search("acessar .cache na pasta root", 3)
+    assert(u.get(0).command == "sudo ls -la /root/.cache", "usuario comum")
+    b.asRoot = true
+    var r = b.search("acessar .cache na pasta root", 3)
+    assert(r.get(0).command == "cd /root/.cache", "root entra direto")
+    for (var m in b.search("acessar root", 3)) {
+        assert(m.command != "sudo -i", "sem sudo -i para root")
+    }
+    var i = b.search("instalar htop", 3)
+    assert(i.get(0).command == "apt update && apt install -y htop", "sem sudo")
 }
 
 test "a receita certa vence as parecidas" {

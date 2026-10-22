@@ -5,9 +5,10 @@
 ; O KofTerm procura a receita mais parecida e mostra o comando em cinza. TAB coloca o comando
 ; na linha; nada roda sozinho. O índice (F2) explica cada parte.
 ;
-; Formato:  # nome   ? jeito de pedir (vários)   $ comando   > explicação
+; Formato:  # nome   ? jeito de pedir (vários)   $ comando   % comando no shell de root   > explicação
 ; {nome} é uma lacuna preenchida com as palavras do pedido. Comandos que apagam usam -i
 ; (perguntam antes). Para contribuir: comandos que funcionam no Debian, Ubuntu e Kali.
+; A linha % é opcional: sem ela, quem já é root (sudo -i) recebe o comando sem "sudo"; "% -" esconde a receita.
 
 ; ───────────── Programas ─────────────
 
@@ -214,6 +215,7 @@ $ sudo chown $USER:$USER {arquivo}
 ? entrar na pasta root
 ? acessar a pasta do root
 $ sudo -i
+% -
 > Abre um terminal como root, o administrador. Como root nada pede confirmação: cuidado. Digite exit para voltar ao seu usuário.
 
 # ver a pasta do root
@@ -221,12 +223,24 @@ $ sudo -i
 ? listar pasta root
 ? ver arquivos do root
 $ sudo ls -la /root
+% ls -la /root
 > Lista a pasta pessoal do root (/root), que só o administrador pode ler.
+
+# entrar numa pasta dentro do root
+? entrar em {pasta} na pasta root
+? entrar na {pasta} dentro do root
+? entrar na pasta {pasta} do root
+? abrir {pasta} da pasta root
+? ver {pasta} dentro do root
+$ sudo ls -la /root/{pasta}
+% cd /root/{pasta}
+> Dentro de /root só o root entra. Como usuário, o sudo lista {pasta}; já como root (depois do sudo -i), dá para entrar nela.
 
 # repetir com sudo
 ? repetir ultimo comando com sudo
 ? deu permissao negada
 $ sudo !!
+% -
 > Repete o último comando como administrador.
 
 ; ───────────── Sistema ─────────────

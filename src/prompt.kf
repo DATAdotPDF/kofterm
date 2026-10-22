@@ -1,7 +1,8 @@
 // Detector do marcador de prompt na saida do bash.
 //
 // O bashrc do kofterm poe no fim do PS1 a sequencia invisivel
-//   ESC ] 7770 ; <codigo de saida> ; <pasta atual> BEL
+//   ESC ] 7770 ; <codigo de saida> ; <uid efetivo> ; <pasta atual> BEL
+// O uid diz se o shell e de root (sudo -i): as receitas mudam para quem ja e root.
 // Quando ela aparece, o bash esta esperando um comando e o cursor esta no inicio da linha
 // a digitar. O marcador nunca chega a tela.
 // Modulo puro (sem libc), testado com `kof test src/prompt.kf`.
@@ -77,14 +78,40 @@ class PromptScanner {
         return code
     }
 
-    // Bytes da pasta atual (depois do primeiro ';'), em UTF-8.
-    List<Int> cwdBytes() {
-        var out = listOf<Int>()
+    // Uid efetivo do shell (segundo campo); -1 se faltar.
+    Int euid() {
         var i = 0
         while (i < payload.size && payload.get(i) != 59) {
             i = i + 1
         }
         i = i + 1
+        var code = 0
+        var digits = 0
+        while (i < payload.size && payload.get(i) != 59) {
+            var c = payload.get(i)
+            if (c >= 48 && c <= 57) {
+                code = code * 10 + (c - 48)
+                digits = digits + 1
+            }
+            i = i + 1
+        }
+        if (digits == 0) {
+            return -1
+        }
+        return code
+    }
+
+    // Bytes da pasta atual (depois do segundo ';'), em UTF-8. A pasta pode ter ';'.
+    List<Int> cwdBytes() {
+        var out = listOf<Int>()
+        var i = 0
+        var seps = 0
+        while (i < payload.size && seps < 2) {
+            if (payload.get(i) == 59) {
+                seps = seps + 1
+            }
+            i = i + 1
+        }
         while (i < payload.size) {
             out.add(payload.get(i))
             i = i + 1
@@ -123,11 +150,21 @@ List<Int> scanAll(PromptScanner s, List<Int> bytes, List<Int> marks) {
 test "marcador some da tela e traz o codigo de saida" {
     var s = PromptScanner()
     var marks = listOf<Int>()
-    // "$ " + ESC ] 7770 ; 127 ; /tmp BEL
-    var out = scanAll(s, listOf(36, 32, 27, 93, 55, 55, 55, 48, 59, 49, 50, 55, 59, 47, 116, 109, 112, 7), marks)
+    // "$ " + ESC ] 7770 ; 127 ; 1000 ; /tmp BEL
+    var out = scanAll(s, listOf(36, 32, 27, 93, 55, 55, 55, 48, 59, 49, 50, 55, 59, 49, 48, 48, 48, 59, 47, 116, 109, 112, 7), marks)
     assert(out.size == 2, "so o prompt visivel")
     assert(marks.size == 1 && marks.get(0) == 127, "status 127")
+    assert(s.euid() == 1000, "uid 1000")
     assert(s.cwdBytes().size == 4, "cwd /tmp")
+}
+
+test "shell de root e pasta com ponto e virgula" {
+    var s = PromptScanner()
+    var marks = listOf<Int>()
+    // ESC ] 7770 ; 0 ; 0 ; /a;b BEL
+    scanAll(s, listOf(27, 93, 55, 55, 55, 48, 59, 48, 59, 48, 59, 47, 97, 59, 98, 7), marks)
+    assert(s.euid() == 0, "root")
+    assert(s.cwdBytes().size == 4, "cwd /a;b inteira")
 }
 
 test "outro OSC (titulo da janela) passa intacto" {

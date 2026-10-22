@@ -139,7 +139,7 @@ main() {
                                 session.brain.outputTail = ringToString(tail, tailSize, tailPos, tailLen).toLowerCase()
                                 tailPos = 0L
                                 tailLen = 0L
-                                session.onPrompt(scanner.status(), bytesToString(scanner.cwdBytes()))
+                                session.onPrompt(scanner.status(), bytesToString(scanner.cwdBytes()), scanner.euid() == 0)
                                 i = i + 1L
                             } else {
                                 i = i + 1L

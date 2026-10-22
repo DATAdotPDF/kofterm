@@ -279,9 +279,10 @@ class Session {
     }
 
     // O bash acabou de imprimir o prompt; o cursor do emulador esta onde a linha comeca.
-    onPrompt(Int status, String dir) {
+    onPrompt(Int status, String dir, Boolean root) {
         lastStatus = status
         cwd = dir
+        recipes.asRoot = root
         brain.promptReturned(status)
         feats = brain.features(dir)
         editing = true
