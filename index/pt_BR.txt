@@ -136,6 +136,7 @@ $ ps aux | grep firefox | Filtra a lista de processos.
 @ https://man7.org/linux/man-pages/man1/grep.1.html
 
 # find
+! findutils
 > Procura arquivos e pastas pelo nome, tipo, tamanho ou data.
 - -name | Pelo nome. Use aspas com curingas: -name "*.txt".
 - -iname | Pelo nome, sem diferenciar maiúsculas.
@@ -181,6 +182,7 @@ $ sudo chown voce:voce arquivo | Passa o arquivo para o seu usuário.
 @ https://ss64.com/bash/chown.html
 
 # sudo
+! sudo
 > "Super-user do": roda UM comando como administrador (root). Pede a SUA senha, não a do root, e só funciona se você estiver no grupo sudo. Tudo fica registrado no journal.
 - -i | Abre um shell de root (o prompt muda de $ para #). Digite exit para voltar ao seu usuário.
 - -s | Shell de root, mas continua na pasta atual.
@@ -202,6 +204,7 @@ $ whoami | Exibe algo como datadotpdf.
 ; ───────────── Pacotes ─────────────
 
 # apt
+! apt
 > Instala, remove e atualiza programas no Debian, Ubuntu e Kali.
 $ sudo apt update | Baixa a lista de versões disponíveis. Não instala nada.
 $ sudo apt upgrade | Atualiza os programas instalados. Rode depois do update.
@@ -219,6 +222,7 @@ $ sudo apt install -y git curl | Instala git e curl sem perguntar.
 ; ───────────── Processos e sistema ─────────────
 
 # ps
+! procps
 > Lista os processos (programas rodando).
 - aux | Todos os processos de todos os usuários, com uso de CPU e memória.
 $ ps aux | Lista completa.
@@ -226,6 +230,7 @@ $ ps aux | grep python | Procura um processo pelo nome.
 @ https://ss64.com/bash/ps.html
 
 # kill
+! procps
 > Envia um sinal para um processo, normalmente para encerrar.
 - -9 | SIGKILL: encerra na força, sem o programa poder salvar nada. Último recurso.
 - -15 | SIGTERM: pede para encerrar (é o padrão).
@@ -233,9 +238,17 @@ $ kill 1234 | Pede ao processo 1234 para encerrar.
 @ https://ss64.com/bash/kill.html
 
 # top
+! procps
 > Mostra os processos ao vivo, com uso de CPU e memória. q sai.
 $ top | Abre o monitor. Experimente também o htop, mais amigável.
 @ https://ss64.com/bash/top.html
+
+# htop
+> Monitor de processos colorido e interativo (uma versão mais amigável do top). Não vem no Kali: sudo apt install htop.
+- F6 | Escolhe a coluna para ordenar (CPU, memória...).
+- F9 | Envia um sinal (encerra) ao processo selecionado.
+$ htop | Abre o monitor. q ou F10 para sair.
+@ https://manpages.debian.org/htop
 
 # df
 > Mostra o espaço livre nos discos.
@@ -265,6 +278,7 @@ $ tar -xzvf backup.tar.gz | Extrai na pasta atual.
 @ https://ss64.com/bash/tar.html
 
 # ping
+! iputils-ping
 > Testa se um computador responde pela rede (ICMP echo). Mostra o tempo de ida e volta (RTT). Ctrl-C para parar.
 - -c | Quantos pacotes enviar e então parar.
 - -i | Intervalo entre os pacotes, em segundos.
@@ -277,6 +291,7 @@ $ ping -c 4 192.168.0.1 | Testa o gateway (roteador) da sua rede.
 @ https://manpages.debian.org/ping
 
 # ip
+! iproute2
 > Mostra e configura a rede (substitui o antigo ifconfig). Os subcomandos podem ser abreviados: ip a = ip address.
 $ ip a | Endereços IP de cada placa de rede (inet = IPv4, inet6 = IPv6).
 $ ip r | Tabela de rotas: "default via" é o gateway.
@@ -308,6 +323,7 @@ $ ip neigh | Lista os vizinhos.
 @ https://man7.org/linux/man-pages/man8/ip-neighbour.8.html
 
 # ssh
+! openssh-client
 > Acessa outro computador pelo terminal, com conexão criptografada.
 - -p | Porta, se não for a 22.
 - -i | Arquivo de chave privada a usar.
@@ -375,6 +391,7 @@ $ !42 | Repete o comando número 42.
 @ https://ss64.com/bash/history.html
 
 # man
+! man-db
 > Abre o manual de um comando. q sai, / procura.
 $ man ls | Manual do ls.
 @ https://man7.org/linux/man-pages/man1/man.1.html
@@ -445,18 +462,21 @@ $ rm *.tmp | Apaga todos os .tmp. Rode ls *.tmp antes para conferir.
 ; ───────────── Usuários e permissões ─────────────
 
 # su
+! util-linux
 > Troca de usuário. Diferente do sudo, pede a senha do usuário de destino (no Kali o root não tem senha: use sudo -i).
 - - | Abre como login completo (pasta e variáveis do outro usuário).
 $ su - aluno | Vira o usuário aluno.
 @ https://manpages.debian.org/su
 
 # id
+! coreutils
 > Mostra seu número de usuário (uid), grupo principal (gid) e todos os grupos. Ver "sudo" na lista indica que você pode virar root.
 $ id | Seus dados.
 $ id aluno | Os dados de outro usuário.
 @ https://manpages.debian.org/id
 
 # groups
+! coreutils
 > Lista os grupos de um usuário. Grupos dão permissões extras (sudo, wireshark, docker...).
 $ groups | Seus grupos.
 @ https://manpages.debian.org/groups
@@ -468,6 +488,7 @@ $ sudo adduser aluno sudo | Coloca aluno no grupo sudo (vale no próximo login).
 @ https://manpages.debian.org/adduser
 
 # useradd
+! passwd
 > Cria um usuário pelo jeito "baixo nível": sem perguntas. Prefira adduser no dia a dia.
 - -m | Cria a pasta pessoal.
 - -s | Shell do usuário (ex.: /bin/bash).
@@ -476,6 +497,7 @@ $ sudo useradd -m -s /bin/bash aluno | Cria aluno com pasta e bash.
 @ https://manpages.debian.org/useradd
 
 # usermod
+! passwd
 > Altera um usuário existente.
 - -aG | Adiciona a um grupo sem tirar dos outros (sem o -a ele substitui todos).
 - -L, -U | Bloqueia ou desbloqueia a conta.
@@ -484,6 +506,7 @@ $ sudo usermod -aG wireshark $USER | Permite capturar pacotes sem root.
 @ https://manpages.debian.org/usermod
 
 # deluser
+! adduser
 > Remove um usuário (ou tira de um grupo).
 - --remove-home | Apaga também a pasta pessoal.
 $ sudo deluser aluno | Remove o usuário, mantendo os arquivos.
@@ -491,6 +514,7 @@ $ sudo deluser aluno sudo | Tira aluno do grupo sudo.
 @ https://manpages.debian.org/deluser
 
 # passwd
+! passwd
 > Troca senha. Sem nome, troca a sua; com sudo e um nome, a de outro usuário.
 - -l | Bloqueia a senha da conta.
 - -S | Mostra o estado da senha.
@@ -499,11 +523,13 @@ $ sudo passwd aluno | Define a senha de aluno.
 @ https://manpages.debian.org/passwd
 
 # who
+! coreutils
 > Quem está logado agora e de onde (terminal local, pts/ remoto via SSH).
 $ who | Lista as sessões.
 @ https://manpages.debian.org/who
 
 # w
+! procps
 > Como o who, mas mostra também o que cada um está rodando e há quanto tempo o sistema está ligado.
 $ w | Sessões e atividade.
 @ https://manpages.debian.org/w
@@ -511,6 +537,7 @@ $ w | Sessões e atividade.
 ; ───────────── Sistema e serviços ─────────────
 
 # uname
+! coreutils
 > Informações do kernel e da arquitetura.
 - -a | Tudo: kernel, versão, máquina.
 - -r | Só a versão do kernel.
@@ -518,40 +545,47 @@ $ uname -a | Mostra tudo.
 @ https://manpages.debian.org/uname
 
 # hostnamectl
+! systemd
 > Mostra ou muda o nome da máquina; também mostra o sistema e se é uma VM (Virtualization).
 $ hostnamectl | Resumo do sistema.
 $ sudo hostnamectl set-hostname lab01 | Renomeia a máquina.
 @ https://manpages.debian.org/hostnamectl
 
 # uptime
+! procps
 > Há quanto tempo o sistema está ligado e a carga média (1, 5 e 15 minutos).
 $ uptime | Mostra o tempo ligado.
 @ https://manpages.debian.org/uptime
 
 # free
+! procps
 > Memória RAM e swap: total, usada e disponível.
 - -h | Em unidades legíveis (MB, GB).
 $ free -h | Memória em formato fácil.
 @ https://manpages.debian.org/free
 
 # lscpu
+! util-linux
 > Detalhes do processador: núcleos, modelo, virtualização.
 $ lscpu | Mostra o processador.
 @ https://manpages.debian.org/lscpu
 
 # lsblk
+! util-linux
 > Lista discos e partições em árvore, com tamanho e onde estão montados.
 - -f | Mostra também o sistema de arquivos e o UUID.
 $ lsblk | Discos e partições.
 @ https://manpages.debian.org/lsblk
 
 # mount
+! util-linux
 > Monta (liga) um disco ou partição numa pasta. Sem argumentos, lista o que está montado.
 $ mount | grep sd | Mostra as partições de disco montadas.
 $ sudo mount /dev/sdb1 /mnt | Monta sdb1 em /mnt.
 @ https://manpages.debian.org/mount
 
 # dmesg
+! util-linux
 > Mensagens do kernel: hardware detectado, USB conectado, erros de disco ou de placa de rede.
 - -w | Fica mostrando as novas mensagens.
 - -T | Horário legível.
@@ -559,6 +593,7 @@ $ sudo dmesg -T | tail | Últimas mensagens do kernel.
 @ https://manpages.debian.org/dmesg
 
 # systemctl
+! systemd
 > Controla os serviços do sistema (systemd): ligar, desligar, reiniciar e ver o estado.
 $ systemctl status ssh | Estado do serviço SSH.
 $ sudo systemctl start ssh | Liga o SSH agora.
@@ -568,6 +603,7 @@ $ systemctl list-units --type=service --state=running | Serviços rodando.
 @ https://manpages.debian.org/systemctl
 
 # journalctl
+! systemd
 > Lê o diário (logs) do systemd. No Kali ele substitui /var/log/syslog e /var/log/auth.log.
 - -u | Só de um serviço (ex.: -u ssh).
 - -f | Acompanha ao vivo.
@@ -581,12 +617,14 @@ $ sudo journalctl _COMM=sudo | Quem usou sudo e para quê.
 @ https://manpages.debian.org/journalctl
 
 # timedatectl
+! systemd
 > Mostra e ajusta data, hora, fuso horário e sincronização (NTP). Horário errado quebra certificados e logs.
 $ timedatectl | Estado do relógio.
 $ sudo timedatectl set-timezone America/Sao_Paulo | Ajusta o fuso.
 @ https://manpages.debian.org/timedatectl
 
 # crontab
+! cron
 > Agenda comandos para rodar sozinhos (cron). Cada linha: minuto hora dia mês dia-da-semana comando.
 - -l | Lista suas tarefas.
 - -e | Edita suas tarefas.
@@ -596,6 +634,7 @@ $ crontab -e | Edita. Ex.: "0 3 * * * comando" roda às 3h todo dia.
 @ https://crontab.guru
 
 # env
+! coreutils
 > Mostra as variáveis de ambiente ou roda um comando com uma variável diferente.
 $ env | Todas as variáveis.
 $ echo $PATH | Pastas onde o bash procura comandos.
@@ -614,6 +653,7 @@ $ alias ll='ls -la' | ll vira ls -la.
 @ https://www.gnu.org/software/bash/manual/bash.html#Aliases
 
 # lsof
+! lsof
 > Lista arquivos abertos, e no Linux conexões também são arquivos. Ótimo para descobrir quem usa uma porta.
 - -i | Conexões de rede (ex.: -i :80).
 $ sudo lsof -i :22 | Quem está usando a porta 22.
@@ -623,6 +663,7 @@ $ sudo lsof -i -P -n | Todas as conexões, sem traduzir nomes.
 ; ───────────── Redes ─────────────
 
 # ss
+! iproute2
 > Mostra conexões e portas abertas (substitui o netstat).
 - -t | TCP.
 - -u | UDP.
@@ -634,12 +675,14 @@ $ sudo ss -tunp | Conexões ativas e seus programas.
 @ https://man7.org/linux/man-pages/man8/ss.8.html
 
 # netstat
+! net-tools
 > Versão antiga do ss (pacote net-tools). Ainda aparece em cursos e provas; as opções são parecidas.
 $ netstat -tuln | Portas escutando.
 $ netstat -rn | Tabela de rotas (como ip r).
 @ https://manpages.debian.org/netstat
 
 # ifconfig
+! net-tools
 > Versão antiga do ip a (pacote net-tools). Mostra interfaces e endereços.
 $ ifconfig | Interfaces ativas.
 $ ifconfig -a | Todas, até as desligadas.
@@ -653,6 +696,7 @@ $ traceroute -n 8.8.8.8 | Caminho até o DNS do Google.
 @ https://manpages.debian.org/traceroute
 
 # dig
+! bind9-dnsutils
 > Consulta DNS em detalhe: pergunta a um servidor qual IP (ou outro registro) um nome tem.
 - +short | Só a resposta.
 - @servidor | Pergunta a um servidor DNS específico.
@@ -663,12 +707,14 @@ $ dig -x 8.8.8.8 | DNS reverso: nome de um IP.
 @ https://manpages.debian.org/dig
 
 # nslookup
+! bind9-dnsutils
 > Consulta DNS simples (também existe no Windows, com uso parecido).
 $ nslookup kali.org | IP de um nome.
 $ nslookup kali.org 1.1.1.1 | Perguntando a outro servidor DNS.
 @ https://manpages.debian.org/nslookup
 
 # host
+! bind9-dnsutils
 > Consulta DNS com saída curta e fácil de ler.
 $ host kali.org | IPs e servidor de e-mail.
 $ host 8.8.8.8 | Nome de um IP.
@@ -687,6 +733,7 @@ $ wget https://exemplo.com/arquivo.iso | Baixa o arquivo.
 @ https://manpages.debian.org/wget
 
 # nmcli
+! network-manager
 > Controla o NetworkManager: conexões, Wi-Fi, IP fixo ou DHCP.
 $ nmcli device status | Estado de cada interface.
 $ nmcli connection show | Conexões salvas.
@@ -745,6 +792,7 @@ $ wireshark captura.pcap | Abre uma captura.
 @ https://www.wireshark.org/docs/wsug_html_chunked/
 
 # nc
+! netcat-traditional
 > Netcat: abre conexões TCP/UDP "cruas". Bom para testar se uma porta responde ou para conversar entre duas VMs.
 - -z | Só testa se a porta está aberta.
 - -v | Mostra detalhes.
@@ -755,6 +803,7 @@ $ nc -lvp 4444 | Escuta na porta 4444 (na outra VM: nc IP 4444).
 @ https://manpages.debian.org/nc.traditional
 
 # scp
+! openssh-client
 > Copia arquivos entre computadores por SSH.
 - -r | Pastas inteiras.
 - -P | Porta (P maiúsculo).
@@ -772,6 +821,7 @@ $ rsync -av pasta/ usuario@servidor:~/pasta/ | Envia por SSH.
 @ https://manpages.debian.org/rsync
 
 # ssh-keygen
+! openssh-client
 > Cria um par de chaves SSH: a privada fica com você e a pública (.pub) vai para o servidor. Login sem senha e mais seguro.
 - -t | Tipo da chave (use ed25519).
 - -C | Comentário (ex.: seu e-mail).
@@ -780,6 +830,7 @@ $ ssh-keygen -lf ~/.ssh/id_ed25519.pub | Mostra a impressão digital da chave.
 @ https://manpages.debian.org/ssh-keygen
 
 # ssh-copy-id
+! openssh-client
 > Instala sua chave pública no servidor (em ~/.ssh/authorized_keys de lá).
 $ ssh-copy-id usuario@192.168.56.101 | Copia a chave; depois ssh entra sem senha.
 @ https://manpages.debian.org/ssh-copy-id
@@ -794,6 +845,7 @@ $ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT | Libera a porta 22 (SSH).
 @ https://manpages.debian.org/iptables
 
 # nft
+! nftables
 > nftables: o firewall atual do Linux, substituto do iptables.
 $ sudo nft list ruleset | Mostra todas as regras.
 @ https://manpages.debian.org/nft
@@ -809,18 +861,21 @@ $ sudo ufw enable | Liga o firewall.
 ; ───────────── Arquivos e texto (análise) ─────────────
 
 # file
+! file
 > Diz o tipo real de um arquivo pelo conteúdo, não pela extensão.
 $ file arquivo.jpg | Pode revelar que é, por exemplo, um ZIP.
 $ file /bin/ls | Um executável ELF de 64 bits.
 @ https://manpages.debian.org/file
 
 # strings
+! binutils
 > Mostra os trechos de texto legível dentro de um arquivo binário.
 - -n | Tamanho mínimo do texto (padrão 4).
 $ strings programa | less | Procura textos dentro do programa.
 @ https://manpages.debian.org/strings
 
 # sha256sum
+! coreutils
 > Calcula o hash SHA-256: a "impressão digital" de um arquivo. Se um byte mudar, o hash muda inteiro.
 - -c | Confere hashes salvos num arquivo (ex.: SHA256SUMS).
 $ sha256sum kali.iso | Calcula o hash para comparar com o do site.
@@ -828,11 +883,13 @@ $ sha256sum -c SHA256SUMS | Confere todos os arquivos da lista.
 @ https://manpages.debian.org/sha256sum
 
 # md5sum
+! coreutils
 > Hash MD5. Ainda usado para conferir downloads, mas não é seguro contra falsificação: prefira sha256sum.
 $ md5sum arquivo | Calcula o MD5.
 @ https://manpages.debian.org/md5sum
 
 # base64
+! coreutils
 > Codifica e decodifica Base64. Não é criptografia: qualquer um decodifica.
 - -d | Decodifica.
 $ echo -n 'texto' | base64 | Codifica.
@@ -852,12 +909,14 @@ $ openssl dgst -sha256 arquivo | Hash SHA-256.
 @ https://docs.openssl.org/master/man1/openssl/
 
 # diff
+! diffutils
 > Compara dois arquivos linha a linha.
 - -u | Formato unificado (o mesmo do git diff).
 $ diff -u antigo.conf novo.conf | O que mudou entre os dois.
 @ https://manpages.debian.org/diff
 
 # cut
+! coreutils
 > Recorta colunas de cada linha.
 - -d | Separador.
 - -f | Quais campos.
@@ -865,6 +924,7 @@ $ cut -d: -f1 /etc/passwd | Só os nomes dos usuários.
 @ https://manpages.debian.org/cut
 
 # awk
+! gawk
 > Processa texto por colunas (campos separados por espaço). $1 é a primeira coluna, $NF a última.
 - -F | Separador de campos.
 $ awk -F: '$3 >= 1000 {print $1}' /etc/passwd | Usuários "humanos" (uid 1000 ou mais).
@@ -880,17 +940,20 @@ $ sed -n '10,20p' arquivo | Mostra as linhas 10 a 20.
 @ https://manpages.debian.org/sed
 
 # tr
+! coreutils
 > Troca ou apaga caracteres.
 $ echo 'ABC' | tr 'A-Z' 'a-z' | Converte para minúsculas.
 @ https://manpages.debian.org/tr
 
 # uniq
+! coreutils
 > Junta linhas repetidas seguidas (use depois do sort).
 - -c | Conta quantas vezes cada uma aparece.
 $ sort acessos.txt | uniq -c | sort -rn | Ranking das linhas que mais aparecem.
 @ https://manpages.debian.org/uniq
 
 # tee
+! coreutils
 > Mostra a saída na tela e grava num arquivo ao mesmo tempo.
 - -a | Acrescenta em vez de sobrescrever.
 $ nmap -sn 192.168.56.0/24 | tee varredura.txt | Vê e salva o resultado.
@@ -898,6 +961,7 @@ $ echo '192.168.56.101 alvo' | sudo tee -a /etc/hosts | Escreve num arquivo de r
 @ https://manpages.debian.org/tee
 
 # xargs
+! findutils
 > Transforma a saída de um comando em argumentos de outro.
 $ find . -name '*.log' | xargs wc -l | Conta as linhas de cada .log.
 @ https://manpages.debian.org/xargs

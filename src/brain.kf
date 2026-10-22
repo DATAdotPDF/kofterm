@@ -16,6 +16,7 @@ class Brain {
     String pendingCmd = ""
     String pendingFeats = ""
     String outputTail = ""
+    Boolean asRoot = false // shell de root (sudo -i): sugestoes sem sudo
 
     String tab() {
         return "\u0009"
@@ -170,9 +171,33 @@ class Brain {
         return g
     }
 
+    // Depois de "comando nao encontrado" (127) de um programa do indice: o comando que o
+    // instala (o indice sabe o pacote certo: dig vem de bind9-dnsutils). Fora do indice, quem
+    // decide e o fixLine, entre erro de digitacao e o pacote que o sistema disse. "" se nada.
+    String installHint() {
+        if (lastStatus != 127) {
+            return ""
+        }
+        var pkg = index.packageFor(commandName(lastCmd.trim()))
+        if (pkg.length() == 0) {
+            return ""
+        }
+        if (asRoot) {
+            return "apt install " + pkg
+        }
+        return "sudo apt install " + pkg
+    }
+
     String rawSuggest(String line, String cwd, String feats) {
         if (line.length() == 0) {
+            var inst = installHint()
+            if (inst.length() > 0) {
+                return inst
+            }
             var fix = fixLine(model, lastCmd, lastStatus, outputTail, known)
+            if (asRoot) {
+                fix = withoutSudo(fix) // "sudo ..." nao ajuda quem ja e root
+            }
             if (fix.length() > 0) {
                 return fix
             }

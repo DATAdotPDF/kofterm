@@ -7,6 +7,7 @@
 //   - -l | Formato longo.     opcao (varios nomes separados por virgula) | explicacao
 //   $ ls -la | O que faz.     exemplo | explicacao
 //   @ https://...             link de leitura (so exibido, nunca aberto pelo kofterm)
+//   ! bind9-dnsutils          pacote apt que traz o comando, quando o nome e outro
 //   ; comentario              ignorado
 
 class Opt(String names, String text)
@@ -19,6 +20,7 @@ class Entry {
     List<Opt> options = listOf<Opt>()
     List<Example> examples = listOf<Example>()
     List<String> links = listOf<String>()
+    String pkg = "" // pacote apt, se diferente do nome do comando
 
     // A opcao cujo nome (entre os separados por virgula) e exatamente `flag`, ou null.
     Opt? option(String flag) {
@@ -62,6 +64,8 @@ class CommandIndex {
                 cur.examples.add(Example(beforeLast(body, " | ").trim(), afterLast(body, " | ").trim()))
             } else if (tag == "@") {
                 cur.links.add(body)
+            } else if (tag == "!") {
+                cur.pkg = body
             }
         }
         if (has) {
@@ -76,6 +80,22 @@ class CommandIndex {
             }
         }
         return null
+    }
+
+    // O pacote apt que instala o programa `name` ("" se o indice nao conhece o programa ou se
+    // ele nao e um programa: builtins do bash, operadores, caminhos).
+    String packageFor(String name) {
+        if (!isProgramName(name)) {
+            return ""
+        }
+        var e = find(name)
+        if (e == null) {
+            return ""
+        }
+        if (e.pkg.length() > 0) {
+            return e.pkg
+        }
+        return name
     }
 
     // Busca para a aba: primeiro os nomes que comecam com a consulta, depois os que contem
@@ -208,6 +228,22 @@ String lastSegment(String line) {
         }
     }
     return segment
+}
+
+// Nome de programa que se instala: letras, numeros e -._+, sem os builtins do bash.
+Boolean isProgramName(String n) {
+    if (n.length() == 0 || " cd alias export history source exit jobs type ".contains(" " + n + " ")) {
+        return false
+    }
+    var i = 0
+    while (i < n.length()) {
+        var c = n.substring(i, i + 1)
+        if (!"abcdefghijklmnopqrstuvwxyz0123456789-._+".contains(c)) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
 }
 
 Boolean isPrefixCommand(String t) {
@@ -465,6 +501,16 @@ test "busca por comeco, depois por conteudo" {
     assert(r.size == 2 && r.get(0).name == "git", "git primeiro")
     var p = idx.search("procura")
     assert(p.size == 1 && p.get(0).name == "find", "pelo resumo")
+}
+
+test "pacote que instala cada programa" {
+    var idx = CommandIndex()
+    idx.load(listOf("# dig", "> DNS.", "! bind9-dnsutils", "# ufw", "> Firewall.", "# cd", "> Muda de pasta.", "# /etc/passwd", "> Usuarios."))
+    assert(idx.packageFor("dig") == "bind9-dnsutils", "pacote com outro nome")
+    assert(idx.packageFor("ufw") == "ufw", "mesmo nome")
+    assert(idx.packageFor("cd") == "", "builtin nao se instala")
+    assert(idx.packageFor("/etc/passwd") == "", "caminho nao se instala")
+    assert(idx.packageFor("cowsay") == "", "fora do indice")
 }
 
 test "quebra de texto" {

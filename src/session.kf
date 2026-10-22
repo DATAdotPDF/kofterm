@@ -30,6 +30,10 @@ class Session {
     Int lastStatus = 0
     String cwd = ""
     String feats = ""
+    // o painel pergunta "esta instalado?" a cada tecla; o PATH so e consultado quando o
+    // comando da linha muda (ou depois de rodar algo, que pode ter instalado o programa)
+    String installedName = ""
+    Boolean installedOk = true
 
     // tela real
     Int rows = 24
@@ -283,6 +287,8 @@ class Session {
         lastStatus = status
         cwd = dir
         recipes.asRoot = root
+        brain.asRoot = root
+        installedName = ""
         brain.promptReturned(status)
         feats = brain.features(dir)
         editing = true
@@ -521,12 +527,67 @@ class Session {
     }
 
     // Linhas do indice para a linha digitada, cada uma com no maximo `w` colunas visiveis.
+    Boolean isInstalled(String name) {
+        if (name != installedName) {
+            installedName = name
+            installedOk = commandInstalled(name)
+        }
+        return installedOk
+    }
+
+    // "Falta um programa": o que falta e o comando que instala, para quem esta aprendendo.
+    missingLines(List<String> out, String name, String install, Int w) {
+        out.add("")
+        out.add(" " + esc() + "[1;33m⚠ " + clip(name + " não está instalado", w - 3) + esc() + "[0m")
+        if (install.length() > 0) {
+            for (var t in wrapText("Para baixar o que falta, use:", w - 1)) {
+                out.add(" " + t)
+            }
+            out.add(" " + esc() + "[33m» " + clip(install, w - 3) + esc() + "[0m")
+            var how = "O apt baixa do repositório oficial da sua distribuição e pede a sua senha (sudo). Depois, rode o comando de novo."
+            if (recipes.asRoot) {
+                how = "O apt baixa do repositório oficial da sua distribuição; como root, não pede senha. Depois, rode o comando de novo."
+            }
+            for (var t in wrapText(how, w - 1)) {
+                out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+            }
+        } else {
+            for (var t in wrapText("Rode o comando: se o sistema souber o pacote, o KofTerm sugere como instalar. Ou procure com apt search " + name + ".", w - 1)) {
+                out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+            }
+        }
+    }
+
+    // O comando que instala o pacote, sem sudo para quem ja e root.
+    String installCommand(String pkg) {
+        if (recipes.asRoot) {
+            return "apt install " + pkg
+        }
+        return "sudo apt install " + pkg
+    }
+
     List<String> panelLines(Int w) {
         if (recipeMode()) {
             return recipePanel(w)
         }
         var out = listOf<String>()
         out.add(esc() + "[7m" + pad(clip(" Índice · F2 fecha · F1 busca", w), w) + esc() + "[0m")
+        // linha vazia depois de "comando nao encontrado": o cinza ja e o comando que instala
+        var hint = ""
+        if (ed.line.trim().length() == 0) {
+            hint = brain.installHint()
+            if (hint.length() == 0 && brain.lastStatus == 127 && ghost.contains("apt install ")) {
+                hint = ghost.trim() // o pacote que o proprio sistema indicou
+            }
+        }
+        if (hint.length() > 0) {
+            missingLines(out, commandName(brain.lastCmd.trim()), hint, w)
+            out.add("")
+            for (var t in wrapText("TAB coloca o comando na linha; nada roda sem o seu Enter.", w - 1)) {
+                out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+            }
+            return out
+        }
         if (isDangerous(ed.line)) {
             out.add("")
             for (var t in wrapText("⚠ Cuidado: este comando pode apagar ou estragar o sistema ou seus dados.", w - 1)) {
@@ -563,6 +624,9 @@ class Session {
                 for (var t in wrapText("O índice ainda não tem \"" + name + "\". F1 abre a busca; man " + name + " abre o manual.", w - 1)) {
                     out.add(" " + esc() + "[90m" + t + esc() + "[0m")
                 }
+                if (isProgramName(name) && !isInstalled(name)) {
+                    missingLines(out, name, "", w)
+                }
             }
             return out
         }
@@ -571,6 +635,12 @@ class Session {
         out.add(" " + esc() + "[1m" + clip(entry.name, w - 1) + esc() + "[0m")
         for (var t in wrapText(entry.summary, w - 1)) {
             out.add(" " + t)
+        }
+        // "ip a", "apt install": o programa e a primeira palavra
+        var prog = before(entry.name, " ")
+        var pkg = tab.index.packageFor(prog)
+        if (pkg.length() > 0 && !isInstalled(prog)) {
+            missingLines(out, prog, installCommand(pkg), w)
         }
         var used = tab.index.optionsInLine(entry, ed.line)
         if (used.size > 0) {

@@ -158,6 +158,17 @@ String sourceRoot() {
     return dir + "/../../.."
 }
 
+// O programa `name` existe em alguma pasta do PATH (mais /usr/sbin e /sbin, onde ficam
+// ferramentas de rede e de administracao)?
+Boolean commandInstalled(String name) {
+    for (var dir in splitOn(getenv("PATH") + ":/usr/sbin:/sbin:/usr/bin:/bin", ":")) {
+        if (dir.length() > 0 && access(dir + "/" + name, 1) == 0) {
+            return true
+        }
+    }
+    return false
+}
+
 // Um arquivo compartilhado: o que acompanha o binario em uso, ou o instalado.
 String findShared(String dataDirPath, String rel) {
     var near = sourceRoot() + "/" + rel

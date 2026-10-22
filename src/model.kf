@@ -307,6 +307,31 @@ class Model {
     }
 }
 
+// O pacote em "apt install <pacote>" na saida de um comando, ou "". Ignora o modelo
+// "apt install <deb name>" que o command-not-found mostra junto de um "voce quis dizer".
+String aptInstallHint(String outputLower) {
+    var at = outputLower.indexOf("apt install ")
+    if (at < 0) {
+        return ""
+    }
+    var i = at + 12
+    var pkg = ""
+    var stop = false
+    while (i < outputLower.length() && !stop) {
+        var c = outputLower.substring(i, i + 1)
+        if ("abcdefghijklmnopqrstuvwxyz0123456789-.+".contains(c)) {
+            pkg = pkg + c
+            i = i + 1
+        } else {
+            stop = true
+        }
+    }
+    if (pkg.length() < 2) {
+        return ""
+    }
+    return pkg
+}
+
 // Correcao para a linha vazia depois de um erro: "sudo <comando>" ou o nome corrigido.
 String fixLine(Model m, String prev, Int status, String outputLower, List<String> known) {
     var p = prev.trim()
@@ -316,9 +341,20 @@ String fixLine(Model m, String prev, Int status, String outputLower, List<String
     if (status == 127) {
         var w = commandName(p)
         var c = m.closestCommand(w, known)
+        // o command-not-found do Debian/Kali diz o pacote ("pode ser instalado com: sudo apt
+        // install ufw"), mas tambem oferece pacotes de brincadeira como "gti": um erro so de
+        // distancia de um comando conhecido e erro de digitacao, e a correcao vence
+        var pkg = aptInstallHint(outputLower)
+        if (pkg.length() > 0 && (c.length() == 0 || levenshtein(w, c) > 1)) {
+            return "sudo apt install " + pkg
+        }
         if (c.length() > 0) {
             var at = p.indexOf(w)
             return p.substring(0, at) + c + p.substring(at + w.length(), p.length())
+        }
+        // nao e erro de digitacao e o sistema nao disse o pacote: procurar pelo nome
+        if (w.length() >= 3 && !w.contains("/") && !w.startsWith(".")) {
+            return "apt search " + w
         }
         return ""
     }
@@ -432,11 +468,15 @@ List<String> splitWords(String s, String sep) {
     return out
 }
 
+// Distancia de edicao em que duas letras vizinhas trocadas contam como um erro so
+// (Damerau restrita): "sl" esta a 1 de "ls", como "nl"; o desempate e pelo uso.
 Int levenshtein(String a, String b) {
+    var prev2 = listOf<Int>()
     var prev = listOf<Int>()
     var j = 0
     while (j <= b.length()) {
         prev.add(j)
+        prev2.add(j)
         j = j + 1
     }
     var i = 1
@@ -456,9 +496,14 @@ Int levenshtein(String a, String b) {
             if (prev.get(j - 1) + cost < best) {
                 best = prev.get(j - 1) + cost
             }
+            if (i > 1 && j > 1 && a.substring(i - 1, i) == b.substring(j - 2, j - 1) &&
+                    a.substring(i - 2, i - 1) == b.substring(j - 1, j) && prev2.get(j - 2) + 1 < best) {
+                best = prev2.get(j - 2) + 1
+            }
             cur.add(best)
             j = j + 1
         }
+        prev2 = prev
         prev = cur
         i = i + 1
     }
@@ -538,6 +583,21 @@ test "pacote que nao existe sugere procurar o nome" {
     assert(fixLine(m, "sudo apt install htopp", 100, "e: unable to locate package htopp", known) == "apt search htopp", "en")
 }
 
+test "programa que falta: o command-not-found diz o pacote" {
+    var m = Model()
+    var known = listOf("grep", "ufw")
+    var pt = "comando 'ufw' não encontrado, mas poder ser instalado com:\nsudo apt install ufw\n"
+    assert(fixLine(m, "ufw status", 127, pt, known) == "sudo apt install ufw", "pt_BR")
+    var en = "command 'tshark' not found, but can be installed with:\nsudo apt install tshark\n"
+    assert(fixLine(m, "tshark -i eth0", 127, en, known) == "sudo apt install tshark", "en")
+    var typo = "command 'grpe' not found, did you mean:\ntry: sudo apt install <deb name>\n"
+    assert(fixLine(m, "grpe x", 127, typo, known) == "grep x", "modelo <deb name> nao vira pacote")
+    assert(fixLine(m, "cowsay oi", 127, "cowsay: comando não encontrado", known) == "apt search cowsay", "sem pacote: procurar")
+    var gti = "comando 'gti' não encontrado, mas poder ser instalado com:\nsudo apt install gti\n"
+    assert(fixLine(m, "gti status", 127, gti, listOf("git")) == "git status", "erro de digitacao vence pacote de brincadeira")
+    assert(fixLine(m, "./script.sh", 127, "", known) == "", "arquivo local nao vira busca")
+}
+
 test "mapa proprio aguenta 20 mil chaves (o Map nativo cai em ~3.650)" {
     var m = KtIntMap()
     var i = 0
@@ -558,8 +618,16 @@ test "mapa proprio aguenta 20 mil chaves (o Map nativo cai em ~3.650)" {
 }
 
 test "distancia de edicao" {
-    assert(levenshtein("gti", "git") == 2, "troca")
-    assert(levenshtein("sl", "ls") == 2, "sl")
-    assert(levenshtein("grpe", "grep") == 2, "grpe")
+    assert(levenshtein("gti", "git") == 1, "troca de vizinhas conta 1")
+    assert(levenshtein("sl", "ls") == 1, "sl")
+    assert(levenshtein("grpe", "grep") == 1, "grpe")
     assert(levenshtein("cat", "cat") == 0, "igual")
+    assert(levenshtein("kitten", "sitting") == 3, "classico")
+}
+
+test "sl vira ls, nao nl (desempate pelo uso)" {
+    var m = Model()
+    m.observe("", "ls -la", "", 0)
+    m.observe("ls -la", "ls", "", 0)
+    assert(fixLine(m, "sl", 127, "", listOf("nl", "ls")) == "ls", "ls e mais usado")
 }
