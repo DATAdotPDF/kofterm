@@ -22,6 +22,14 @@ main() {
     if (sub >= 0) {
         process.exit(sub)
     }
+    // Um KofTerm dentro de outro (por exemplo "script -c kofterm" digitado no KofTerm) deixa a
+    // coluna de fora congelada e a de dentro espremida: melhor explicar e nao abrir.
+    if (secure_getenv("KOFTERM") != 0L) {
+        println("O KofTerm já está aberto nesta janela: você está dentro dele.")
+        println("Para gravar a sessão com script, abra uma aba nova do terminal (sem o KofTerm) e rode:")
+        println("  script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm")
+        process.exit(0)
+    }
     var saved = ttySave(Sys.STDIN)
     if (saved == 0L) {
         println("kofterm: a entrada padrao nao e um terminal")

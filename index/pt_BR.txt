@@ -390,6 +390,17 @@ $ history | Lista numerada.
 $ !42 | Repete o comando número 42.
 @ https://ss64.com/bash/history.html
 
+# script
+> Grava tudo o que aparece no terminal (e o que você digita) num arquivo. Útil para guardar uma aula, um laboratório ou mostrar um erro. Digite exit para parar a gravação.
+- -q | Não mostra as mensagens de início e fim.
+- -a | Acrescenta ao arquivo em vez de sobrescrever.
+- -c | Grava só um comando e para.
+- -I, -O | Grava a entrada (o que você digita) e a saída em arquivos separados.
+$ script aula-redes.txt | Começa a gravar em aula-redes.txt; exit para terminar.
+$ script -q -c "ip a" saida.txt | Grava só a saída do ip a.
+@ https://manpages.debian.org/script
+! bsdutils
+
 # man
 ! man-db
 > Abre o manual de um comando. q sai, / procura.

@@ -886,3 +886,11 @@ $ echo $PATH
 ? ver variáveis
 $ env
 > Todas as variáveis de ambiente.
+
+# gravar o terminal
+? gravar o terminal em {arquivo}
+? gravar a sessão em {arquivo}
+? salvar tudo que aparece no terminal em {arquivo}
+? gravar a aula em {arquivo}
+$ script {arquivo}.txt
+> Grava tudo o que aparece no terminal em {arquivo}.txt até você digitar exit.

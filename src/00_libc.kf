@@ -18,6 +18,9 @@ extern "libc.so.6" strndup(Long s, Long n): String
 extern "libc.so.6" strlen(Long s): Long
 extern "libc.so.6" setenv(String name, String value, Int overwrite): Int
 extern "libc.so.6" getenv(String name): String
+// Mesma funcao, mas como ponteiro: 0 quando a variavel nao existe (o getenv acima e so
+// para variaveis que sempre existem, como HOME e PATH).
+extern "libc.so.6" secure_getenv(String name): Long
 
 extern "libc.so.6" open(String path, Int flags, Int mode): Int
 extern "libc.so.6" lseek(Int fd, Long offset, Int whence): Long
