@@ -102,7 +102,7 @@ Outros comandos: `kofterm doctor` confere a instalação, `kofterm uninstall` re
 | | |
 | --- | --- |
 | **Coluna do índice** | Enquanto você digita, a coluna à direita explica o comando, cada opção usada (`-ld` vira `-l` + `-d`), o `sudo` e os caminhos da linha (`/etc/shadow`). São 148 comandos e caminhos, escritos em português para quem está começando. **F1** abre a busca. |
-| **Peça do seu jeito** | `? qual o gateway` sugere `ip r`; `? quanto espaço sobrou` sugere `df -h`. São 124 receitas revisadas por pessoas, com tolerância a acentos, sinônimos e erros de digitação. Ele nunca inventa comando. |
+| **Peça do seu jeito** | `? qual o gateway` sugere `ip r`; `? quanto espaço sobrou` sugere `df -h`. São 141 receitas revisadas por pessoas, com tolerância a acentos, sinônimos e erros de digitação. Ele nunca inventa comando. |
 | **Sugestão em cinza** | O resto da linha aparece em cinza, como no VS Code, e o **TAB** aceita. Ele aprende com o que você roda, só na sua máquina. |
 | **Lê o contexto** | "Permissão negada" sugere o mesmo comando com `sudo`; `gti status` vira `git status`; programa que falta vira `sudo apt install` com o pacote certo. |
 | **Funciona como root** | Depois de `sudo -i`, tudo continua funcionando, e as sugestões saem sem `sudo`. |

@@ -2,6 +2,13 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [Unreleased]
+
+### Added
+- 17 networking recipes for labs and Cisco studies: route to an IP (`ip route get`), add or remove an IP on an interface, renew the IP through DHCP (`nmcli`), restart the network, nearby Wi-Fi networks, IPv6 addresses, interface statistics, subnet calculation (`ipcalc`), MX, NS and TXT records, asking a specific DNS server (`dig @server`), testing a UDP port, listening on a port (`nc -lvnp`), a quick web server (`python3 -m http.server`) and OS detection (`nmap -O`, lab only). "pingar {site}" and "fazer ping em {site}" now reach the ping recipe
+- Index entries `ipcalc` (with its package, so KofTerm says how to install it when missing) and `python3` (150 entries, 141 recipes)
+- Versioning policy and the road to 1.0 in CONTRIBUTING (section "Versões") and the README
+
 ## [0.7.0] - 23/10/2026
 
 Security, reliability and tests first, following Mariana's review.

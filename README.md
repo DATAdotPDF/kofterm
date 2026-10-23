@@ -102,7 +102,7 @@ Other commands: `kofterm doctor` checks the installation, `kofterm uninstall` re
 | | |
 | --- | --- |
 | **Index column** | As you type, the right-hand column explains the command, each option used (`-ld` becomes `-l` + `-d`), `sudo` and the paths on the line (`/etc/shadow`). 148 commands and paths, written for beginners. **F1** opens the search. |
-| **Ask your way** | `? qual o gateway` suggests `ip r`; `? quanto espaço sobrou` suggests `df -h`. 124 recipes reviewed by people, tolerant to accents, synonyms and typos. It never makes up a command. |
+| **Ask your way** | `? qual o gateway` suggests `ip r`; `? quanto espaço sobrou` suggests `df -h`. 141 recipes reviewed by people, tolerant to accents, synonyms and typos. It never makes up a command. |
 | **Grey suggestion** | The rest of the line shows in grey, like in VS Code, and **TAB** accepts it. It learns from what you run, on your machine only. |
 | **Reads the context** | "Permission denied" suggests the same command with `sudo`; `gti status` becomes `git status`; a missing program becomes `sudo apt install` with the right package. |
 | **Works as root** | After `sudo -i` everything keeps working, and suggestions drop `sudo`. |

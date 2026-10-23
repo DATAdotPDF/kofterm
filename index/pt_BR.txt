@@ -751,6 +751,20 @@ $ nmcli connection show | Conexões salvas.
 $ nmcli device wifi list | Redes Wi-Fi visíveis.
 @ https://manpages.debian.org/nmcli
 
+# ipcalc
+! ipcalc
+> Calcula uma sub-rede: máscara, endereço de rede, broadcast, faixa de IPs e quantos hosts cabem. Bom para conferir exercícios de subnetting.
+$ ipcalc 192.168.10.0/26 | Rede /26: 64 endereços, 62 hosts.
+$ ipcalc 10.0.0.0/8 | Uma rede classe A inteira.
+@ https://manpages.debian.org/ipcalc
+
+# python3
+> Roda programas em Python. No terminal também serve para tarefas rápidas, como um servidor web de teste.
+- -m | Roda um módulo da biblioteca padrão como programa.
+$ python3 -m http.server 8000 | Serve a pasta atual em http://SEU_IP:8000 (Ctrl-C para parar). Só no lab: qualquer um na rede vê os arquivos.
+$ python3 --version | Mostra a versão instalada.
+@ https://docs.python.org/3/library/http.server.html
+
 # nmap
 > Descobre computadores e portas abertas numa rede. Use só na sua rede de laboratório ou com autorização por escrito: escanear redes de terceiros pode ser crime.
 - -sn | Só descobre quem está ligado (sem portas).

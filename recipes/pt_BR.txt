@@ -355,6 +355,9 @@ $ ip a
 ? testar internet
 ? testar conexao com {site}
 ? o site {site} esta no ar
+? pingar {site}
+? fazer ping em {site}
+? {site} responde ping
 $ ping -c 4 {site}
 > Envia 4 pacotes para {site} e mostra se respondeu.
 
@@ -645,6 +648,122 @@ $ openssl s_client -connect {site}:443
 ? ver wifi
 $ nmcli device status
 > Estado de cada interface no NetworkManager (conectada, desconectada).
+
+# rota para um ip
+? por onde sai o trafego para {ip}
+? qual rota para {ip}
+? qual interface vai para {ip}
+$ ip route get {ip}
+> Mostra qual rota, gateway e interface o Linux usa para chegar em {ip}.
+
+# colocar ip na interface
+? colocar o ip {ip} na interface {interface}
+? adicionar o ip {ip} na placa {interface}
+? configurar ip {ip} na {interface}
+$ sudo ip addr add {ip} dev {interface}
+> Põe o endereço {ip} (com a máscara, ex.: 192.168.56.10/24) em {interface}. Some ao reiniciar.
+
+# tirar ip da interface
+? tirar o ip {ip} da interface {interface}
+? remover o ip {ip} da placa {interface}
+$ sudo ip addr del {ip} dev {interface}
+> Tira o endereço {ip} de {interface} (escreva com a máscara, igual ao ip -br a).
+
+# renovar ip pelo dhcp
+? renovar o ip da interface {interface}
+? pedir ip de novo ao dhcp na {interface}
+? reconectar a interface {interface}
+$ nmcli device disconnect {interface} && nmcli device connect {interface}
+> Desconecta e reconecta {interface} pelo NetworkManager, que pede um IP novo ao DHCP.
+
+# reiniciar a rede
+? reiniciar a rede
+? reiniciar o network manager
+? a rede travou
+$ sudo systemctl restart NetworkManager
+> Reinicia o NetworkManager. As conexões caem por alguns segundos e voltam.
+
+# redes wifi por perto
+? ver redes wifi
+? listar redes wifi por perto
+? quais wifi estao disponiveis
+$ nmcli device wifi list
+> Redes Wi-Fi visíveis, com sinal e segurança. Numa VM normalmente não aparece nenhuma.
+
+# ver ipv6
+? ver meu ipv6
+? enderecos ipv6
+? ver ip versao 6
+$ ip -6 a
+> Endereços IPv6 de cada interface. fe80:: é o endereço local do link.
+
+# estatísticas da interface
+? estatisticas da interface {interface}
+? pacotes e erros da interface {interface}
+? trafego da interface {interface}
+$ ip -s link show {interface}
+> Bytes e pacotes recebidos (RX) e enviados (TX) por {interface}, com erros e descartes.
+
+# calcular sub-rede
+? calcular sub-rede {rede}
+? calcular a rede {rede}
+? mascara da rede {rede}
+? quantos hosts tem {rede}
+? broadcast da rede {rede}
+$ ipcalc {rede}
+> Para {rede} (ex.: 192.168.10.0/26): máscara, endereço de rede, broadcast, primeiro e último IP e quantos hosts cabem.
+
+# servidor de email de um domínio
+? servidor de email de {site}
+? registro mx de {site}
+$ dig +short MX {site}
+> Os servidores que recebem e-mail de {site} (registro MX), com a prioridade.
+
+# servidores dns de um domínio
+? servidores dns do dominio {site}
+? registro ns de {site}
+? quem responde pelo dominio {site}
+$ dig +short NS {site}
+> Os servidores DNS responsáveis por {site} (registro NS).
+
+# registros txt de um domínio
+? registros txt de {site}
+? ver spf de {site}
+$ dig +short TXT {site}
+> Textos publicados no DNS de {site}: SPF, verificações de serviços e outros.
+
+# perguntar a um dns específico
+? consultar {site} no dns {servidor}
+? perguntar ao servidor {servidor} sobre {site}
+$ dig @{servidor} {site}
+> Pergunta direto ao servidor DNS {servidor} (ex.: 1.1.1.1 ou o DNS do lab), sem usar o configurado.
+
+# testar porta udp
+? testar a porta udp {porta} de {destino}
+? a porta udp {porta} está aberta em {destino}
+$ nc -zvu {destino} {porta}
+> Testa a porta UDP {porta} de {destino}. UDP não confirma conexão: "open" pode ser só falta de resposta.
+
+# escutar numa porta
+? escutar na porta {porta}
+? esperar conexao na porta {porta}
+? abrir a porta {porta} para teste
+$ nc -lvnp {porta}
+> Fica esperando uma conexão na porta {porta} e mostra o que chegar. Ctrl-C para parar.
+
+# servidor web rápido
+? servidor web na porta {porta}
+? subir um servidor http na porta {porta}
+? compartilhar a pasta pela rede na porta {porta}
+$ python3 -m http.server {porta}
+> Serve a pasta atual em http://SEU_IP:{porta}. Qualquer um na rede vê os arquivos: use só no lab e pare com Ctrl-C.
+
+# sistema operacional de uma máquina
+? descobrir o sistema de {destino}
+? qual sistema operacional de {destino}
+? que sistema roda em {destino}
+$ sudo nmap -O {destino}
+> Tenta adivinhar o sistema operacional de {destino} pelas respostas de rede. Só no seu laboratório ou com autorização.
 
 # dar nome a uma máquina do lab
 ? dar nome a um ip
