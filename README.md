@@ -13,7 +13,7 @@ Open source, 100% offline and written in <a href="https://koflang.github.io">KOF
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.6.6-8b5cf6?style=flat-square" alt="Release v0.6.6"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.7.0-8b5cf6?style=flat-square" alt="Release v0.7.0"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/labels/good%20first%20issue"><img src="https://img.shields.io/github/issues/DATAdotPDF/kofterm/good%20first%20issue?style=flat-square&label=good%20first%20issue&color=7057ff" alt="good first issue"></a>
 </p>
@@ -54,10 +54,10 @@ Open source, 100% offline and written in <a href="https://koflang.github.io">KOF
 
 You need Linux x86_64 (a VM is fine). The program only depends on the system `libc`.
 
-**Ready-made release, no KOF needed:** download `kofterm-0.6.6-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases).
+**Ready-made release, no KOF needed:** download `kofterm-0.7.0-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases).
 
 ```bash
-sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-0.6.6-linux-x86_64.tar.gz && ./kofterm-0.6.6-linux-x86_64/kofterm install
+sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-0.7.0-linux-x86_64.tar.gz && ./kofterm-0.7.0-linux-x86_64/kofterm install
 ```
 
 **From source:** the installer builds with KOF 0.6.6. If KOF is missing, it asks before downloading it and checks its SHA-256.

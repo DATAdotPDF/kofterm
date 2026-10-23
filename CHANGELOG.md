@@ -2,9 +2,9 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
-## [Unreleased]
+## [0.7.0] - 23/10/2026
 
-Version 0.7 (in progress): security, reliability and tests first, following Mariana's review.
+Security, reliability and tests first, following Mariana's review.
 
 ### Security
 - Secrets stay out of the history: a line that looks like a password, token or key (`mysql -pPASSWORD`, `export GITHUB_TOKEN=...`, `curl -u user:pass`, `https://user:pass@host`, `sshpass`, long key-like strings) still runs, but is not written to `history` or `events` and does not teach the model. A line starting with a space is also kept out, the same convention as Bash's `HISTCONTROL=ignorespace`
