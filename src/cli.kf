@@ -280,6 +280,8 @@ Int runUpdate() {
         println("    sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-X.Y.Z-linux-x86_64.tar.gz && ./kofterm-X.Y.Z-linux-x86_64/kofterm install")
     }
     println("")
+    println("Depois, feche e abra de novo as janelas do KofTerm que estavam abertas: cada uma")
+    println("continua na versão antiga até ser reaberta.")
     println("Seu histórico e o que o KofTerm aprendeu ficam em " + dir + " e continuam lá.")
     println("O que mudou em cada versão: https://github.com/DATAdotPDF/kofterm/blob/main/CHANGELOG.md")
     println("O KofTerm não acessa a internet: ele só mostrou o comando. Nada foi baixado nem executado.")

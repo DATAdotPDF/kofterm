@@ -94,7 +94,7 @@ cd ~/kofterm && git pull && ./install.sh
 
 **If you installed the ready-made release**, download the new `.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases) and run the same install command with the new version number.
 
-To check: `kofterm version`. What changed in each version is in the [CHANGELOG](CHANGELOG.md). KofTerm never updates itself, because it doesn't use the internet.
+Then close and reopen any KofTerm windows that were open: each one keeps running the old version until it is reopened. To check: `kofterm version`. What changed in each version is in the [CHANGELOG](CHANGELOG.md). KofTerm never updates itself, because it doesn't use the internet.
 
 ## First steps
 
