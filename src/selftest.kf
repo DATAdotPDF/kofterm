@@ -338,7 +338,9 @@ Int runSelftest() {
     // 6. lixo binário
     s.send("head -c 300000 /dev/urandom; echo; echo VIVO_$((40+3))\r")
     rep.check(s.expect("VIVO_43", 60000), "300 KB de lixo binário", "sem resposta depois do lixo")
-    s.send("reset >/dev/null 2>&1; echo VIVO_$((40+4))\r")
+    // o lixo pode ter ligado a tela alternativa ou uma região de rolagem; ESC c (reset total)
+    // passa pelo emulador (o "reset >/dev/null" de antes não chegava nele)
+    s.send("printf '\\033c'; echo VIVO_$((40+4))\r")
     s.expect("VIVO_44", 15000)
     // 7. marcador imitado (formato antigo, sem o token): as teclas continuam indo para o read
     s.send("printf '\\033]7770;0;1000;/tmp\\007'; read -r x; echo LIDO_$((1+4))\r")
