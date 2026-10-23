@@ -72,6 +72,8 @@ main() {
     session.loadHistory()
     session.panelPath = dir + "/panel"
     session.loadPanelSetting()
+    session.mousePath = dir + "/mouse"
+    session.loadMouseSetting()
     session.tab.index.load(loadLines(findShared(dir, "index/pt_BR.txt")))
     session.recipes.load(loadLines(findShared(dir, "recipes/pt_BR.txt")))
 

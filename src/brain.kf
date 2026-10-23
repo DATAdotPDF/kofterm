@@ -270,8 +270,41 @@ class Brain {
 
     // Completa um nome de arquivo ou pasta da pasta do bash. Pastas ganham "/".
     String completePath(String cwd, String tok) {
-        if (tok.contains("$") || tok.contains("*") || tok.contains("\"") || tok.contains("'")) {
+        var matches = pathCandidates(cwd, tok)
+        if (matches.size == 0) {
             return ""
+        }
+        var base = pathBase(tok)
+        // prefixo comum de todos os candidatos
+        var common = matches.get(0)
+        for (var m in matches) {
+            var i = 0
+            while (i < common.length() && i < m.length() && common.substring(i, i + 1) == m.substring(i, i + 1)) {
+                i = i + 1
+            }
+            common = common.substring(0, i)
+        }
+        if (common.length() <= base.length()) {
+            return ""
+        }
+        return common.substring(base.length(), common.length())
+    }
+
+    // O pedaco do token depois da ultima "/" (o nome que esta sendo completado).
+    String pathBase(String tok) {
+        var cut = tok.length()
+        while (cut > 0 && tok.substring(cut - 1, cut) != "/") {
+            cut = cut - 1
+        }
+        return tok.substring(cut, tok.length())
+    }
+
+    // Os nomes da pasta que comecam com o que foi digitado, em ordem alfabetica (no maximo 500).
+    // Pastas ganham "/". A lista do TAB TAB.
+    List<String> pathCandidates(String cwd, String tok) {
+        var matches = listOf<String>()
+        if (tok.contains("$") || tok.contains("*") || tok.contains("\"") || tok.contains("'")) {
+            return matches
         }
         var cut = tok.length()
         while (cut > 0 && tok.substring(cut - 1, cut) != "/") {
@@ -288,39 +321,30 @@ class Brain {
         if (dir.length() == 0) {
             dir = "/"
         }
-        var matches = listOf<String>()
         var d = opendir(dir)
         if (d == 0L) {
-            return ""
+            return matches
         }
         var ent = readdir(d)
-        while (ent != 0L) {
+        while (ent != 0L && matches.size < 500) {
             var name = strndup(ent + 19L, strlen(ent + 19L))
             var hiddenOk = base.startsWith(".") || !name.startsWith(".")
             if (name != "." && name != ".." && hiddenOk && name.startsWith(base)) {
                 if (buffer.peek8(ent + 18L) == 4) {
                     name = name + "/"
                 }
+                // insercao ordenada: o readdir devolve na ordem do disco
                 matches.add(name)
+                var j = matches.size - 1
+                while (j > 0 && nameBefore(name, matches.get(j - 1))) {
+                    matches.set(j, matches.get(j - 1))
+                    j = j - 1
+                }
+                matches.set(j, name)
             }
             ent = readdir(d)
         }
         closedir(d)
-        if (matches.size == 0) {
-            return ""
-        }
-        // prefixo comum de todos os candidatos
-        var common = matches.get(0)
-        for (var m in matches) {
-            var i = 0
-            while (i < common.length() && i < m.length() && common.substring(i, i + 1) == m.substring(i, i + 1)) {
-                i = i + 1
-            }
-            common = common.substring(0, i)
-        }
-        if (common.length() <= base.length()) {
-            return ""
-        }
-        return common.substring(base.length(), common.length())
+        return matches
     }
 }

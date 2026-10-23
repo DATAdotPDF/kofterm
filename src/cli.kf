@@ -2,7 +2,7 @@
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
-    static String NUMBER = "0.7.2"
+    static String NUMBER = "0.8.0"
 }
 
 printHelp() {
@@ -217,7 +217,7 @@ Int runUninstall(List<String> args) {
     }
     rmdir(dir + "/datasets")
     if (purge) {
-        for (var f in listOf("history", "events", "panel")) {
+        for (var f in listOf("history", "events", "panel", "mouse")) {
             unlink(dir + "/" + f)
         }
         rmdir(dir)

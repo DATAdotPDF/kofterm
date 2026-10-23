@@ -2,6 +2,18 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.8.0] - 23/10/2026
+
+Finding things: the history, the files of a folder and the output that already scrolled away.
+
+### Added
+- **Ctrl+R** searches the history. What is already typed becomes the search; the column lists every earlier command containing it (ignoring case, newest first, no repeats), **↑/↓** or Ctrl+R again picks, and Enter, TAB or → put the command on the line **without running it**. Esc, Ctrl+G or Ctrl+C give back the line as it was. Dangerous commands show in red. Without the column, the grey text shows the chosen one and `[3/12]`
+- **TAB with no grey suggestion** and a name that could be several files opens a list: in the column (folders in blue, ending in `/`), or below the line in a narrow window, like Bash. TAB or ↓ goes to the next, ↑ to the previous, Enter or → put it on the line, Esc closes; any other key closes the list and works as usual
+- **Old output:** KofTerm keeps the last 2,000 lines that scrolled off the screen (programs like vim, htop and less, on the alternate screen, are left out). At the prompt, the **mouse wheel** scrolls 3 lines and **Shift+PgUp/PgDn** half a screen; a bar at the top says how far up you are, and any key returns to the end
+- The mouse belongs to KofTerm only at the prompt: when a command runs, it goes back to the terminal (vim and htop still ask for it themselves). While the wheel is on, select text with **Shift+drag**. **F3** turns the wheel off and on, and the choice is remembered (`~/.local/share/kofterm/mouse`)
+- `kofterm selftest` checks 21 things: the wheel scrolls old output, and the mouse is released when a program runs
+- The welcome line and the column's key list mention Ctrl+R and the wheel
+
 ## [0.7.2] - 23/10/2026
 
 Two small helps that came from Pedro's test of 0.7.1.

@@ -328,7 +328,7 @@ Int runSelftest() {
     rep.check(s.termRestored(), "bash morto: terminal restaurado", "eco ou modo canônico desligado")
     s.finish()
 
-    // 5 a 9 numa sessão só
+    // 5 a 12 numa sessão só
     s = stStart(exe, home)
     // 5. saída grande
     s.send("seq 1 300000; echo FIM_$((1+1))\r")
@@ -381,7 +381,21 @@ Int runSelftest() {
         closedir(d)
     }
     rep.check(sockets == 0, "nenhum socket de rede aberto", "" + sockets + " sockets")
-    // 10. linha com senha não vai para o histórico; linha comum vai
+    // 10. a roda do mouse rola a saída antiga (o mouse volta a ser do KofTerm no prompt)
+    s.send("seq 1 500; echo FIM_$((3+3))\r")
+    s.expect("FIM_6", 15000)
+    var captured = s.expect("\u001b[?1000h", 5000)
+    s.send("\u001b[<64;5;5M")
+    rep.check(captured && s.expect("linhas acima", 5000), "roda do mouse rola a saída antiga", "a faixa não apareceu")
+    s.send("a\u0015")
+    s.settle(400)
+    // 11. ao rodar um programa, o mouse volta para o terminal (cliques não vão parar no cat)
+    s.send("cat\r")
+    rep.check(s.expect("\u001b[?1000l", 5000), "mouse solto ao rodar um programa", "o KofTerm não soltou o mouse")
+    s.settle(300)
+    s.send("\u0004")
+    s.settle(600)
+    // 12. linha com senha não vai para o histórico; linha comum vai
     s.send("echo comum_$((1+0)) --password=falsa_456\r")
     // espera o prompt voltar: o que se digita com um comando rodando vai direto ao bash
     s.expect("comum_1", 10000)

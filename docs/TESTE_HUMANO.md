@@ -1,4 +1,4 @@
-# Roteiro de teste humano — KofTerm 0.7.2
+# Roteiro de teste humano — KofTerm 0.8.0
 
 Roteiro completo para uma **pessoa de verdade, numa janela de terminal de verdade**, conferir
 cada funcionalidade do KofTerm como um aluno usaria. Cada passo diz o que fazer e o que deve
@@ -33,8 +33,8 @@ script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|
-| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.7.2 instalado" | |
-| 0.2 ★ | `kofterm version` | `KofTerm 0.7.2` | |
+| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.8.0 instalado" | |
+| 0.2 ★ | `kofterm version` | `KofTerm 0.8.0` | |
 | 0.3 | `kofterm doctor` | `indice: 148 entradas`, pasta de dados `(pasta 0700, arquivos 0600)`, `bash: true` | |
 | 0.4 | `kofterm help` | Lista os subcomandos e as teclas | |
 | 0.5 | `kofterm --qualquer-coisa` | Mostra a ajuda; nada quebra | |
@@ -268,7 +268,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | N.1 ★ | `exit` | A tela de **antes** de abrir o KofTerm volta (como no vim) | |
 | N.2 | Feche a janela com o KofTerm aberto; abra outra e rode `stty -a \| head -3` | Nada estranho; `pgrep -a kofterm` não mostra processos esquecidos | |
 | N.3 | No terminal de fora: `kofterm < /dev/null` | Mensagem "a entrada padrão não é um terminal", sem travar | |
-| N.4 ★ | No terminal de fora: `kofterm selftest` | Cerca de 30 s de linhas `ok`, termina com "19 ok, 0 falharam"; nenhuma pasta `/tmp/kofterm-selftest-*` fica para trás | |
+| N.4 ★ | No terminal de fora: `kofterm selftest` | Cerca de 30 s de linhas `ok`, termina com "21 ok, 0 falharam"; nenhuma pasta `/tmp/kofterm-selftest-*` fica para trás | |
 | N.5 | Num KofTerm aberto **depois** de instalar a 0.7 (feche e abra de novo): `printf '\033]7770;0;1000;/tmp\007'; read -r x`, digite `teste456` e Enter; depois `grep -cx teste456 ~/.local/share/kofterm/history` | O `read` termina normalmente e o grep mostra `0` (um marcador falso não captura o que você digita). O `-x` conta só linhas iguais a `teste456`, não a própria linha do grep | |
 
 ## P. Instalação (opcional, no fim)
@@ -280,6 +280,22 @@ coluna. Nada é instalado sem você apertar Enter.
 | N.6 | Na pasta pessoal, digite sem Enter `python3 -m http.server 8000`; depois `python3 -m http.server 8000 --bind 127.0.0.1` | O primeiro mostra o aviso amarelo de Atenção (compartilha a pasta pessoal, inclusive ~/.ssh); o segundo não mostra aviso | |
 | N.7 | Digite `EXIT` (maiúsculas) e Enter | "comando não encontrado"; o cinza sugere `exit` e a coluna explica que maiúsculas importam | |
 | P.3 | `kofterm update` | Mostra `cd ~/kofterm && git pull && ./install.sh` e avisa que nada foi baixado nem executado | |
+
+## R. Achar coisas (0.8.0)
+
+| # | Fazer | Deve acontecer | Resultado |
+|---|---|---|---|
+| R.1 ★ | Rode `ping -c 1 127.0.0.1` e `ls`; depois digite `ping` e aperte Ctrl+R | A coluna vira "Histórico" e lista o `ping` que você rodou; o cinza mostra `→ ping -c 1 127.0.0.1` | |
+| R.2 ★ | Enter | O `ping` vai para a linha e **não roda**; Enter de novo roda | |
+| R.3 | Digite `xyz`, Ctrl+R, depois Esc | A linha volta a ser `xyz` | |
+| R.4 ★ | `cd /etc` e digite `ls sys` + TAB (sem Enter) | A coluna vira "Arquivos" e lista `sysctl.conf`, `sysctl.d/`, `systemd/`... (pastas em azul). Se aparecer um cinza antes, o primeiro TAB aceita o cinza; apague-o e tente de novo | |
+| R.5 ★ | TAB algumas vezes, depois Enter | O escolhido muda a cada TAB; o Enter coloca o nome na linha, sem rodar | |
+| R.6 ★ | Rode `seq 1 3000` e role a roda do mouse para cima | Os números antigos voltam; no topo, uma faixa "↑ N linhas acima" | |
+| R.7 | Shift+PgUp e Shift+PgDn | Rolam meia tela de cada vez | |
+| R.8 ★ | Com a faixa no topo, digite uma letra | A tela volta para o fim e a letra entra na linha | |
+| R.9 ★ | Segure Shift e arraste o mouse sobre um texto | O texto é selecionado normalmente (para copiar) | |
+| R.10 | F3, depois role a roda | A coluna avisa "roda do mouse desligada"; a roda não rola mais (o terminal faz o que fazia antes); F3 de novo liga | |
+| R.11 | Abra `vim`, use a roda lá dentro e saia com `:q` | O vim decide o que a roda faz; de volta ao prompt, a roda rola a saída antiga de novo | |
 
 ## Q. Impressões gerais (texto livre)
 

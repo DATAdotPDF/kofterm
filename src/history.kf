@@ -67,6 +67,31 @@ class History {
     resetBrowse() {
         browse = -1
     }
+
+    // Ctrl+R: as linhas que contem `q` (sem diferenciar maiusculas), da mais recente para a
+    // mais antiga, sem repetir. Com `q` vazio, as ultimas.
+    List<String> search(String q, Int max) {
+        var out = listOf<String>()
+        var low = q.toLowerCase()
+        var i = items.size - 1
+        while (i >= 0 && out.size < max) {
+            var h = items.get(i)
+            if ((low.length() == 0 || h.toLowerCase().contains(low)) && !hasItem(out, h)) {
+                out.add(h)
+            }
+            i = i - 1
+        }
+        return out
+    }
+
+    Boolean hasItem(List<String> list, String s) {
+        for (var x in list) {
+            if (x == s) {
+                return true
+            }
+        }
+        return false
+    }
 }
 
 // Primeira "palavra" de uma sugestao, com os espacos da frente (Ctrl+seta direita).
@@ -79,6 +104,27 @@ String firstWord(String ghost) {
         i = i + 1
     }
     return ghost.substring(0, i)
+}
+
+// Ordem alfabetica por byte, como o `ls` com LC_ALL=C (a lista do TAB TAB).
+Boolean nameBefore(String a, String b) {
+    var i = 0
+    while (i < a.length() && i < b.length()) {
+        var x = a.charAt(i) as Int
+        var y = b.charAt(i) as Int
+        if (x != y) {
+            return x < y
+        }
+        i = i + 1
+    }
+    return a.length() < b.length()
+}
+
+test "nomes em ordem alfabetica" {
+    assert(nameBefore("abc", "abd"), "letra")
+    assert(nameBefore("ab", "abc"), "mais curto")
+    assert(!nameBefore("b", "a"), "inverso")
+    assert(!nameBefore("a", "a"), "igual")
 }
 
 test "sugere o mais recente com o mesmo comeco" {
@@ -109,6 +155,20 @@ test "setas navegam e voltam ao rascunho" {
     assert(h.prev("um") == "um", "para no primeiro")
     assert(h.next("um") == "dois", "baixo 1")
     assert(h.next("dois") == "rasc", "volta ao rascunho")
+}
+
+test "ctrl-r acha pelo meio, mais recente primeiro, sem repetir" {
+    var h = History()
+    h.add("ping 8.8.8.8")
+    h.add("ls")
+    h.add("PING -c 3 kali.org")
+    h.add("ping 8.8.8.8")
+    var r = h.search("ping", 10)
+    assert(r.size == 2, "dois diferentes")
+    assert(r.get(0) == "ping 8.8.8.8", "mais recente")
+    assert(r.get(1) == "PING -c 3 kali.org", "maiusculas")
+    assert(h.search("", 2).size == 2, "vazio traz os ultimos")
+    assert(h.search("zzz", 5).size == 0, "nada")
 }
 
 test "primeira palavra da sugestao" {

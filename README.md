@@ -13,7 +13,7 @@ Open source, 100% offline and written in <a href="https://koflang.github.io">KOF
   <a href="https://github.com/KofLang/Kof4j"><img src="https://img.shields.io/badge/Built_with-KOF_0.6.6-f59e0b?style=flat-square" alt="Built with KOF 0.6.6"></a>
   <img src="https://img.shields.io/badge/Platform-Linux_x86__64-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux x86_64">
   <img src="https://img.shields.io/badge/Network-none-22c55e?style=flat-square" alt="No network">
-  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.7.2-8b5cf6?style=flat-square" alt="Release v0.7.0"></a>
+  <a href="https://github.com/DATAdotPDF/kofterm/releases"><img src="https://img.shields.io/badge/Release-v0.8.0-8b5cf6?style=flat-square" alt="Release v0.8.0"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml"><img src="https://github.com/DATAdotPDF/kofterm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/DATAdotPDF/kofterm/labels/good%20first%20issue"><img src="https://img.shields.io/github/issues/DATAdotPDF/kofterm/good%20first%20issue?style=flat-square&label=good%20first%20issue&color=7057ff" alt="good first issue"></a>
 </p>
@@ -64,10 +64,10 @@ Open source, 100% offline and written in <a href="https://koflang.github.io">KOF
 
 You need Linux x86_64 (a VM is fine). The program only depends on the system `libc`.
 
-**Ready-made release, no KOF needed:** download `kofterm-0.7.2-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases).
+**Ready-made release, no KOF needed:** download `kofterm-0.8.0-linux-x86_64.tar.gz` and `SHA256SUMS` from the [releases page](https://github.com/DATAdotPDF/kofterm/releases).
 
 ```bash
-sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-0.7.2-linux-x86_64.tar.gz && ./kofterm-0.7.2-linux-x86_64/kofterm install
+sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-0.8.0-linux-x86_64.tar.gz && ./kofterm-0.8.0-linux-x86_64/kofterm install
 ```
 
 **From source:** the installer builds with KOF 0.6.6. If KOF is missing, it asks before downloading it and checks its SHA-256.
@@ -105,6 +105,9 @@ Then close and reopen any KofTerm windows that were open: each one keeps running
 | **F1** or **Ctrl+T** | Full-screen index search |
 | **?** + your request | `? instalar o htop`, `? quem usa a porta 22`. **TAB** puts the command on the line; Enter runs it |
 | **↑ / ↓** | Previous commands |
+| **Ctrl+R** | Searches the history: type part of a command, the column lists every match, **↑/↓** picks, Enter puts it on the line (without running it), Esc goes back |
+| **TAB** with no grey suggestion | When a name could be several files, the column lists them: **TAB** goes to the next, Enter picks |
+| **Mouse wheel** or **Shift+PgUp/PgDn** | Scrolls back through old output (last 2,000 lines); any key returns. To select text with the mouse, hold **Shift**. **F3** turns the wheel off |
 | **Ctrl-L** | Clears the screen and keeps what you were typing |
 
 Try this: type `ls -la` slowly and watch the column; run `cat /etc/shadow` and look at the next line; ask `? qual meu ip`. To try everything calmly, follow the [test script](docs/TESTE_HUMANO.md) (Portuguese).
@@ -167,14 +170,14 @@ Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_COND
 | Version | What goes in |
 | --- | --- |
 | **0.7.x** | Fixes from testing 0.7.0 and more networking recipes |
-| **0.8.0**, finding things | History search with Ctrl+R, a candidate list when completing files, and the mouse wheel scrolling old output |
+| **0.8.0**, finding things (done) | History search with Ctrl+R, a candidate list when completing files, and the mouse wheel scrolling old output |
 | **0.9.0**, for everyone | English index and recipes, emoji above U+FFFF, and a clear warning when the terminal is too narrow |
 | **1.0.0**, stable | Tested by other people on several distributions and terminals, no limitation that gets in the way, stable file formats |
 | **Later** | A small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes |
 
 How versions are numbered and the 1.0 criteria: [CONTRIBUTING, section Versões](CONTRIBUTING.md#7-versões) (in Portuguese). See also the [CHANGELOG](CHANGELOG.md) and the [issues](https://github.com/DATAdotPDF/kofterm/issues).
 
-**Known limitations:** the mouse wheel doesn't scroll old output inside KofTerm yet; the column needs at least 40 columns left for Bash; emoji above U+FFFF show as `�`.
+**Known limitations:** while the wheel is on, selecting text with the mouse needs Shift (or F3 to turn the wheel off); old output keeps the last 2,000 lines; the column needs at least 40 columns left for Bash; emoji above U+FFFF show as `�`.
 
 ## Contributors
 

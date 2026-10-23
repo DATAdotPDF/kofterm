@@ -29,6 +29,13 @@ class K {
     static Int PAGE_DOWN = 24
     static Int F2 = 25
     static Int CPR = 26   // resposta do terminal a ESC [ 6 n: code = linha * 10000 + coluna
+    static Int CTRL_R = 27
+    static Int CTRL_G = 28
+    static Int SHIFT_PAGE_UP = 29
+    static Int SHIFT_PAGE_DOWN = 30
+    static Int WHEEL_UP = 31
+    static Int WHEEL_DOWN = 32
+    static Int F3 = 33
 }
 
 // `code` e o codepoint Unicode quando kind == K.CHAR.
@@ -97,6 +104,8 @@ class KeyDecoder {
         if (b == 11) { return Key(K.CTRL_K, 0) }
         if (b == 12) { return Key(K.CTRL_L, 0) }
         if (b == 20) { return Key(K.CTRL_T, 0) }
+        if (b == 18) { return Key(K.CTRL_R, 0) }
+        if (b == 7) { return Key(K.CTRL_G, 0) }
         if (b >= 32) { return Key(K.CHAR, b) }
         return Key(K.IGNORE, b)
     }
@@ -139,6 +148,8 @@ class KeyDecoder {
             }
             if (c == 59) {
                 params = params + ";"
+            } else if (c == 60 && j == i + 2) {
+                params = "<" // mouse SGR: ESC [ < botao ; coluna ; linha M
             } else if (c >= 48 && c <= 57) {
                 params = params + (c - 48)
             }
@@ -148,6 +159,9 @@ class KeyDecoder {
     }
 
     Key finalKey(Int c, String params) {
+        if (params.startsWith("<")) {
+            return mouseKey(c, params)
+        }
         var ctrl = params.endsWith(";5")
         if (c == 65) { return Key(K.UP, 0) }
         if (c == 66) { return Key(K.DOWN, 0) }
@@ -163,6 +177,7 @@ class KeyDecoder {
         if (c == 70) { return Key(K.END, 0) }
         if (c == 80 && params.length() == 0) { return Key(K.F1, 0) } // ESC O P
         if (c == 81 && params.length() == 0) { return Key(K.F2, 0) } // ESC O Q
+        if (c == 82 && params.length() == 0) { return Key(K.F3, 0) } // ESC O R
         if (c == 82 && params.contains(";")) { // ESC [ linha ; coluna R
             var row = 0
             var col = 0
@@ -184,11 +199,30 @@ class KeyDecoder {
         if (c == 126) { // ~
             if (params == "11") { return Key(K.F1, 0) }
             if (params == "12") { return Key(K.F2, 0) }
+            if (params == "13") { return Key(K.F3, 0) }
             if (params == "5") { return Key(K.PAGE_UP, 0) }
             if (params == "6") { return Key(K.PAGE_DOWN, 0) }
+            if (params == "5;2") { return Key(K.SHIFT_PAGE_UP, 0) }
+            if (params == "6;2") { return Key(K.SHIFT_PAGE_DOWN, 0) }
             if (params == "3") { return Key(K.DELETE, 0) }
             if (params == "1" || params == "7") { return Key(K.HOME, 0) }
             if (params == "4" || params == "8") { return Key(K.END, 0) }
+        }
+        return Key(K.IGNORE, c)
+    }
+
+    // Mouse SGR: so a roda vira tecla. Cliques e arrastos sao engolidos (nunca vao para o bash).
+    Key mouseKey(Int c, String params) {
+        var b = 0
+        var i = 1
+        while (i < params.length() && params.substring(i, i + 1) != ";") {
+            b = b * 10 + digit(params.substring(i, i + 1))
+            i = i + 1
+        }
+        // 64 = roda para cima, 65 = para baixo; Shift/Alt/Ctrl somam 4, 8 e 16
+        if (c == 77 && b >= 64 && b < 96) {
+            if (b % 4 == 0) { return Key(K.WHEEL_UP, 0) }
+            if (b % 4 == 1) { return Key(K.WHEEL_DOWN, 0) }
         }
         return Key(K.IGNORE, c)
     }
@@ -288,6 +322,31 @@ test "utf8 de dois bytes" {
     var d = KeyDecoder()
     var ks = d.decode(listOf(195, 167)) // c cedilha
     assert(ks.size == 1 && ks.get(0).code == 231, "codepoint 231")
+}
+
+test "ctrl-r, ctrl-g, F3 e shift+page up" {
+    var d = KeyDecoder()
+    assert(d.decode(listOf(18)).get(0).kind == K.CTRL_R, "ctrl-r")
+    assert(d.decode(listOf(7)).get(0).kind == K.CTRL_G, "ctrl-g")
+    assert(d.decode(listOf(27, 79, 82)).get(0).kind == K.F3, "F3 xterm")
+    assert(d.decode(listOf(27, 91, 49, 51, 126)).get(0).kind == K.F3, "F3 vt")
+    assert(d.decode(listOf(27, 91, 53, 59, 50, 126)).get(0).kind == K.SHIFT_PAGE_UP, "shift+pgup")
+    assert(d.decode(listOf(27, 91, 54, 59, 50, 126)).get(0).kind == K.SHIFT_PAGE_DOWN, "shift+pgdn")
+    assert(d.decode(listOf(27, 91, 53, 126)).get(0).kind == K.PAGE_UP, "pgup puro")
+}
+
+test "roda do mouse e clique engolido" {
+    var d = KeyDecoder()
+    // ESC [ < 64 ; 10 ; 5 M
+    assert(d.decode(listOf(27, 91, 60, 54, 52, 59, 49, 48, 59, 53, 77)).get(0).kind == K.WHEEL_UP, "roda cima")
+    assert(d.decode(listOf(27, 91, 60, 54, 53, 59, 49, 59, 49, 77)).get(0).kind == K.WHEEL_DOWN, "roda baixo")
+    assert(d.decode(listOf(27, 91, 60, 54, 56, 59, 49, 59, 49, 77)).get(0).kind == K.WHEEL_UP, "shift+roda")
+    var click = d.decode(listOf(27, 91, 60, 48, 59, 51, 59, 52, 77, 27, 91, 60, 48, 59, 51, 59, 52, 109))
+    assert(click.size == 2 && click.get(0).kind == K.IGNORE && click.get(1).kind == K.IGNORE, "clique")
+    var a = d.decode(listOf(27, 91, 60, 54, 53, 59))
+    assert(a.size == 0, "espera o resto")
+    var b = d.decode(listOf(49, 59, 49, 77))
+    assert(b.size == 1 && b.get(0).kind == K.WHEEL_DOWN, "roda cortada")
 }
 
 test "tab, backspace, ctrl-c" {

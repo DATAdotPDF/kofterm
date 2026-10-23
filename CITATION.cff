@@ -9,7 +9,7 @@ authors:
     email: "data.pedutraferreira@gmail.com"
 repository-code: "https://github.com/DATAdotPDF/kofterm"
 license: GPL-3.0-or-later
-version: "0.7.2"
+version: "0.8.0"
 date-released: "2026-10-23"
 keywords:
   - kof
