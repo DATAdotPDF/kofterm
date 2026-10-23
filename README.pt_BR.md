@@ -82,6 +82,20 @@ Depois, é só abrir:
 kofterm
 ```
 
+### Atualizar
+
+Instale a versão nova por cima da antiga. Seu histórico e o que o KofTerm aprendeu com você ficam em `~/.local/share/kofterm` e continuam lá.
+
+**Se instalou pelo código**, dentro da pasta onde clonou:
+
+```bash
+cd ~/kofterm && git pull && ./install.sh
+```
+
+**Se instalou pela release pronta**, baixe o `.tar.gz` novo e o `SHA256SUMS` da [página de releases](https://github.com/DATAdotPDF/kofterm/releases) e rode o mesmo comando de instalação, com o número da versão nova.
+
+Para conferir: `kofterm version`. O que mudou em cada versão está no [CHANGELOG](CHANGELOG.md). O KofTerm nunca se atualiza sozinho, porque não acessa a internet.
+
 ## Primeiros passos
 
 | Tecla | O que faz |
