@@ -4,6 +4,13 @@ All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
 ## [Unreleased]
 
+Version 0.7 (in progress): security, reliability and tests first, following Mariana's review.
+
+### Security
+- Secrets stay out of the history: a line that looks like a password, token or key (`mysql -pPASSWORD`, `export GITHUB_TOKEN=...`, `curl -u user:pass`, `https://user:pass@host`, `sshpass`, long key-like strings) still runs, but is not written to `history` or `events` and does not teach the model. A line starting with a space is also kept out, the same convention as Bash's `HISTCONTROL=ignorespace`
+- On start, secrets that older versions already wrote to `history` and `events` are removed and the files are rewritten (still 0600)
+- The secret detector now also catches a user and password inside a URL, for contributions too; local history keeps ordinary `export PATH=...` lines, while contributions still drop every `export`
+
 ### Changed
 - New "100% brasileiro" identity, inspired by Brazilian TV commercials of the early 2000s: blue TV background with soft rays, chrome KOFTERM lettering with a yellow outline, the slogan "Seus problemas com o terminal acabaram!", a green-yellow-blue stripe and a round seal pinned to the terminal's corner. Applied to the README banner (now `docs/images/banner.png`, rendered from `site/banner.html`), the site and the cover image; the rest of the site stays short on a plain background
 

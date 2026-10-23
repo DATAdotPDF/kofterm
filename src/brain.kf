@@ -126,7 +126,11 @@ class Brain {
 
     // Enter: o comando foi enviado; o codigo de saida chega no proximo prompt.
     commandSent(String line, String feats) {
+        // linha com segredo (ou começando com espaço) não ensina o modelo nem vai para o events
         pendingCmd = line.trim()
+        if (privateLine(line)) {
+            pendingCmd = ""
+        }
         pendingFeats = feats
         outputTail = ""
     }

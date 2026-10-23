@@ -112,7 +112,7 @@ O KofTerm vê o que você digita, por isso segue regras que não mudam:
 
 - **100% offline.** O programa não abre conexões de rede, e o CI recusa código de rede. Confira: dentro do KofTerm, `ls -l /proc/$PPID/fd | grep -c socket` mostra `0`.
 - **Nada roda sozinho.** Sugestões e receitas só preenchem a linha.
-- **Seus dados ficam com você,** em `~/.local/share/kofterm` (pasta 0700). Senhas do `sudo` não passam pelo editor e não são gravadas.
+- **Seus dados ficam com você,** em `~/.local/share/kofterm` (pasta 0700). Senhas do `sudo` não passam pelo editor; linhas com senha, token ou chave (e linhas começando com espaço) rodam, mas não são gravadas no histórico.
 - **Estudo com ética.** Ferramentas de varredura e captura vêm com o aviso: só na sua rede de laboratório ou com autorização por escrito.
 - **Não instala nada.** Quando falta uma ferramenta, ele explica como instalar; a decisão é sua.
 

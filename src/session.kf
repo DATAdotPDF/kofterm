@@ -80,9 +80,22 @@ class Session {
         return esc() + "[" + r + ";" + c + "H"
     }
 
+    // Ao abrir, tira do histórico gravado o que tiver cara de segredo (de versões antigas, que
+    // ainda não filtravam) e regrava o arquivo sem essas linhas.
     loadHistory() {
-        for (var line in loadLines(histPath)) {
-            hist.add(line)
+        var lines = loadLines(histPath)
+        var kept = ""
+        var removed = 0
+        for (var line in lines) {
+            if (privateLine(line)) {
+                removed = removed + 1
+            } else {
+                hist.add(line)
+                kept = kept + line + "\n"
+            }
+        }
+        if (removed > 0) {
+            saveFile(histPath, kept)
         }
         hist.resetBrowse()
     }
@@ -756,7 +769,8 @@ class Session {
         var line = ed.line
         editing = false
         ed.clear()
-        if (hist.add(line)) {
+        // senha, token ou linha começando com espaço: vai para o bash, mas não fica gravada
+        if (!privateLine(line) && hist.add(line)) {
             appendLine(histPath, line)
         }
         hist.resetBrowse()

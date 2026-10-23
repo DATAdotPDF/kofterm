@@ -124,43 +124,9 @@ class Anonymizer {
         return "<ARG>"
     }
 
+    // Para contribuir, o critério é o rígido: qualquer "export X=..." também sai.
     Boolean isSecret(String raw) {
-        var low = raw.toLowerCase()
-        for (var hint in listOf("password", "passwd=", "--pass", "pass=", "pwd=", "token", "secret",
-                "apikey", "api_key", "api-key", "authorization", "bearer", "private_key", "privatekey",
-                "sshpass", "aws_access", "aws_secret", "credential")) {
-            if (low.contains(hint)) {
-                return true
-            }
-        }
-        var toks = anonTokens(raw)
-        if (toks.size > 0 && toks.get(0) == "export") {
-            for (var t in toks) {
-                if (t.contains("=")) {
-                    return true
-                }
-            }
-        }
-        var i = 0
-        while (i < toks.size) {
-            var t = toks.get(i)
-            if ((t == "-u" || t == "--user") && i + 1 < toks.size && toks.get(i + 1).contains(":")) {
-                return true
-            }
-            if ((toks.get(0) == "mysql" || toks.get(0) == "mariadb") && t.startsWith("-p") && t.length() > 2) {
-                return true
-            }
-            // pedaco longo misturando letras e numeros: chave, token ou hash
-            var v = t
-            if (t.contains("=")) {
-                v = t.substring(t.indexOf("=") + 1, t.length())
-            }
-            if (v.length() >= 24 && !v.contains("/") && anonHasDigit(v) && anonHasLetter(v)) {
-                return true
-            }
-            i = i + 1
-        }
-        return false
+        return secretLine(raw, true)
     }
 
     // Validador do CI: "" se a linha do arquivo .kofdata esta ok, senao o motivo.
@@ -278,6 +244,62 @@ Boolean isOperator(String t) {
         }
     }
     return false
+}
+
+// A linha tem cara de segredo (senha, token, chave)? `strict` é o critério das contribuições:
+// ali, qualquer "export X=..." também conta. No histórico local, "export PATH=..." fica.
+Boolean secretLine(String raw, Boolean strict) {
+    var low = raw.toLowerCase()
+    for (var hint in listOf("password", "passwd=", "--pass", "pass=", "pwd=", "token", "secret",
+            "apikey", "api_key", "api-key", "authorization", "bearer", "private_key", "privatekey",
+            "sshpass", "aws_access", "aws_secret", "credential")) {
+        if (low.contains(hint)) {
+            return true
+        }
+    }
+    var toks = anonTokens(raw)
+    if (strict && toks.size > 0 && toks.get(0) == "export") {
+        for (var t in toks) {
+            if (t.contains("=")) {
+                return true
+            }
+        }
+    }
+    var i = 0
+    while (i < toks.size) {
+        var t = toks.get(i)
+        if ((t == "-u" || t == "--user") && i + 1 < toks.size && toks.get(i + 1).contains(":")) {
+            return true
+        }
+        if ((toks.get(0) == "mysql" || toks.get(0) == "mariadb") && t.startsWith("-p") && t.length() > 2) {
+            return true
+        }
+        // usuário e senha dentro de uma URL: https://usuario:senha@servidor
+        var at = t.indexOf("://")
+        if (at >= 0) {
+            var rest = t.substring(at + 3, t.length())
+            var arroba = rest.indexOf("@")
+            if (arroba > 0 && rest.substring(0, arroba).contains(":")) {
+                return true
+            }
+        }
+        // pedaco longo misturando letras e numeros: chave, token ou hash
+        var v = t
+        if (t.contains("=")) {
+            v = t.substring(t.indexOf("=") + 1, t.length())
+        }
+        if (v.length() >= 24 && !v.contains("/") && anonHasDigit(v) && anonHasLetter(v)) {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+// Linha que não deve ser gravada no histórico nem ensinar o modelo: começa com espaço (a mesma
+// convenção do Bash, HISTCONTROL=ignorespace) ou tem cara de segredo.
+Boolean privateLine(String line) {
+    return line.startsWith(" ") || secretLine(line, false)
 }
 
 // Separa a linha em palavras, mantendo juntos os trechos entre aspas.
@@ -500,4 +522,19 @@ test "o minimo de repeticoes filtra o que e raro" {
     b.add("", "git status", "", "git")
     var out = b.build(3, "t")
     assert(out.size == 3 && out.get(2) == "L 3 git status", "so o que apareceu 3 vezes")
+}
+
+test "segredos ficam fora do historico local" {
+    assert(privateLine("mysql -u root -pS3nhaForte banco"), "senha do mysql")
+    assert(privateLine("export GITHUB_TOKEN=ghp_abc"), "token")
+    assert(privateLine("git clone https://pedro:minhasenha@github.com/x/y"), "senha na URL")
+    assert(privateLine("curl -u admin:admin123 http://192.168.56.101"), "usuario:senha")
+    assert(privateLine("sshpass -p segredo ssh aluno@lab"), "sshpass")
+    assert(privateLine("echo a8f5f167f44f4964e6c998dee827110c4d9a1b2c"), "chave longa")
+    assert(privateLine(" comando com espaco na frente"), "espaco na frente, como no bash")
+    assert(!privateLine("ls -la"), "comando comum fica")
+    assert(!privateLine("export PATH=$PATH:~/bin"), "export comum fica no historico local")
+    assert(!privateLine("ssh aluno@192.168.56.101"), "ssh sem senha fica")
+    assert(!privateLine("git clone https://github.com/DATAdotPDF/kofterm"), "URL sem senha fica")
+    assert(secretLine("export PATH=$PATH:~/bin", true), "para contribuir, qualquer export sai")
 }

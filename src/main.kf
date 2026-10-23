@@ -75,7 +75,20 @@ main() {
     for (var f in listFiles(findShared(dir, "datasets/contrib"), ".kofdata")) {
         brain.loadContrib(loadLines(f))
     }
-    var events = loadLines(brain.eventsPath)
+    // o arquivo de eventos também perde o que tiver cara de segredo (gravado por versões antigas)
+    var allEvents = loadLines(brain.eventsPath)
+    var events = listOf<String>()
+    var keptEvents = ""
+    for (var e in allEvents) {
+        var parts = splitOn(e, "\u0009")
+        if (!privateLine(parts.get(parts.size - 1))) {
+            events.add(e)
+            keptEvents = keptEvents + e + "\n"
+        }
+    }
+    if (events.size != allEvents.size) {
+        saveFile(brain.eventsPath, keptEvents)
+    }
     if (events.size == 0) {
         // primeira vez com a Fase 4: aproveita o historico da Fase 2 (sem codigos de saida)
         var prev = ""

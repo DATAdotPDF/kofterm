@@ -10,7 +10,9 @@ privacidade são regras do projeto, não detalhes.
   mostra `0`.
 - **Nada roda sozinho.** Sugestões e receitas só preenchem a linha.
 - **Seus dados ficam com você**, em `~/.local/share/kofterm` (pasta 0700, arquivos 0600).
-  Senhas digitadas em `sudo` não passam pelo editor do KofTerm e não são gravadas.
+  Senhas digitadas em `sudo` não passam pelo editor do KofTerm e não são gravadas. Linhas com
+  cara de segredo (senha, token, chave, `usuario:senha` numa URL) e linhas que começam com
+  espaço rodam normalmente, mas não vão para o histórico nem ensinam o modelo.
 - **Contribuições anonimizadas.** `kofterm contribute --preview` mostra tudo antes de sair da
   máquina; caminhos, nomes, IPs, e-mails e segredos são removidos.
 

@@ -108,6 +108,7 @@ Digite o texto **sem apertar Enter**, faça a ação e confira a linha.
 | E.2 | Digite (sem Enter) `chmod -R 777 /` e `dd if=/dev/zero of=/dev/sda` | Também em vermelho | |
 | E.3 ★ | `sudo -k; sudo ls /root` e a sua senha | A senha **não aparece** na tela e o comando roda | |
 | E.4 | `history \| tail -3` e `tail -3 ~/.local/share/kofterm/history` | A senha não aparece em lugar nenhum | |
+| E.4b ★ | Rode `export API_TOKEN=falso`, depois ` echo com espaco` (com um espaço antes) e `echo normal`; então `tail -3 ~/.local/share/kofterm/history` | Só `echo normal` aparece: segredos e linhas com espaço na frente não são gravados | |
 | E.5 | `ls -ld ~/.local/share/kofterm; ls -l ~/.local/share/kofterm/` | Pasta `drwx------`; `history` e `events` com `-rw-------` | |
 | E.6 ★ | `ls -l /proc/$PPID/fd \| grep -c socket` ($PPID aqui é o próprio KofTerm) | `0`: o KofTerm não tem nenhuma conexão de rede | |
 | E.7 | TAB numa sugestão **nunca** executa nada | Só preenche a linha | |

@@ -112,7 +112,7 @@ KofTerm sees what you type, so it follows rules that don't change:
 
 - **100% offline.** The program opens no network connections, and CI rejects network code. Check it: inside KofTerm, `ls -l /proc/$PPID/fd | grep -c socket` prints `0`.
 - **Nothing runs by itself.** Suggestions and recipes only fill the line.
-- **Your data stays with you,** in `~/.local/share/kofterm` (folder 0700). `sudo` passwords don't go through the editor and are never saved.
+- **Your data stays with you,** in `~/.local/share/kofterm` (folder 0700). `sudo` passwords don't go through the editor; lines with a password, token or key (and lines starting with a space) still run but are never saved to the history.
 - **Ethical study.** Scanning and capture tools come with a warning: only on your own lab network or with written permission.
 - **It installs nothing.** When a tool is missing, it explains how to install it; the decision is yours.
 
