@@ -32,7 +32,7 @@ Open source, 100% offline and written in <a href="https://koflang.github.io">KOF
   more nights studying and building cool things for the community, that makes me very happy &lt;3
 </p>
 <p align="center">
-  <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Doe%20um%20caf%C3%A9zin!&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a><br>
+  <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a><br>
   <sub>or Pix (Brazil, Itaú), random key: <code>a6a35680-c2cd-4e0e-ab3d-8c601cc159c4</code></sub>
 </p>
 
