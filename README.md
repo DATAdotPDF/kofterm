@@ -145,7 +145,7 @@ KofTerm is and will stay **free and open source**: no feature is behind a paymen
 | How | Where |
 | --- | --- |
 | **Pix** (Brazil, Itaú bank) | Random key: `a6a35680-c2cd-4e0e-ab3d-8c601cc159c4` |
-| **Buy Me a Coffee** | Coming soon |
+| **Buy Me a Coffee** | <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Doe%20um%20caf%C3%A9zin!&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a> |
 
 Money is optional. Testing, suggesting a recipe or telling someone about the project helps just as much.
 

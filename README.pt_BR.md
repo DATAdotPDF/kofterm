@@ -145,7 +145,7 @@ O KofTerm é e continua **livre e gratuito**, para sempre: nenhuma função fica
 | Como | Onde |
 | --- | --- |
 | **Pix** (Brasil, banco Itaú) | Chave aleatória: `a6a35680-c2cd-4e0e-ab3d-8c601cc159c4` |
-| **Buy Me a Coffee** | Em breve |
+| **Buy Me a Coffee** | <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Doe%20um%20caf%C3%A9zin!&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a> |
 
 Apoiar com dinheiro é opcional. Testar, sugerir uma receita ou contar o projeto para alguém ajuda tanto quanto.
 
