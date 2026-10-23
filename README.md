@@ -138,6 +138,17 @@ KofTerm is open source and built to **help, cooperate and add up**. You **don't 
 
 Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
+## Support the project
+
+KofTerm is and will stay **free and open source**: no feature is behind a payment, and nothing changes for people who don't contribute. If it helped you and you'd like to support the project or its developer, any amount helps keep time dedicated to it.
+
+| How | Where |
+| --- | --- |
+| **Pix** (Brazil, Itaú bank) | Random key: `a6a35680-c2cd-4e0e-ab3d-8c601cc159c4` |
+| **Buy Me a Coffee** | Coming soon |
+
+Money is optional. Testing, suggesting a recipe or telling someone about the project helps just as much.
+
 ## What comes next
 
 An English index and recipes, more networking recipes, history search with Ctrl+R, a candidate list when completing files and, later, a small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes. See the [CHANGELOG](CHANGELOG.md) and the [issues](https://github.com/DATAdotPDF/kofterm/issues).

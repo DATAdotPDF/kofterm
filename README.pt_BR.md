@@ -138,6 +138,17 @@ O KofTerm é open source e feito para **ajudar, cooperar e somar**. Você **não
 
 Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_OF_CONDUCT.md)
 
+## Apoie o projeto
+
+O KofTerm é e continua **livre e gratuito**, para sempre: nenhuma função fica atrás de pagamento e nada muda para quem não contribuir. Se ele te ajudou e você quiser apoiar o projeto ou quem o desenvolve, qualquer valor ajuda a manter o tempo dedicado a ele.
+
+| Como | Onde |
+| --- | --- |
+| **Pix** (Brasil, banco Itaú) | Chave aleatória: `a6a35680-c2cd-4e0e-ab3d-8c601cc159c4` |
+| **Buy Me a Coffee** | Em breve |
+
+Apoiar com dinheiro é opcional. Testar, sugerir uma receita ou contar o projeto para alguém ajuda tanto quanto.
+
 ## Próximos passos
 
 Índice e receitas em inglês, mais receitas de redes, busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e, depois, um modelo neural pequeno em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais. Veja o [CHANGELOG](CHANGELOG.md) e as [issues](https://github.com/DATAdotPDF/kofterm/issues).
