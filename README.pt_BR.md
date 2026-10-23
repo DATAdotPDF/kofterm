@@ -26,6 +26,16 @@ Open source, 100% offline e escrito em <a href="https://koflang.github.io">KOF</
   <a href="docs/JOURNAL.md">Diário</a>
 </p>
 
+<p align="center">
+  <b>O KofTerm é e sempre vai ser de graça.</b> Nenhuma função fica atrás de pagamento.<br>
+  Mas se ele te ajudou e você sentir vontade de me pagar um cafézin (ou um Monster) pra eu virar<br>
+  mais noites estudando e criando coisas legais pra comunidade, fico muito feliz &lt;3
+</p>
+<p align="center">
+  <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Doe%20um%20caf%C3%A9zin!&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a><br>
+  <sub>ou Pix (Itaú), chave aleatória: <code>a6a35680-c2cd-4e0e-ab3d-8c601cc159c4</code></sub>
+</p>
+
 ---
 
 ```text
@@ -137,17 +147,6 @@ O KofTerm é open source e feito para **ajudar, cooperar e somar**. Você **não
 | Deixar o modelo mais esperto | `kofterm contribute --preview` mostra o que o seu modelo aprendeu, anonimizado; veja [datasets/contrib](datasets/contrib/README.md) |
 
 Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_OF_CONDUCT.md)
-
-## Apoie o projeto
-
-O KofTerm é e continua **livre e gratuito**, para sempre: nenhuma função fica atrás de pagamento e nada muda para quem não contribuir. Se ele te ajudou e você quiser apoiar o projeto ou quem o desenvolve, qualquer valor ajuda a manter o tempo dedicado a ele.
-
-| Como | Onde |
-| --- | --- |
-| **Pix** (Brasil, banco Itaú) | Chave aleatória: `a6a35680-c2cd-4e0e-ab3d-8c601cc159c4` |
-| **Buy Me a Coffee** | <a href="https://www.buymeacoffee.com/dotpdf"><img src="https://img.buymeacoffee.com/button-api/?text=Doe%20um%20caf%C3%A9zin!&emoji=&slug=dotpdf&button_colour=5F7FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee: dotpdf" height="40"></a> |
-
-Apoiar com dinheiro é opcional. Testar, sugerir uma receita ou contar o projeto para alguém ajuda tanto quanto.
 
 ## Próximos passos
 
