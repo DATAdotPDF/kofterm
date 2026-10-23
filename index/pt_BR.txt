@@ -761,7 +761,10 @@ $ ipcalc 10.0.0.0/8 | Uma rede classe A inteira.
 # python3
 > Roda programas em Python. No terminal também serve para tarefas rápidas, como um servidor web de teste.
 - -m | Roda um módulo da biblioteca padrão como programa.
-$ python3 -m http.server 8000 | Serve a pasta atual em http://SEU_IP:8000 (Ctrl-C para parar). Só no lab: qualquer um na rede vê os arquivos.
+- --directory | Com http.server: qual pasta servir (sem ela, serve a pasta atual inteira).
+- --bind | Com http.server: em qual endereço escutar. 127.0.0.1 deixa só esta máquina acessar.
+$ python3 -m http.server 8000 --directory site | Serve só a pasta site em http://SEU_IP:8000 (Ctrl-C para parar). Qualquer um na rede baixa o que estiver nela.
+$ python3 -m http.server 8000 --bind 127.0.0.1 | Só esta máquina acessa: ninguém da rede vê.
 $ python3 --version | Mostra a versão instalada.
 @ https://docs.python.org/3/library/http.server.html
 

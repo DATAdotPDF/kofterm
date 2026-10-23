@@ -785,6 +785,89 @@ Risk segmentRisk(List<String> w, Boolean root, String dir) {
     if (cmd == "git" && w.size > ci + 1 && w.get(ci + 1) == "push" && force) {
         return Risk(RiskLevel.CAUTION, "reescreve o histórico no servidor; o trabalho de outras pessoas pode se perder.")
     }
+    var web = riskWebShare(w, ci, cmd, dir, priv)
+    if (web.level > none.level) {
+        return web
+    }
+    return none
+}
+
+// Servidor web de teste (python3 -m http.server, php -S): qualquer um na rede baixa os arquivos
+// da pasta servida. Avisa quando ela é a pasta pessoal (tem ~/.ssh), a raiz ou uma pasta do
+// sistema; quem escuta só em 127.0.0.1/localhost não é visto pela rede e não ganha aviso.
+Risk riskWebShare(List<String> w, Int ci, String cmd, String dir, Boolean priv) {
+    var none = Risk(RiskLevel.NONE, "")
+    var served = ""
+    var bind = ""
+    var isWeb = false
+    var j = ci + 1
+    if (cmd == "python" || cmd == "python3" || cmd == "python2") {
+        while (j < w.size) {
+            var a = w.get(j)
+            if (a == "-m" && j + 1 < w.size && (w.get(j + 1) == "http.server" || w.get(j + 1) == "SimpleHTTPServer")) {
+                isWeb = true
+                j = j + 1
+            } else if ((a == "--directory" || a == "-d") && j + 1 < w.size) {
+                served = w.get(j + 1)
+                j = j + 1
+            } else if (a.startsWith("--directory=")) {
+                served = a.substring(12, a.length())
+            } else if ((a == "--bind" || a == "-b") && j + 1 < w.size) {
+                bind = w.get(j + 1)
+                j = j + 1
+            } else if (a.startsWith("--bind=")) {
+                bind = a.substring(7, a.length())
+            }
+            j = j + 1
+        }
+    } else if (cmd == "php") {
+        while (j < w.size) {
+            var a = w.get(j)
+            if (a == "-S" && j + 1 < w.size) {
+                isWeb = true
+                var addr = w.get(j + 1)
+                var colon = addr.lastIndexOf(":")
+                bind = addr
+                if (colon >= 0) {
+                    bind = addr.substring(0, colon)
+                }
+                j = j + 1
+            } else if (a == "-t" && j + 1 < w.size) {
+                served = w.get(j + 1)
+                j = j + 1
+            }
+            j = j + 1
+        }
+    }
+    if (!isWeb || bind == "127.0.0.1" || bind == "localhost" || bind == "::1") {
+        return none
+    }
+    // a pasta servida, com caminho completo quando der
+    var d = riskNorm(served)
+    var here = riskNorm(dir)
+    if (d.length() == 0 || d == ".") {
+        d = here
+    } else if (!d.startsWith("/") && !d.startsWith("~") && here.length() > 0) {
+        d = riskNorm(here + "/" + d)
+    }
+    if (d.length() == 0) {
+        return none // não sabemos onde estamos
+    }
+    var home = d == "~" || d == "/root" || riskIsHome(d)
+    var keys = d.endsWith("/.ssh") || d == "~/.ssh"
+    var system = d == "/" || RiskWords.SYSTEM.contains(" " + d + " ")
+    if (priv && (d == "/" || d == "/root" || d == "/etc")) {
+        return Risk(RiskLevel.DANGER, "como root, entrega " + riskWhat(d, dir) + " para qualquer um na rede, inclusive senhas (/etc/shadow) e chaves. Sirva só uma pasta com --directory.")
+    }
+    if (keys) {
+        return Risk(RiskLevel.CAUTION, "compartilha as suas chaves SSH com a rede: quem baixar entra nas suas máquinas.")
+    }
+    if (home) {
+        return Risk(RiskLevel.CAUTION, "compartilha a sua pasta pessoal inteira com a rede, inclusive ~/.ssh (suas chaves). Use --directory com uma pasta só para isso, ou --bind 127.0.0.1.")
+    }
+    if (system) {
+        return Risk(RiskLevel.CAUTION, "compartilha " + riskWhat(d, dir) + " com a rede. Use --directory com uma pasta só para isso.")
+    }
     return none
 }
 
@@ -970,6 +1053,27 @@ test "atencao depende do privilegio e da pasta" {
     assert(lineRisk("rm -rf build", false, "").level == N, "pasta comum")
     assert(lineRisk("ls -la 2>&1 | less", false, "").level == N, "2>&1 nao separa")
     assert(lineRisk("sudo reboot", false, "").reason.contains("SSH"), "explica o motivo")
+}
+
+test "servidor web de teste depende da pasta servida e do endereco" {
+    var C = RiskLevel.CAUTION
+    var N = RiskLevel.NONE
+    var D = RiskLevel.DANGER
+    var home = "/home/aluno"
+    assert(lineRisk("python3 -m http.server 8000", false, home).level == C, "pasta pessoal")
+    assert(lineRisk("python3 -m http.server 8000", false, home).reason.contains(".ssh"), "explica o ~/.ssh")
+    assert(lineRisk("python3 -m http.server", false, "/").level == C, "raiz")
+    assert(lineRisk("python3 -m http.server 8000 --directory ~", false, "/tmp").level == C, "--directory ~")
+    assert(lineRisk("python3 -m http.server -d .ssh", false, home).level == C, "chaves ssh")
+    assert(lineRisk("cd ~ && python3 -m http.server", false, "/tmp/lab").level == C, "cd ~ antes")
+    assert(lineRisk("php -S 0.0.0.0:8000", false, home).level == C, "php -S na pasta pessoal")
+    assert(lineRisk("sudo python3 -m http.server 80", false, "/").level == D, "root servindo a raiz")
+    assert(lineRisk("python3 -m http.server 8000", true, "/root").level == D, "shell de root na pasta do root")
+    assert(lineRisk("python3 -m http.server 8000", false, home + "/lab/site").level == N, "pasta de projeto")
+    assert(lineRisk("python3 -m http.server 8000 --directory site", false, home).level == N, "--directory relativo")
+    assert(lineRisk("python3 -m http.server 8000 --bind 127.0.0.1", false, home).level == N, "so nesta maquina")
+    assert(lineRisk("php -S localhost:8000", false, home).level == N, "php so local")
+    assert(lineRisk("python3 -m venv .venv", false, home).level == N, "outro modulo")
 }
 
 test "perigoso nunca e aprendido nem sugerido" {

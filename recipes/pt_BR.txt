@@ -752,11 +752,20 @@ $ nc -lvnp {porta}
 > Fica esperando uma conexão na porta {porta} e mostra o que chegar. Ctrl-C para parar.
 
 # servidor web rápido
+? servidor web da pasta {pasta} na porta {porta}
+? compartilhar a pasta {pasta} na porta {porta}
 ? servidor web na porta {porta}
 ? subir um servidor http na porta {porta}
 ? compartilhar a pasta pela rede na porta {porta}
-$ python3 -m http.server {porta}
-> Serve a pasta atual em http://SEU_IP:{porta}. Qualquer um na rede vê os arquivos: use só no lab e pare com Ctrl-C.
+$ python3 -m http.server {porta} --directory {pasta}
+> Serve só a pasta {pasta} em http://SEU_IP:{porta}: qualquer um na rede baixa o que estiver nela. Troque {pasta} por uma pasta só com o que quer mostrar (nunca a pessoal, que tem ~/.ssh). Fica ligado até Ctrl-C.
+
+# servidor web só nesta máquina
+? servidor web so para mim na porta {porta}
+? servidor web local na porta {porta}
+? servidor http so nesta maquina na porta {porta}
+$ python3 -m http.server {porta} --bind 127.0.0.1 --directory {pasta}
+> Serve {pasta} só para esta máquina, em http://127.0.0.1:{porta}; ninguém da rede acessa. Fica ligado até Ctrl-C.
 
 # sistema operacional de uma máquina
 ? descobrir o sistema de {destino}

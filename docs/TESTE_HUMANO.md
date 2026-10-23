@@ -277,6 +277,7 @@ coluna. Nada é instalado sem você apertar Enter.
 |---|---|---|---|
 | P.1 | `kofterm uninstall` | Remove o programa; `history` e `events` continuam em `~/.local/share/kofterm` | |
 | P.2 | `cd ~/kofterm && ./install.sh` | Instala de novo; o que você ensinou continua (C.4 ainda sugere) | |
+| N.6 | Na pasta pessoal, digite sem Enter `python3 -m http.server 8000`; depois `python3 -m http.server 8000 --bind 127.0.0.1` | O primeiro mostra o aviso amarelo de Atenção (compartilha a pasta pessoal, inclusive ~/.ssh); o segundo não mostra aviso | |
 | P.3 | `kofterm update` | Mostra `cd ~/kofterm && git pull && ./install.sh` e avisa que nada foi baixado nem executado | |
 
 ## Q. Impressões gerais (texto livre)

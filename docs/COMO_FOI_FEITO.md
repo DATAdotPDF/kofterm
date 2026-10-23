@@ -11,7 +11,7 @@ A parte técnica do projeto: fases, arquitetura, mapa do repositório e o proces
 - **Fase 4 (o modelo que entende contexto): concluída.** A sugestão em cinza agora vem de um modelo local que aprende com cada comando que você roda: usa o que você digitou, o comando anterior, o tipo de pasta em que você está e quão recente é cada comando. Na linha vazia ele prevê o próximo comando, oferece `sudo` depois de "Permissão negada" e corrige o nome depois de "comando não encontrado". Também completa arquivos, pastas e opções, e nunca sugere comandos perigosos.
 - **Fase 5 (contribuição, instalador, primeira release): concluída.** `kofterm contribute` exporta o que o seu modelo aprendeu, anonimizado na sua máquina, para você revisar e enviar por pull request; o CI valida cada contribuição e a próxima versão aprende com ela. Instalação com um comando, pela release ou pelo código. **Primeira release: v0.5.0.**
 - **Fase 6 (o KofTerm desenha a própria tela): concluída.** Um emulador de terminal escrito em KOF (`vt.kf`) interpreta tudo o que o Bash e os programas escrevem, então o índice fica numa **coluna à direita** que os programas nunca tocam: o Bash, o `vim`, o `top` e o `less` enxergam só a área da esquerda. Funciona dentro de qualquer terminal Linux.
-- **Fase 7 (modo humanizado): concluída.** Digite `?` e o que você quer fazer, do seu jeito. O KofTerm acha a mais parecida entre 141 receitas escritas por pessoas (408 jeitos de pedir), preenche as lacunas e mostra o comando em cinza; o TAB coloca na linha, nada roda sozinho, e a coluna lateral explica cada parte.
+- **Fase 7 (modo humanizado): concluída.** Digite `?` e o que você quer fazer, do seu jeito. O KofTerm acha a mais parecida entre 142 receitas escritas por pessoas (413 jeitos de pedir), preenche as lacunas e mostra o comando em cinza; o TAB coloca na linha, nada roda sozinho, e a coluna lateral explica cada parte.
 - **Próximos passos:** o seu retorno como primeiro testador humano, mais receitas e entradas no índice, índice em inglês, lista de candidatos ao completar arquivos, modelo neural opcional em KOF puro (`kof-nn`).
 
 ## Funcionalidades
@@ -32,7 +32,7 @@ A parte técnica do projeto: fases, arquitetura, mapa do repositório e o proces
 | Aba do índice em tela cheia com busca (**F1** / **Ctrl+T**), 150 entradas em português (comandos, redes, usuários, serviços e caminhos importantes) | ✅ Fase 3 |
 | **Coluna do índice à direita** com explicação ao vivo da linha atual (**F2**, lembrado) | ✅ Fase 6 |
 | Emulador de terminal próprio: o Bash e os programas de tela cheia nunca escrevem por cima do índice | ✅ Fase 6 |
-| Modo humanizado: `? o que você quer` → comando real de 141 receitas revisadas | ✅ Fase 7 |
+| Modo humanizado: `? o que você quer` → comando real de 142 receitas revisadas | ✅ Fase 7 |
 | Cada opção explicada separadamente (`-ld` → `-l` + `-d`), com exemplos e links de leitura | ✅ Fase 3 |
 | Contribuição opcional e anonimizada do aprendizado de volta ao projeto via Git | ✅ Fase 5 |
 | Modelo neural pequeno opcional, treinado e executado em KOF puro (`kof-nn`) | Fase 8 (planejada) |

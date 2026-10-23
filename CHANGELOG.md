@@ -6,6 +6,8 @@ All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
 ### Added
 - `kofterm update` shows how to update this installation: `cd <your clone> && git pull && ./install.sh` when it was installed from source, or the release steps when it came from the ready-made package. It downloads and runs nothing (KofTerm stays offline); `kofterm install` now notes where it came from in `~/.local/share/kofterm/origem`, and installs made before that are recognized when the clone is in `~/kofterm`
+- A test web server is judged by the folder it serves: `python3 -m http.server` or `php -S` serving your home folder, `~/.ssh`, `/` or a system folder shows Caution ("shares your whole home folder with the network, including ~/.ssh"), and DANGER when done as root. Serving only on `127.0.0.1`/`localhost` (`--bind`) or a project folder (`--directory`) shows nothing. Found by Pedro's test: the recipe served the home folder
+- The web server recipe now serves only the folder you name (`--directory {pasta}`), and a new recipe serves only to this machine (`--bind 127.0.0.1`); `python3` index entry explains both options
 - README section "Update", including closing and reopening KofTerm windows that were already open (they keep the old version until reopened)
 
 ### Fixed
