@@ -30,6 +30,8 @@ extern "libc.so.6" lseek(Int fd, Long offset, Int whence): Long
 extern "libc.so.6" mkdir(String path, Int mode): Int
 extern "libc.so.6" chmod(String path, Int mode): Int
 extern "libc.so.6" readlink(String path, Long buf, Long size): Long
+// realpath(path, 0): caminho absoluto sem ".." num buffer novo (free depois); 0 se nao existe
+extern "libc.so.6" realpath(String path, Long resolved): Long
 extern "libc.so.6" access(String path, Int mode): Int
 extern "libc.so.6" opendir(String path): Long
 extern "libc.so.6" readdir(Long dir): Long // struct dirent*: d_type em +18, d_name em +19

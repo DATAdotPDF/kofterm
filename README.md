@@ -84,7 +84,7 @@ kofterm
 
 ### Update
 
-Install the new version over the old one. Your history and what KofTerm learned from you live in `~/.local/share/kofterm` and stay there.
+Run `kofterm update`: it shows the right command for your case, without downloading or running anything. In short, you install the new version over the old one. Your history and what KofTerm learned from you live in `~/.local/share/kofterm` and stay there.
 
 **If you installed from source**, inside the folder you cloned:
 

@@ -1,4 +1,4 @@
-// Subcomandos: kofterm [contribute|check|install|uninstall|doctor|selftest|version|help]
+// Subcomandos: kofterm [contribute|check|install|update|uninstall|doctor|selftest|version|help]
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
@@ -13,6 +13,7 @@ printHelp() {
     println("  kofterm contribute           grava kofterm-contrib.kofdata na pasta atual")
     println("  kofterm check ARQUIVO...     valida arquivos .kofdata (usado no CI)")
     println("  kofterm install              instala em ~/.local/share/kofterm e cria ~/.local/bin/kofterm")
+    println("  kofterm update               mostra como atualizar (nao baixa nada)")
     println("  kofterm uninstall            remove o programa (seu historico fica, a menos que use --purge)")
     println("  kofterm doctor               confere a instalacao e mostra onde ficam seus dados")
     println("  kofterm selftest             testa o terminal: sinais, saidas grandes, marcador e historico")
@@ -179,6 +180,12 @@ Int runInstall() {
     mkdir(home + "/.local/bin", Sys.MODE_755)
     unlink(home + "/.local/bin/kofterm")
     symlink(dir + "/kofterm", home + "/.local/bin/kofterm")
+    // de onde veio esta instalacao, para o `kofterm update` mostrar o comando certo
+    var origin = "release"
+    if (access(root + "/.git", 0) == 0) {
+        origin = "git " + absolutePath(root)
+    }
+    saveFile(dir + "/origem", origin + "\n")
     println("KofTerm " + Version.NUMBER + " instalado:")
     println("  programa: " + dir + "/kofterm (" + copied + " arquivos de indice e corpus)")
     println("  comando:  " + home + "/.local/bin/kofterm")
@@ -200,6 +207,8 @@ Int runUninstall(List<String> args) {
     unlink(home + "/.local/bin/kofterm")
     unlink(dir + "/kofterm")
     unlink(dir + "/bashrc")
+    unlink(dir + "/bashrc-login")
+    unlink(dir + "/origem")
     for (var sub in listOf("index", "corpus", "recipes", "datasets/contrib")) {
         for (var f in listFiles(dir + "/" + sub, "")) {
             unlink(f)
@@ -217,6 +226,63 @@ Int runUninstall(List<String> args) {
         println("KofTerm removido. Seu historico e o que o modelo aprendeu ficaram em " + dir)
         println("Para apagar tambem: kofterm uninstall --purge (rode antes de remover) ou rm -r " + dir)
     }
+    return 0
+}
+
+// Caminho absoluto e sem "..", ou o proprio caminho se nao existir.
+String absolutePath(String path) {
+    var p = realpath(path, 0L)
+    if (p == 0L) {
+        return path
+    }
+    var out = strndup(p, strlen(p))
+    free(p)
+    return out
+}
+
+// So mostra o comando de atualizacao: o KofTerm nao acessa a internet e nao roda nada sozinho.
+Int runUpdate() {
+    var dir = dataDir()
+    var home = getenv("HOME")
+    var releases = "https://github.com/DATAdotPDF/kofterm/releases"
+    println("KofTerm " + Version.NUMBER + " instalado.")
+    println("")
+    var origin = ""
+    var lines = loadLines(dir + "/origem")
+    if (lines.size > 0) {
+        origin = lines.get(0)
+    }
+    var repo = ""
+    if (origin.startsWith("git ")) {
+        repo = origin.substring(4, origin.length())
+    } else if (origin.length() == 0 && access(home + "/kofterm/.git", 0) == 0) {
+        repo = home + "/kofterm" // instalado por uma versao que ainda nao anotava a origem
+    }
+    if (repo.length() > 0 && access(repo + "/.git", 0) == 0) {
+        println("Você instalou pelo código, em " + repo + ". Para atualizar, rode:")
+        println("")
+        println("  cd " + repo + " && git pull && ./install.sh")
+    } else if (origin == "release") {
+        println("Você instalou pela release pronta. Para atualizar:")
+        println("")
+        println("  1. Baixe o kofterm-X.Y.Z-linux-x86_64.tar.gz novo e o SHA256SUMS de")
+        println("     " + releases)
+        println("  2. Na pasta onde baixou, rode (troque X.Y.Z pelo número da versão):")
+        println("")
+        println("  sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-X.Y.Z-linux-x86_64.tar.gz && ./kofterm-X.Y.Z-linux-x86_64/kofterm install")
+    } else {
+        println("Não sei de onde veio esta instalação. Use o caso que for o seu:")
+        println("")
+        println("  Pelo código (dentro da pasta onde você clonou o projeto):")
+        println("    git pull && ./install.sh")
+        println("")
+        println("  Pela release pronta: baixe o .tar.gz novo e o SHA256SUMS de " + releases)
+        println("    sha256sum -c SHA256SUMS --ignore-missing && tar -xzf kofterm-X.Y.Z-linux-x86_64.tar.gz && ./kofterm-X.Y.Z-linux-x86_64/kofterm install")
+    }
+    println("")
+    println("Seu histórico e o que o KofTerm aprendeu ficam em " + dir + " e continuam lá.")
+    println("O que mudou em cada versão: https://github.com/DATAdotPDF/kofterm/blob/main/CHANGELOG.md")
+    println("O KofTerm não acessa a internet: ele só mostrou o comando. Nada foi baixado nem executado.")
     return 0
 }
 
@@ -257,6 +323,9 @@ Int runSubcommand(List<String> args) {
     }
     if (cmd == "install") {
         return runInstall()
+    }
+    if (cmd == "update") {
+        return runUpdate()
     }
     if (cmd == "uninstall") {
         return runUninstall(args)

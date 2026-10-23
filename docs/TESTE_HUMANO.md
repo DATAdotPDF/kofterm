@@ -277,6 +277,7 @@ coluna. Nada é instalado sem você apertar Enter.
 |---|---|---|---|
 | P.1 | `kofterm uninstall` | Remove o programa; `history` e `events` continuam em `~/.local/share/kofterm` | |
 | P.2 | `cd ~/kofterm && ./install.sh` | Instala de novo; o que você ensinou continua (C.4 ainda sugere) | |
+| P.3 | `kofterm update` | Mostra `cd ~/kofterm && git pull && ./install.sh` e avisa que nada foi baixado nem executado | |
 
 ## Q. Impressões gerais (texto livre)
 

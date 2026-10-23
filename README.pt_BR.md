@@ -84,7 +84,7 @@ kofterm
 
 ### Atualizar
 
-Instale a versão nova por cima da antiga. Seu histórico e o que o KofTerm aprendeu com você ficam em `~/.local/share/kofterm` e continuam lá.
+Rode `kofterm update`: ele mostra o comando certo para o seu caso, sem baixar nem executar nada. Em resumo, você instala a versão nova por cima da antiga. Seu histórico e o que o KofTerm aprendeu com você ficam em `~/.local/share/kofterm` e continuam lá.
 
 **Se instalou pelo código**, dentro da pasta onde clonou:
 

@@ -5,6 +5,8 @@ All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 ## [Unreleased]
 
 ### Added
+- `kofterm update` shows how to update this installation: `cd <your clone> && git pull && ./install.sh` when it was installed from source, or the release steps when it came from the ready-made package. It downloads and runs nothing (KofTerm stays offline); `kofterm install` now notes where it came from in `~/.local/share/kofterm/origem`, and installs made before that are recognized when the clone is in `~/kofterm`
+- README section "Update"
 - 17 networking recipes for labs and Cisco studies: route to an IP (`ip route get`), add or remove an IP on an interface, renew the IP through DHCP (`nmcli`), restart the network, nearby Wi-Fi networks, IPv6 addresses, interface statistics, subnet calculation (`ipcalc`), MX, NS and TXT records, asking a specific DNS server (`dig @server`), testing a UDP port, listening on a port (`nc -lvnp`), a quick web server (`python3 -m http.server`) and OS detection (`nmap -O`, lab only). "pingar {site}" and "fazer ping em {site}" now reach the ping recipe
 - Index entries `ipcalc` (with its package, so KofTerm says how to install it when missing) and `python3` (150 entries, 141 recipes)
 - Versioning policy and the road to 1.0 in CONTRIBUTING (section "Versões") and the README
