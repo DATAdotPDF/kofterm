@@ -22,7 +22,8 @@ receitas do modo `?` e entradas do índice, escritas em português simples.
 4. [Abrir uma issue](#4-abrir-uma-issue)
 5. [Enviar um pull request](#5-enviar-um-pull-request)
 6. [Regras do projeto](#6-regras-do-projeto)
-7. [Reconhecimento](#7-reconhecimento)
+7. [Versões](#7-versões)
+8. [Reconhecimento](#8-reconhecimento)
 
 ---
 
@@ -161,7 +162,35 @@ alguma delas não entra, mas a gente ajuda você a encontrar outro caminho.
    aprendizado são anonimizadas e revisadas pela própria pessoa antes de sair da máquina.
 7. **Escrito para quem está aprendendo.** Frases curtas, sem jargão desnecessário.
 
-## 7. Reconhecimento
+## 7. Versões
+
+O KofTerm usa números no formato **MAJOR.MINOR.PATCH** ([Versionamento Semântico](https://semver.org/lang/pt-BR/)).
+Enquanto começar com **0.**, o projeto está em desenvolvimento e o comportamento ainda pode mudar
+entre versões.
+
+| Sobe o... | Quando | Exemplos |
+| --- | --- | --- |
+| **PATCH** (0.7.**1**) | Correção de bug, conteúdo novo (entradas no índice, receitas), texto, documentação, desempenho. Nenhuma tecla, subcomando ou formato de arquivo novo | Uma correção vinda de teste; mais receitas de redes |
+| **MINOR** (0.**8**.0) | Algo novo que a pessoa usa ou percebe (tecla, subcomando, painel, idioma), ou mudança no formato dos arquivos (histórico, eventos, receitas, índice), sempre com migração automática | Ctrl+R, lista de candidatos, rodinha do mouse, inglês |
+| **MAJOR** (**1**.0.0) | Promessa de estabilidade: a partir dela, quebrar compatibilidade só numa 2.0 | Veja os critérios abaixo |
+
+**Caminho até a 1.0** (o mesmo de "Próximos passos" no README):
+
+- **0.7.x:** correções do teste da 0.7.0 e receitas de redes.
+- **0.8.0, achar coisas:** busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e a rodinha do mouse rolando a saída antiga.
+- **0.9.0, para todo mundo:** índice e receitas em inglês, emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais. É a candidata à 1.0.
+- **1.0.0**, quando tudo isto for verdade:
+  1. o [roteiro de teste](docs/TESTE_HUMANO.md) rodado por pelo menos 2 ou 3 pessoas além do autor, em mais de uma distribuição (Kali, Ubuntu, Debian) e de um terminal (QTerminal, GNOME Terminal, xterm, tmux);
+  2. nenhuma limitação conhecida que atrapalhe o uso no dia a dia;
+  3. formatos de histórico, eventos, receitas e índice documentados e estáveis;
+  4. atualizar de uma versão para outra sem perder nada, testado;
+  5. os bugs do KOF que o projeto contorna ([#931](https://github.com/KofLang/Kof4j/issues/931) a [#934](https://github.com/KofLang/Kof4j/issues/934)) corrigidos no compilador, ou os contornos testados e documentados como definitivos.
+- **Depois da 1.0:** o modelo neural em KOF puro (`kof-nn`), numa 1.x. Se mudar muito a experiência, vira a 2.0.
+
+Toda versão sai com tag assinada, entrada no [CHANGELOG](CHANGELOG.md), CI verde (testes
+unitários e `kofterm selftest`) e o pacote `kofterm-X.Y.Z-linux-x86_64.tar.gz` com `SHA256SUMS`.
+
+## 8. Reconhecimento
 
 Toda contribuição aceita aparece:
 

@@ -150,7 +150,15 @@ Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_COND
 
 ## What comes next
 
-An English index and recipes, more networking recipes, history search with Ctrl+R, a candidate list when completing files and, later, a small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes. See the [CHANGELOG](CHANGELOG.md) and the [issues](https://github.com/DATAdotPDF/kofterm/issues).
+| Version | What goes in |
+| --- | --- |
+| **0.7.x** | Fixes from testing 0.7.0 and more networking recipes |
+| **0.8.0**, finding things | History search with Ctrl+R, a candidate list when completing files, and the mouse wheel scrolling old output |
+| **0.9.0**, for everyone | English index and recipes, emoji above U+FFFF, and a clear warning when the terminal is too narrow |
+| **1.0.0**, stable | Tested by other people on several distributions and terminals, no limitation that gets in the way, stable file formats |
+| **Later** | A small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes |
+
+How versions are numbered and the 1.0 criteria: [CONTRIBUTING, section Versões](CONTRIBUTING.md#7-versões) (in Portuguese). See also the [CHANGELOG](CHANGELOG.md) and the [issues](https://github.com/DATAdotPDF/kofterm/issues).
 
 **Known limitations:** the mouse wheel doesn't scroll old output inside KofTerm yet; the column needs at least 40 columns left for Bash; emoji above U+FFFF show as `�`.
 

@@ -150,7 +150,15 @@ Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_O
 
 ## Próximos passos
 
-Índice e receitas em inglês, mais receitas de redes, busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e, depois, um modelo neural pequeno em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais. Veja o [CHANGELOG](CHANGELOG.md) e as [issues](https://github.com/DATAdotPDF/kofterm/issues).
+| Versão | O que entra |
+| --- | --- |
+| **0.7.x** | Correções do teste da 0.7.0 e mais receitas de redes |
+| **0.8.0**, achar coisas | Busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e a rodinha do mouse rolando a saída antiga |
+| **0.9.0**, para todo mundo | Índice e receitas em inglês, emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais |
+| **1.0.0**, estável | Testado por outras pessoas em várias distribuições e terminais, sem limitação que atrapalhe, formatos de arquivo estáveis |
+| **Depois** | Um modelo neural pequeno em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais |
+
+Como as versões são numeradas e os critérios da 1.0: [CONTRIBUTING, seção Versões](CONTRIBUTING.md#7-versões). Veja também o [CHANGELOG](CHANGELOG.md) e as [issues](https://github.com/DATAdotPDF/kofterm/issues).
 
 **Limitações conhecidas:** a rodinha do mouse ainda não rola a saída antiga dentro do KofTerm; a coluna precisa que sobrem pelo menos 40 colunas para o Bash; emoji acima de U+FFFF aparecem como `�`.
 
