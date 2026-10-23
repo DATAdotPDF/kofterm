@@ -53,3 +53,6 @@ jobs:
         run: |
           ./build/kofterm/Default/Main version
           ./build/kofterm/Default/Main doctor
+
+      - name: Autoteste do PTY (sinais, saídas grandes, marcador de prompt, histórico)
+        run: timeout 600 ./build/kofterm/Default/Main selftest

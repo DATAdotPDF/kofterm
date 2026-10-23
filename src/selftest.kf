@@ -1,0 +1,419 @@
+// `kofterm selftest`: testes de segurança e confiabilidade do PTY, em KOF.
+// Abre o próprio binário num pseudo-terminal novo (pasta pessoal temporária), conversa com
+// ele como um terminal faria e confere sinais, código de saída, restauração do terminal,
+// saídas grandes e binárias, o marcador de prompt e o histórico. Roda no CI e na sua máquina.
+// Os comandos usados são inofensivos (echo, seq, printf, read, head de /dev/urandom).
+
+class StPty(Int pid, Int master)
+
+class St {
+    static Int WNOHANG = 1
+    static Int ICANON = 2
+    static Int ECHO = 8
+}
+
+// Milissegundos de um relógio que só anda para frente.
+Long stNow() {
+    var ts = malloc(16L)
+    clock_gettime(1, ts)
+    var ms = buffer.peek64(ts) * 1000L + buffer.peek64(ts + 8L) / 1000000L
+    free(ts)
+    return ms
+}
+
+String stExePath() {
+    var buf = malloc(4096L)
+    var n = readlink("/proc/self/exe", buf, 4095L)
+    var p = ""
+    if (n > 0L) {
+        p = strndup(buf, n)
+    }
+    free(buf)
+    return p
+}
+
+// Abre o kofterm num PTY de rows × cols, com HOME = `home`.
+StPty stSpawn(String exe, String home) {
+    var ws = malloc(8L)
+    buffer.poke8(ws, 40) // 40 linhas
+    buffer.poke8(ws + 1L, 0)
+    buffer.poke8(ws + 2L, 140) // 140 colunas
+    buffer.poke8(ws + 3L, 0)
+    buffer.poke64(ws + 4L, 0L)
+    var box = malloc(8L)
+    var pid = forkpty(box, 0L, 0L, ws)
+    if (pid == 0) {
+        setenv("HOME", home, 1)
+        setenv("TERM", "xterm-256color", 1)
+        unsetenv("KOFTERM")
+        var argv = malloc(16L)
+        var path = strdup(exe)
+        buffer.poke64(argv, path)
+        buffer.poke64(argv + 8L, 0L)
+        execvp(path, argv)
+        _exit(127)
+    }
+    var master = -1
+    if (pid > 0) {
+        master = buffer.peek32(box)
+    }
+    free(box)
+    free(ws)
+    return StPty(pid, master)
+}
+
+class StSession {
+    StPty p = StPty(-1, -1)
+    String out = ""
+    Long buf = 0L
+    Long fds = 0L
+    Long tmo = 0L
+
+    begin(StPty pty) {
+        p = pty
+        buf = malloc(16384L)
+        fds = malloc(8L)
+        tmo = malloc(16L)
+    }
+
+    // Lê o que estiver disponível por até `ms`; devolve false se o PTY fechou.
+    Boolean pump(Int ms) {
+        var fd = p.master
+        var pf = fds
+        buffer.poke32(pf, fd)
+        buffer.poke32(pf + 4L, 1) // POLLIN
+        var sec = (ms / 1000) as Long
+        var nsec = ((ms % 1000) * 1000000) as Long
+        buffer.poke64(tmo, sec)
+        buffer.poke64(tmo + 8L, nsec)
+        var r = ppoll(fds, 1L, tmo, 0L)
+        if (r <= 0) {
+            return true
+        }
+        var n = read(p.master, buf, 16384L)
+        if (n <= 0L) {
+            return false
+        }
+        // bytes NUL cortariam a String: viram espaço
+        var i = 0L
+        while (i < n) {
+            if (buffer.peek8(buf + i) == 0) {
+                buffer.poke8(buf + i, 32)
+            }
+            i = i + 1L
+        }
+        out = out + strndup(buf, n)
+        if (out.length() > 8192) {
+            out = out.substring(out.length() - 4096, out.length())
+        }
+        return true
+    }
+
+    // Espera `text` aparecer na saída; consome a saída até ali.
+    Boolean expect(String text, Int ms) {
+        var end = stNow() + (ms as Long)
+        while (stNow() < end) {
+            var at = out.indexOf(text)
+            if (at >= 0) {
+                out = out.substring(at + text.length(), out.length())
+                return true
+            }
+            if (!pump(100)) {
+                return out.indexOf(text) >= 0
+            }
+        }
+        return false
+    }
+
+    send(String s) {
+        var c = strdup(s)
+        writeAll(p.master, c, strlen(c))
+        free(c)
+    }
+
+    // Lê e descarta a saída por `ms` (dá tempo ao kofterm de reagir).
+    settle(Int ms) {
+        var end = stNow() + (ms as Long)
+        while (stNow() < end) {
+            if (!pump(50)) {
+                return
+            }
+        }
+    }
+
+    // Espera o kofterm terminar; devolve o código de saída ou -1 se não terminou a tempo.
+    Int waitExit(Int ms) {
+        var st = malloc(8L)
+        var end = stNow() + (ms as Long)
+        var code = -1
+        while (stNow() < end && code < 0) {
+            buffer.poke32(st, 0)
+            if (waitpid(p.pid, st, St.WNOHANG) == p.pid) {
+                var low = buffer.peek8(st)
+                if (low == 0) {
+                    code = buffer.peek8(st + 1L)
+                } else {
+                    code = 128 + (low % 128)
+                }
+            } else if (p.master >= 0) {
+                pump(50)
+            } else {
+                stSleep(50)
+            }
+        }
+        free(st)
+        return code
+    }
+
+    // O terminal voltou ao modo normal (eco e modo canônico ligados)?
+    Boolean termRestored() {
+        var t = malloc(64L)
+        var ok = tcgetattr(p.master, t) == 0
+        var lflag = buffer.peek32(t + 12L)
+        free(t)
+        return ok && (lflag / St.ICANON) % 2 == 1 && (lflag / St.ECHO) % 2 == 1
+    }
+
+    // Quem o kofterm abriu (o bash): primeiro pid em /proc/<pid>/task/<pid>/children.
+    Int childPid() {
+        var first = stReadProc("/proc/" + p.pid + "/task/" + p.pid + "/children")
+        var n = 0
+        var i = 0
+        while (i < first.length() && first.charAt(i) as Int >= 48 && first.charAt(i) as Int <= 57) {
+            n = n * 10 + (first.charAt(i) as Int - 48)
+            i = i + 1
+        }
+        if (i == 0) {
+            return -1
+        }
+        return n
+    }
+
+    finish() {
+        if (waitExit(10) < 0) {
+            stKill(p.pid, 9)
+            waitExit(2000)
+        }
+        if (p.master >= 0) {
+            close(p.master)
+        }
+        free(buf)
+        free(fds)
+        free(tmo)
+    }
+}
+
+// Arquivos de /proc dizem ter tamanho 0 (loadLines não serve): lê direto, até 4 KB.
+String stReadProc(String path) {
+    var fd = open(path, Sys.O_RDONLY, 0)
+    if (fd < 0) {
+        return ""
+    }
+    var buf = malloc(4096L)
+    var n = read(fd, buf, 4095L)
+    var s = ""
+    if (n > 0L) {
+        s = strndup(buf, n)
+    }
+    free(buf)
+    close(fd)
+    return s
+}
+
+// kill(-1) atinge todos os processos do usuário e kill(0) o grupo inteiro: só pids reais.
+stKill(Int pid, Int sig) {
+    if (pid > 1) {
+        kill(pid, sig)
+    }
+}
+
+stSleep(Int ms) {
+    var tmo = malloc(16L)
+    var sec = (ms / 1000) as Long
+    var nsec = ((ms % 1000) * 1000000) as Long
+    buffer.poke64(tmo, sec)
+    buffer.poke64(tmo + 8L, nsec)
+    ppoll(0L, 0L, tmo, 0L)
+    free(tmo)
+}
+
+// O processo ainda existe (e não é zumbi)?
+Boolean stAlive(Int pid) {
+    if (pid <= 0) {
+        return false
+    }
+    var s = stReadProc("/proc/" + pid + "/stat")
+    var paren = s.lastIndexOf(")")
+    return paren > 0 && s.length() > paren + 2 && s.substring(paren + 2, paren + 3) != "Z"
+}
+
+Boolean stGone(Int pid, Int ms) {
+    var end = stNow() + (ms as Long)
+    while (stNow() < end) {
+        if (!stAlive(pid)) {
+            return true
+        }
+        stSleep(50)
+    }
+    return !stAlive(pid)
+}
+
+class StReport {
+    Int failed = 0
+    Int passed = 0
+
+    check(Boolean ok, String name, String detail) {
+        if (ok) {
+            passed = passed + 1
+            println("  ok      " + name)
+        } else {
+            failed = failed + 1
+            println("  FALHOU  " + name + " (" + detail + ")")
+        }
+    }
+}
+
+// Abre um kofterm novo e espera ele aceitar comandos.
+StSession stStart(String exe, String home) {
+    var s = StSession()
+    s.begin(stSpawn(exe, home))
+    s.send("echo PRONTO_$((2*3))\r")
+    s.expect("PRONTO_6", 15000)
+    return s
+}
+
+Int runSelftest() {
+    var exe = stExePath()
+    var base = "/tmp/kofterm-selftest-" + randomToken().substring(0, 8)
+    mkdir(base, Sys.MODE_700)
+    var home = base + "/home"
+    mkdir(home, Sys.MODE_700)
+    var rep = StReport()
+    println("KofTerm " + Version.NUMBER + " · autoteste do PTY (pasta temporária " + base + ")")
+
+    // 1. código de saída repassado e terminal restaurado
+    var s = stStart(exe, home)
+    s.send("exit 7\r")
+    var code = s.waitExit(10000)
+    rep.check(code == 7, "exit 7 devolve 7", "veio " + code)
+    rep.check(s.termRestored(), "terminal restaurado depois do exit", "eco ou modo canônico desligado")
+    s.finish()
+
+    // 2. SIGTERM: sai com 143, restaura o terminal e não deixa bash órfão
+    s = stStart(exe, home)
+    var bash = s.childPid()
+    stKill(s.p.pid, Sys.SIGTERM)
+    code = s.waitExit(10000)
+    rep.check(code == 143, "SIGTERM: sai com 143", "veio " + code)
+    rep.check(s.termRestored(), "SIGTERM: terminal restaurado", "eco ou modo canônico desligado")
+    rep.check(bash > 0 && stGone(bash, 3000), "SIGTERM: nenhum bash órfão", "bash " + bash + " ainda vivo")
+    s.finish()
+
+    // 3. terminal fechado (o lado de fora some): sai e leva o bash junto
+    s = stStart(exe, home)
+    bash = s.childPid()
+    close(s.p.master)
+    s.p = StPty(s.p.pid, -1)
+    code = s.waitExit(10000)
+    rep.check(code >= 0, "terminal fechado: o kofterm sai", "não saiu em 10 s")
+    rep.check(bash > 0 && stGone(bash, 3000), "terminal fechado: nenhum bash órfão", "bash " + bash + " ainda vivo")
+    s.finish()
+
+    // 4. bash morto no meio: o kofterm sai e devolve o terminal
+    s = stStart(exe, home)
+    bash = s.childPid()
+    stKill(bash, 9)
+    code = s.waitExit(10000)
+    rep.check(code >= 0, "bash morto: o kofterm sai", "não saiu em 10 s")
+    rep.check(s.termRestored(), "bash morto: terminal restaurado", "eco ou modo canônico desligado")
+    s.finish()
+
+    // 5 a 9 numa sessão só
+    s = stStart(exe, home)
+    // 5. saída grande
+    s.send("seq 1 300000; echo FIM_$((1+1))\r")
+    rep.check(s.expect("FIM_2", 60000), "300 mil linhas de saída", "não terminou em 60 s")
+    s.send("echo VIVO_$((40+2))\r")
+    rep.check(s.expect("VIVO_42", 10000), "responde depois da saída grande", "sem resposta")
+    // 6. lixo binário
+    s.send("head -c 300000 /dev/urandom; echo; echo VIVO_$((40+3))\r")
+    rep.check(s.expect("VIVO_43", 60000), "300 KB de lixo binário", "sem resposta depois do lixo")
+    s.send("reset >/dev/null 2>&1; echo VIVO_$((40+4))\r")
+    s.expect("VIVO_44", 15000)
+    // 7. marcador imitado (formato antigo, sem o token): as teclas continuam indo para o read
+    s.send("printf '\\033]7770;0;1000;/tmp\\007'; read -r x; echo LIDO_$((1+4))\r")
+    s.settle(800)
+    s.send("segredo_falso_123\r")
+    rep.check(s.expect("LIDO_5", 10000), "marcador imitado: o read recebe as teclas", "o read não terminou")
+    // 8. rajada de redimensionamentos durante a saída
+    s.send("seq 1 100000; echo FIM_$((2+2))\r")
+    var ws = malloc(8L)
+    var k = 0
+    while (k < 60) {
+        buffer.poke8(ws, 30 + k % 15)
+        buffer.poke8(ws + 1L, 0)
+        buffer.poke8(ws + 2L, 90 + k % 40)
+        buffer.poke8(ws + 3L, 0)
+        buffer.poke64(ws + 4L, 0L)
+        ioctl(s.p.master, Sys.TIOCSWINSZ, ws)
+        s.pump(15)
+        k = k + 1
+    }
+    free(ws)
+    rep.check(s.expect("FIM_4", 60000), "60 redimensionamentos durante a saída", "não terminou")
+    s.send("echo VIVO_$((40+5))\r")
+    rep.check(s.expect("VIVO_45", 10000), "responde depois dos redimensionamentos", "sem resposta")
+    // 9. nenhum socket de rede aberto
+    var sockets = 0
+    var d = opendir("/proc/" + s.p.pid + "/fd")
+    if (d != 0L) {
+        var link = malloc(256L)
+        var ent = readdir(d)
+        while (ent != 0L) {
+            var name = strndup(ent + 19L, strlen(ent + 19L))
+            var n = readlink("/proc/" + s.p.pid + "/fd/" + name, link, 255L)
+            if (n > 0L && strndup(link, n).startsWith("socket:")) {
+                sockets = sockets + 1
+            }
+            ent = readdir(d)
+        }
+        free(link)
+        closedir(d)
+    }
+    rep.check(sockets == 0, "nenhum socket de rede aberto", "" + sockets + " sockets")
+    // 10. linha com senha não vai para o histórico; linha comum vai
+    s.send("echo comum_$((1+0)) --password=falsa_456\r")
+    // espera o prompt voltar: o que se digita com um comando rodando vai direto ao bash
+    s.expect("comum_1", 10000)
+    s.settle(600)
+    s.send("echo normal_$((3+4))\r")
+    s.expect("normal_7", 10000)
+    s.settle(600)
+    s.send("exit\r")
+    s.waitExit(10000)
+    s.finish()
+    var hist = loadLines(home + "/.local/share/kofterm/history")
+    var joined = ""
+    for (var h in hist) {
+        joined = joined + h + "\n"
+    }
+    rep.check(!joined.contains("segredo_falso_123"), "marcador imitado: nada capturado no histórico", "o segredo foi gravado")
+    rep.check(!joined.contains("falsa_456"), "linha com senha fora do histórico", "a senha foi gravada")
+    rep.check(joined.contains("normal_"), "linha comum no histórico", "histórico vazio")
+
+    // apaga a pasta temporária (só o que o próprio teste criou)
+    var data = home + "/.local/share/kofterm"
+    for (var f in listFiles(data, "")) {
+        unlink(f)
+    }
+    rmdir(data)
+    rmdir(home + "/.local/share")
+    rmdir(home + "/.local")
+    unlink(home + "/.bash_history")
+    rmdir(home)
+    rmdir(base)
+
+    println("")
+    println("" + rep.passed + " ok, " + rep.failed + " falharam")
+    return rep.failed
+}

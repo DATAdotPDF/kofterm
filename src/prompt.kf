@@ -1,10 +1,14 @@
 // Detector do marcador de prompt na saida do bash.
 //
 // O bashrc do kofterm poe no fim do PS1 a sequencia invisivel
-//   ESC ] 7770 ; <codigo de saida> ; <uid efetivo> ; <pasta atual> BEL
-// O uid diz se o shell e de root (sudo -i): as receitas mudam para quem ja e root.
+//   ESC ] 7770 ; <token> ; <codigo de saida> ; <uid efetivo> ; <pasta atual> BEL
 // Quando ela aparece, o bash esta esperando um comando e o cursor esta no inicio da linha
-// a digitar. O marcador nunca chega a tela.
+// a digitar. O marcador nunca chega a tela. O uid diz se o shell e de root (sudo -i).
+//
+// O token e sorteado a cada inicio (so o bashrc do kofterm, numa pasta 0700, o conhece).
+// Sem ele, qualquer saida (um `cat` de arquivo, uma pagina baixada) poderia imitar o
+// marcador e fazer o kofterm capturar teclas que eram de outro programa, como uma senha.
+// Marcador com token errado, ou longo demais, e descartado em silencio.
 // Modulo puro (sem libc), testado com `kof test src/prompt.kf`.
 
 class Feed {
@@ -17,8 +21,19 @@ class Feed {
 class PromptScanner {
     List<Int> prefix = listOf(27, 93, 55, 55, 55, 48, 59) // ESC ] 7 7 7 0 ;
     List<Int> payload = listOf<Int>()
+    List<Int> token = listOf<Int>()
     Int matched = 0
     Boolean inPayload = false
+    Int MAX_PAYLOAD = 4096 // uma pasta muito longa ainda cabe; um "marcador" sem fim, nao
+
+    setToken(String t) {
+        token = listOf<Int>()
+        var i = 0
+        while (i < t.length()) {
+            token.add(t.charAt(i) as Int)
+            i = i + 1
+        }
+    }
 
     // Os bytes guardados num falso alarme sao sempre o comeco do prefixo, entao basta saber
     // quantos foram: nao e preciso criar uma lista a cada ESC (o top manda centenas por quadro).
@@ -37,7 +52,17 @@ class PromptScanner {
             if (b == 7) {
                 inPayload = false
                 matched = 0
-                return Feed.MARK
+                if (tokenOk()) {
+                    return Feed.MARK
+                }
+                payload = listOf<Int>() // imitacao: descartada, nada muda
+                return Feed.HOLD
+            }
+            if (payload.size >= MAX_PAYLOAD) {
+                inPayload = false
+                matched = 0
+                payload = listOf<Int>()
+                return Feed.HOLD
             }
             payload.add(b)
             return Feed.HOLD
@@ -59,32 +84,42 @@ class PromptScanner {
         return Feed.FLUSH
     }
 
+    // O primeiro campo do payload e exatamente o token.
+    Boolean tokenOk() {
+        if (token.size == 0 || payload.size <= token.size || payload.get(token.size) != 59) {
+            return false
+        }
+        var i = 0
+        while (i < token.size) {
+            if (payload.get(i) != token.get(i)) {
+                return false
+            }
+            i = i + 1
+        }
+        return true
+    }
+
     // Depois de um FLUSH: os bytes guardados ja foram repassados.
     clearHeld() {
         heldN = 0
     }
 
-    // Codigo de saida do comando anterior (antes do primeiro ';' do payload).
-    Int status() {
-        var code = 0
+    // Onde comeca o campo `n` do payload (0 = token).
+    Int fieldStart(Int n) {
         var i = 0
-        while (i < payload.size && payload.get(i) != 59) {
-            var c = payload.get(i)
-            if (c >= 48 && c <= 57) {
-                code = code * 10 + (c - 48)
+        var seps = 0
+        while (i < payload.size && seps < n) {
+            if (payload.get(i) == 59) {
+                seps = seps + 1
             }
             i = i + 1
         }
-        return code
+        return i
     }
 
-    // Uid efetivo do shell (segundo campo); -1 se faltar.
-    Int euid() {
-        var i = 0
-        while (i < payload.size && payload.get(i) != 59) {
-            i = i + 1
-        }
-        i = i + 1
+    // Numero do campo `n`; -1 se nao houver digitos.
+    Int numberField(Int n) {
+        var i = fieldStart(n)
         var code = 0
         var digits = 0
         while (i < payload.size && payload.get(i) != 59) {
@@ -101,17 +136,24 @@ class PromptScanner {
         return code
     }
 
-    // Bytes da pasta atual (depois do segundo ';'), em UTF-8. A pasta pode ter ';'.
+    // Codigo de saida do comando anterior (campo 1).
+    Int status() {
+        var s = numberField(1)
+        if (s < 0) {
+            return 0
+        }
+        return s
+    }
+
+    // Uid efetivo do shell (campo 2); -1 se faltar.
+    Int euid() {
+        return numberField(2)
+    }
+
+    // Bytes da pasta atual (o resto, depois do terceiro ';'), em UTF-8. A pasta pode ter ';'.
     List<Int> cwdBytes() {
         var out = listOf<Int>()
-        var i = 0
-        var seps = 0
-        while (i < payload.size && seps < 2) {
-            if (payload.get(i) == 59) {
-                seps = seps + 1
-            }
-            i = i + 1
-        }
+        var i = fieldStart(3)
         while (i < payload.size) {
             out.add(payload.get(i))
             i = i + 1
@@ -147,11 +189,34 @@ List<Int> scanAll(PromptScanner s, List<Int> bytes, List<Int> marks) {
     return out
 }
 
-test "marcador some da tela e traz o codigo de saida" {
+// Texto ASCII em bytes; "^" vira ESC e "~" vira BEL (para escrever os testes).
+List<Int> pmBytes(String s) {
+    var out = listOf<Int>()
+    var i = 0
+    while (i < s.length()) {
+        var c = s.substring(i, i + 1)
+        if (c == "^") {
+            out.add(27)
+        } else if (c == "~") {
+            out.add(7)
+        } else {
+            out.add(s.charAt(i) as Int)
+        }
+        i = i + 1
+    }
+    return out
+}
+
+PromptScanner pmScanner() {
     var s = PromptScanner()
+    s.setToken("a1b2")
+    return s
+}
+
+test "marcador some da tela e traz o codigo de saida" {
+    var s = pmScanner()
     var marks = listOf<Int>()
-    // "$ " + ESC ] 7770 ; 127 ; 1000 ; /tmp BEL
-    var out = scanAll(s, listOf(36, 32, 27, 93, 55, 55, 55, 48, 59, 49, 50, 55, 59, 49, 48, 48, 48, 59, 47, 116, 109, 112, 7), marks)
+    var out = scanAll(s, pmBytes("$ ^]7770;a1b2;127;1000;/tmp~"), marks)
     assert(out.size == 2, "so o prompt visivel")
     assert(marks.size == 1 && marks.get(0) == 127, "status 127")
     assert(s.euid() == 1000, "uid 1000")
@@ -159,37 +224,66 @@ test "marcador some da tela e traz o codigo de saida" {
 }
 
 test "shell de root e pasta com ponto e virgula" {
-    var s = PromptScanner()
+    var s = pmScanner()
     var marks = listOf<Int>()
-    // ESC ] 7770 ; 0 ; 0 ; /a;b BEL
-    scanAll(s, listOf(27, 93, 55, 55, 55, 48, 59, 48, 59, 48, 59, 47, 97, 59, 98, 7), marks)
+    scanAll(s, pmBytes("^]7770;a1b2;0;0;/a;b~"), marks)
     assert(s.euid() == 0, "root")
     assert(s.cwdBytes().size == 4, "cwd /a;b inteira")
 }
 
 test "outro OSC (titulo da janela) passa intacto" {
-    var s = PromptScanner()
+    var s = pmScanner()
     var marks = listOf<Int>()
-    // ESC ] 0 ; t BEL
-    var out = scanAll(s, listOf(27, 93, 48, 59, 116, 7), marks)
+    var out = scanAll(s, pmBytes("^]0;t~"), marks)
     assert(out.size == 6, "seis bytes devolvidos")
     assert(out.get(0) == 27 && out.get(2) == 48, "ordem preservada")
     assert(marks.size == 0, "sem marcador")
 }
 
 test "marcador cortado entre dois reads" {
-    var s = PromptScanner()
+    var s = pmScanner()
     var marks = listOf<Int>()
-    scanAll(s, listOf(27, 93, 55, 55), marks)
-    var out = scanAll(s, listOf(55, 48, 59, 48, 59, 47, 7), marks)
+    scanAll(s, pmBytes("^]77"), marks)
+    var out = scanAll(s, pmBytes("70;a1b2;0;1000;/~"), marks)
     assert(out.size == 0, "nada visivel")
     assert(marks.size == 1 && marks.get(0) == 0, "status 0")
 }
 
 test "ESC dentro de falso alarme recomeca a busca" {
-    var s = PromptScanner()
+    var s = pmScanner()
     var marks = listOf<Int>()
-    var out = scanAll(s, listOf(27, 27, 93, 55, 55, 55, 48, 59, 48, 59, 47, 7), marks)
+    var out = scanAll(s, pmBytes("^^]7770;a1b2;0;1000;/~"), marks)
     assert(out.size == 1 && out.get(0) == 27, "primeiro ESC devolvido")
     assert(marks.size == 1, "marcador achado")
+}
+
+test "marcador imitado (sem o token) e ignorado" {
+    var s = pmScanner()
+    var marks = listOf<Int>()
+    // um arquivo ou pagina com o formato antigo, ou com um token chutado
+    var out = scanAll(s, pmBytes("^]7770;0;1000;/tmp~^]7770;zzzz;0;0;/~^]7770;a1b;0;0;/~ok"), marks)
+    assert(marks.size == 0, "nenhum prompt falso")
+    assert(out.size == 2, "so o texto depois aparece")
+    // e o verdadeiro continua funcionando depois
+    scanAll(s, pmBytes("^]7770;a1b2;0;1000;/~"), marks)
+    assert(marks.size == 1, "marcador verdadeiro aceito")
+}
+
+test "marcador sem fim nao cresce sem limite" {
+    var s = pmScanner()
+    var marks = listOf<Int>()
+    var big = listOf<Int>()
+    for (var b in pmBytes("^]7770;a1b2;")) {
+        big.add(b)
+    }
+    var i = 0
+    while (i < 5000) {
+        big.add(120)
+        i = i + 1
+    }
+    scanAll(s, big, marks)
+    assert(s.payload.size <= 4096, "payload limitado")
+    assert(!s.inPayload, "voltou ao normal")
+    scanAll(s, pmBytes("^]7770;a1b2;0;1000;/~"), marks)
+    assert(marks.size == 1, "e o proximo prompt funciona")
 }

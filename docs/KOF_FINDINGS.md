@@ -104,6 +104,29 @@ tela montada num buffer C com `stpcpy`. **Sugestão:** internar literais (um obj
 
 ---
 
+## 6. Constante `static` não serve de valor para `buffer.poke*` dentro de método de classe (ainda não reportado)
+
+```kof
+extern "libc.so.6" malloc(Long n): Long
+class K {
+    static Int V = 1
+}
+class C {
+    Long p = 0L
+    go() {
+        p = malloc(8L)
+        buffer.poke32(p, K.V)   // SEM025: Cannot resolve method 'poke32' on namespace 'buffer'
+    }
+}
+```
+
+Falha também com `var v = K.V` antes, e com `poke8`. Funciona com o literal (`poke32(p, 1)`) e
+funciona a mesma chamada numa função de nível de arquivo (`main.kf` usa `Sys.POLLIN` assim). O
+erro aponta uma linha abaixo da chamada. Achado escrevendo o `kofterm selftest` (0.7).
+**Contorno:** literal com comentário (`buffer.poke32(pf + 4L, 1) // POLLIN`).
+
+---
+
 ## Outras observações (não são bugs, mas valem para a documentação)
 
 - `charAt(i)` devolve um caractere, não `String`: `s.charAt(0) == " "` é sempre falso. Usar

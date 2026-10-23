@@ -40,8 +40,14 @@ main() {
 
     var dir = dataDir()
     var rcPath = dir + "/bashrc"
-    saveFile(rcPath, shellRc(dir, false))
-    saveFile(dir + "/bashrc-login", shellRc(dir, true)) // para sudo -i (comeca em ~)
+    // token sorteado: so o bashrc do kofterm (pasta 0700) sabe escrever o marcador de prompt
+    var token = randomToken()
+    if (token.length() == 0) {
+        println("kofterm: nao consegui ler /dev/urandom")
+        process.exit(1)
+    }
+    saveFile(rcPath, shellRc(dir, false, token))
+    saveFile(dir + "/bashrc-login", shellRc(dir, true, token)) // para sudo -i (comeca em ~)
 
     // Sinais bloqueados ANTES do fork: nenhum chega no meio da preparacao.
     var sfd = sigOpen()
@@ -100,6 +106,7 @@ main() {
     brain.loadEvents(events)
     var keys = KeyDecoder()
     var scanner = PromptScanner()
+    scanner.setToken(token)
 
     ttyRaw(Sys.STDIN)
     session.start(winRows(ws), winCols(ws))

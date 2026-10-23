@@ -169,6 +169,27 @@ Boolean commandInstalled(String name) {
     return false
 }
 
+// 24 caracteres hexadecimais de /dev/urandom: o token do marcador de prompt desta sessao.
+String randomToken() {
+    var hex = "0123456789abcdef"
+    var out = ""
+    var fd = open("/dev/urandom", Sys.O_RDONLY, 0)
+    var buf = malloc(12L)
+    if (fd >= 0 && read(fd, buf, 12L) == 12L) {
+        var i = 0L
+        while (i < 12L) {
+            var b = buffer.peek8(buf + i)
+            out = out + hex.substring(b / 16, b / 16 + 1) + hex.substring(b % 16, b % 16 + 1)
+            i = i + 1L
+        }
+    }
+    free(buf)
+    if (fd >= 0) {
+        close(fd)
+    }
+    return out
+}
+
 // Um arquivo compartilhado: o que acompanha o binario em uso, ou o instalado.
 String findShared(String dataDirPath, String rel) {
     var near = sourceRoot() + "/" + rel
@@ -246,7 +267,8 @@ List<String> commandArgs() {
 }
 
 // bashrc do kofterm: carrega o ~/.bashrc do usuario e poe o marcador invisivel
-// (ESC ] 7770 ; status ; uid ; pasta BEL) no fim do prompt. Sem readline (bash --noediting),
+// (ESC ] 7770 ; token ; status ; uid ; pasta BEL) no fim do prompt; o token desta sessao
+// impede que uma saida qualquer imite o marcador (veja prompt.kf). Sem readline (bash --noediting),
 // o \[ \] do PS1 nao e necessario.
 //
 // O gancho se reinstala a cada prompt: o ~/.bashrc do Kali faz
@@ -257,7 +279,7 @@ List<String> commandArgs() {
 // arquivo, e o KofTerm deixaria de ver o prompt. As funcoes sudo e bash abaixo abrem esses
 // shells ja com este arquivo; qualquer outro uso de sudo/bash passa direto. A linha digitada
 // continua a mesma (a tela mostra "sudo -i").
-String shellRc(String dir, Boolean login) {
+String shellRc(String dir, Boolean login, String token) {
     var esc = "\u001b"
     var bel = "\u0007"
     var rc = dir + "/bashrc"
@@ -278,7 +300,7 @@ String shellRc(String dir, Boolean login) {
         "}\n" +
         "bash() { if [ $# -eq 0 ]; then command bash --noediting --rcfile \"$__kofterm_rc\" -i; else command bash \"$@\"; fi; }\n" +
         "[ -f ~/.bashrc ] && . ~/.bashrc\n" +
-        "__kofterm_mark='" + esc + "]7770;$__kofterm_s;$EUID;$PWD" + bel + "'\n" +
+        "__kofterm_mark='" + esc + "]7770;" + token + ";$__kofterm_s;$EUID;$PWD" + bel + "'\n" +
         "__kofterm_pre() { __kofterm_s=$?; }\n" +
         "__kofterm_hook() {\n" +
         "  if [[ \"$(declare -p PROMPT_COMMAND 2>/dev/null)\" == \"declare -a\"* ]]; then\n" +

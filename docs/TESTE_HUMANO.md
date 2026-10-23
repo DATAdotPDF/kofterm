@@ -268,6 +268,8 @@ coluna. Nada é instalado sem você apertar Enter.
 | N.1 ★ | `exit` | A tela de **antes** de abrir o KofTerm volta (como no vim) | |
 | N.2 | Feche a janela com o KofTerm aberto; abra outra e rode `stty -a \| head -3` | Nada estranho; `pgrep -a kofterm` não mostra processos esquecidos | |
 | N.3 | No terminal de fora: `kofterm < /dev/null` | Mensagem "a entrada padrão não é um terminal", sem travar | |
+| N.4 ★ | No terminal de fora: `kofterm selftest` | Cerca de 30 s de linhas `ok`, termina com "19 ok, 0 falharam"; nenhuma pasta `/tmp/kofterm-selftest-*` fica para trás | |
+| N.5 | Dentro do KofTerm: `printf '\033]7770;0;1000;/tmp\007'; read -r x`, digite `teste123` e Enter; depois `grep -c teste123 ~/.local/share/kofterm/history` | O `read` termina normalmente e o grep mostra `0` (um marcador falso não captura o que você digita) | |
 
 ## P. Instalação (opcional, no fim)
 

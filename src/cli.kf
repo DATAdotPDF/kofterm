@@ -1,4 +1,4 @@
-// Subcomandos: kofterm [contribute|check|install|uninstall|doctor|version|help]
+// Subcomandos: kofterm [contribute|check|install|uninstall|doctor|selftest|version|help]
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
@@ -15,6 +15,7 @@ printHelp() {
     println("  kofterm install              instala em ~/.local/share/kofterm e cria ~/.local/bin/kofterm")
     println("  kofterm uninstall            remove o programa (seu historico fica, a menos que use --purge)")
     println("  kofterm doctor               confere a instalacao e mostra onde ficam seus dados")
+    println("  kofterm selftest             testa o terminal: sinais, saidas grandes, marcador e historico")
     println("  kofterm version              mostra a versao")
     println("")
     println("Dentro do terminal: TAB aceita a sugestao, F2 mostra o indice na lateral, F1 busca no indice,")
@@ -259,6 +260,9 @@ Int runSubcommand(List<String> args) {
     }
     if (cmd == "uninstall") {
         return runUninstall(args)
+    }
+    if (cmd == "selftest") {
+        return runSelftest()
     }
     if (cmd == "doctor") {
         return runDoctor()

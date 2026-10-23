@@ -13,6 +13,12 @@ privacidade são regras do projeto, não detalhes.
   Senhas digitadas em `sudo` não passam pelo editor do KofTerm e não são gravadas. Linhas com
   cara de segredo (senha, token, chave, `usuario:senha` numa URL) e linhas que começam com
   espaço rodam normalmente, mas não vão para o histórico nem ensinam o modelo.
+- **Só o Bash do KofTerm fala com o KofTerm.** O marcador invisível que avisa "o prompt
+  voltou" leva um token sorteado a cada início; uma saída qualquer (um arquivo, uma página, um
+  programa pedindo senha) não consegue imitá-lo para capturar o que você digita.
+- **Testado de verdade.** `kofterm selftest` abre o próprio KofTerm num terminal novo e confere
+  sinais, restauração do terminal, saídas enormes e binárias, o marcador e o histórico. O CI roda
+  a cada push.
 - **Contribuições anonimizadas.** `kofterm contribute --preview` mostra tudo antes de sair da
   máquina; caminhos, nomes, IPs, e-mails e segredos são removidos.
 
