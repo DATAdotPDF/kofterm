@@ -288,7 +288,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | R.1 ★ | Rode `ping -c 1 127.0.0.1` e `ls`; depois digite `ping` e aperte Ctrl+R | A coluna vira "Histórico" e lista o `ping` que você rodou; o cinza mostra `→ ping -c 1 127.0.0.1` | |
 | R.2 ★ | Enter | O `ping` vai para a linha e **não roda**; Enter de novo roda | |
 | R.3 | Digite `xyz`, Ctrl+R, depois Esc | A linha volta a ser `xyz` | |
-| R.4 ★ | `cd /etc` e digite `ls sys` + TAB (sem Enter) | A coluna vira "Arquivos" e lista `sysctl.conf`, `sysctl.d/`, `systemd/`... (pastas em azul). Se aparecer um cinza antes, o primeiro TAB aceita o cinza; apague-o e tente de novo | |
+| R.4 ★ | `cd /etc` e digite `ls sys` + TAB (sem Enter) | A coluna vira "Arquivos" e lista os nomes que começam com `sys` (no Kali: `sysctl.d/`, `sysstat/`, `systemd/`; pastas em azul). Se aparecer um cinza antes, o primeiro TAB aceita o cinza; apague-o e tente de novo | |
 | R.5 ★ | TAB algumas vezes, depois Enter | O escolhido muda a cada TAB; o Enter coloca o nome na linha, sem rodar | |
 | R.6 ★ | Rode `seq 1 3000` e role a roda do mouse para cima | Os números antigos voltam; no topo, uma faixa "↑ N linhas acima" | |
 | R.7 | Shift+PgUp e Shift+PgDn | Rolam meia tela de cada vez | |
