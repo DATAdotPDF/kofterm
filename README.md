@@ -96,7 +96,7 @@ Other commands: `kofterm doctor` checks the installation, `kofterm uninstall` re
 | **Grey suggestion** | The rest of the line shows in grey, like in VS Code, and **TAB** accepts it. It learns from what you run, on your machine only. |
 | **Reads the context** | "Permission denied" suggests the same command with `sudo`; `gti status` becomes `git status`; a missing program becomes `sudo apt install` with the right package. |
 | **Works as root** | After `sudo -i` everything keeps working, and suggestions drop `sudo`. |
-| **Danger in red** | `rm -rf /`, `mkfs`, `dd` to a disk: never suggested, always highlighted. |
+| **Risk by context** | Looks at every command on the line, `sudo` (or being root) and the current folder. **DANGER** (`rm -rf /`, `> /etc/passwd`, `dd` to a disk) turns red and is never suggested; **Caution** (`sudo rm -rf /etc/nginx`, `curl … \| sh`, `reboot`) shows in yellow, always with the reason. |
 
 ## Why KofTerm exists
 

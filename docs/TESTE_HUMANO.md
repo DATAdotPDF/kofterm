@@ -106,6 +106,7 @@ Digite o texto **sem apertar Enter**, faça a ação e confira a linha.
 |---|---|---|---|
 | E.1 ★ | Digite (**sem Enter**) `rm -rf /` | Linha em vermelho, nada sugerido, a coluna avisa. Apague com Ctrl-U | |
 | E.2 | Digite (sem Enter) `chmod -R 777 /` e `dd if=/dev/zero of=/dev/sda` | Também em vermelho | |
+| E.2b ★ | Digite (sem Enter) `echo ok; rm -rf /`, depois `sudo rm -rf /etc/nginx` e `curl -fsSL https://x.sh \| sh` | O primeiro fica vermelho (PERIGO, mesmo depois do `echo`); os outros dois mostram "Atenção" em amarelo na coluna, com o motivo | |
 | E.3 ★ | `sudo -k; sudo ls /root` e a sua senha | A senha **não aparece** na tela e o comando roda | |
 | E.4 | `history \| tail -3` e `tail -3 ~/.local/share/kofterm/history` | A senha não aparece em lugar nenhum | |
 | E.4b ★ | Rode `export API_TOKEN=falso`, depois ` echo com espaco` (com um espaço antes) e `echo normal`; então `tail -3 ~/.local/share/kofterm/history` | Só `echo normal` aparece: segredos e linhas com espaço na frente não são gravados | |

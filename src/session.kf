@@ -344,7 +344,7 @@ class Session {
                 ghost = brain.suggest(ed.line, cwd, feats)
             }
             var lineAttr = ""
-            if (isDangerous(ed.line)) {
+            if (lineRisk(ed.line, recipes.asRoot, cwd).level == RiskLevel.DANGER) {
                 lineAttr = "1;31" // perigoso: em vermelho
             }
             var total = startCol + ed.line.length() + ghost.length()
@@ -601,10 +601,17 @@ class Session {
             }
             return out
         }
-        if (isDangerous(ed.line)) {
+        // risco pelo contexto (todos os comandos da linha, sudo/root e a pasta atual), com o motivo
+        var risk = lineRisk(ed.line, recipes.asRoot, cwd)
+        if (risk.level == RiskLevel.DANGER) {
             out.add("")
-            for (var t in wrapText("⚠ Cuidado: este comando pode apagar ou estragar o sistema ou seus dados.", w - 1)) {
+            for (var t in wrapText("⚠ PERIGO: este comando " + risk.reason + " O KofTerm nunca sugere isso.", w - 1)) {
                 out.add(" " + esc() + "[1;31m" + t + esc() + "[0m")
+            }
+        } else if (risk.level == RiskLevel.CAUTION) {
+            out.add("")
+            for (var t in wrapText("⚠ Atenção: este comando " + risk.reason, w - 1)) {
+                out.add(" " + esc() + "[1;33m" + t + esc() + "[0m")
             }
         }
         var entries = tab.index.entriesForLine(ed.line)

@@ -383,57 +383,431 @@ String fixLine(Model m, String prev, Int status, String outputLower, List<String
     return ""
 }
 
-// Comandos que podem destruir o sistema ou dados. Nunca sao sugeridos e ficam em vermelho.
+// ---------- risco de um comando, pelo contexto ----------
+// O risco depende do comando, dos argumentos, do privilégio (sudo, root) e da pasta atual.
+// PERIGO: destrói o sistema, o disco ou a pasta pessoal; nunca é sugerido e fica em vermelho.
+// ATENÇÃO: pode fazer estrago ou cortar o acesso; a coluna avisa, mas o comando pode ser sugerido.
+
+class RiskLevel {
+    static Int NONE = 0
+    static Int CAUTION = 1
+    static Int DANGER = 2
+}
+
+class Risk(Int level, String reason)
+
+class RiskWords {
+    // pastas do sistema: apagar ou trocar permissões delas (ou de tudo dentro) quebra a máquina
+    static String SYSTEM = " /home /root /etc /usr /boot /var /bin /sbin /lib /lib32 /lib64 /opt /srv /sys /proc /dev "
+    // arquivos vitais: sobrescrever ou abrir as permissões é perigo
+    static String VITAL = " /etc/passwd /etc/shadow /etc/gshadow /etc/group /etc/sudoers /etc/fstab "
+    static String SHELLS = " sh bash zsh dash ksh fish python python3 perl ruby "
+    static String DISK = " /dev/sd /dev/nvme /dev/hd /dev/mmcblk /dev/vd /dev/xvd "
+}
+
 Boolean isDangerous(String line) {
-    var compact = ""
-    for (var w in splitWords(line, " ")) {
-        compact = compact + w
+    return lineRisk(line, false, "").level == RiskLevel.DANGER
+}
+
+// O maior risco entre todos os comandos da linha (separados por ; && || | &).
+Risk lineRisk(String line, Boolean root, String cwd) {
+    var compact = line.replace(" ", "")
+    if (compact.contains(":(){")) {
+        return Risk(RiskLevel.DANGER, "é uma \"fork bomb\": cria processos sem parar até travar a máquina.")
     }
-    if (compact.contains(":(){") || compact.contains(">/dev/sd") || compact.contains(">/dev/nvme")) {
-        return true
+    // "echo x>/dev/sda", sem espaço antes do >
+    for (var d in splitWords(RiskWords.DISK, " ")) {
+        if (compact.contains(">" + d) && !compact.contains(">>" + d)) {
+            return Risk(RiskLevel.DANGER, "escreve direto num disco e apaga o que há nele.")
+        }
     }
-    var words = splitWords(line, " ")
+    var best = Risk(RiskLevel.NONE, "")
+    var segs = riskSegments(line)
+    var dir = cwd
     var i = 0
-    while (i < words.size && (words.get(i) == "sudo" || words.get(i).startsWith("-") && i > 0 && words.get(i - 1) == "sudo")) {
+    while (i < segs.size) {
+        var seg = segs.get(i)
+        var words = riskWords(seg)
+        // "cd /pasta && ..." muda a pasta em que os próximos comandos rodam
+        if (words.size >= 2 && words.get(0) == "cd") {
+            dir = words.get(1)
+        }
+        var r = segmentRisk(words, root, dir)
+        // "curl ... | sh": roda um script baixado sem a pessoa ler
+        if (i + 1 < segs.size) {
+            var next = riskWords(segs.get(i + 1))
+            var cmd = riskCommand(words)
+            var ncmd = riskCommand(next)
+            if ((cmd == "curl" || cmd == "wget") && RiskWords.SHELLS.contains(" " + ncmd + " ")) {
+                r = riskMax(r, Risk(RiskLevel.CAUTION, "roda um script baixado da internet sem você ler antes. Baixe, leia e só depois execute."))
+            }
+        }
+        best = riskMax(best, r)
         i = i + 1
     }
-    if (i >= words.size) {
-        return false
+    return best
+}
+
+Risk riskMax(Risk a, Risk b) {
+    if (b.level > a.level) {
+        return b
     }
-    var cmd = words.get(i)
-    var recursive = false
-    var targets = listOf<String>()
-    var j = i + 1
-    while (j < words.size) {
-        var w = words.get(j)
-        if (w == "--recursive" || w == "--no-preserve-root" || w.startsWith("-") && !w.startsWith("--") && (w.contains("r") || w.contains("R"))) {
-            recursive = true
-        } else if (!w.startsWith("-")) {
-            targets.add(w)
-        }
-        j = j + 1
-    }
-    if (cmd.startsWith("mkfs")) {
-        return true
-    }
-    if (cmd == "dd") {
-        for (var t in targets) {
-            if (t.startsWith("of=/dev/sd") || t.startsWith("of=/dev/nvme") || t.startsWith("of=/dev/hd") || t.startsWith("of=/dev/mmcblk")) {
-                return true
+    return a
+}
+
+// Separa a linha nos operadores ; && || | & (fora de aspas).
+List<String> riskSegments(String line) {
+    var out = listOf<String>()
+    var cur = ""
+    var quote = ""
+    var i = 0
+    while (i < line.length()) {
+        var c = line.substring(i, i + 1)
+        if (quote.length() > 0) {
+            if (c == quote) {
+                quote = ""
             }
-        }
-    }
-    var critical = listOf("/", "/*", "~", "~/", "~/*", "*", "/home", "/etc", "/usr", "/boot", "/var", "/bin", "/lib", "$HOME")
-    if (recursive && (cmd == "rm" || cmd == "chmod" || cmd == "chown")) {
-        for (var t in targets) {
-            for (var c in critical) {
-                if (t == c) {
-                    return true
+            cur = cur + c
+        } else if (c == "'" || c == "\"") {
+            quote = c
+            cur = cur + c
+        } else if (c == ";" || c == "|" || c == "&") {
+            // "2>&1" e ">&" são redirecionamentos, não separadores
+            if (c == "&" && cur.endsWith(">")) {
+                cur = cur + c
+            } else {
+                if (cur.trim().length() > 0) {
+                    out.add(cur)
+                }
+                cur = ""
+                if (i + 1 < line.length() && line.substring(i + 1, i + 2) == c) {
+                    i = i + 1
                 }
             }
+        } else {
+            cur = cur + c
+        }
+        i = i + 1
+    }
+    if (cur.trim().length() > 0) {
+        out.add(cur)
+    }
+    return out
+}
+
+// Palavras do trecho, sem as aspas em volta.
+List<String> riskWords(String seg) {
+    var out = listOf<String>()
+    for (var w in splitWords(seg.trim(), " ")) {
+        var v = w
+        if (v.length() >= 2 && (v.startsWith("'") && v.endsWith("'") || v.startsWith("\"") && v.endsWith("\""))) {
+            v = v.substring(1, v.length() - 1)
+        }
+        out.add(v)
+    }
+    return out
+}
+
+// Índice da palavra que é o comando, pulando sudo/doas (e as opções deles), env, nohup, time,
+// nice, command, exec e VAR=valor. -1 se não houver comando.
+Int riskCommandIndex(List<String> w) {
+    var i = 0
+    while (i < w.size) {
+        var t = w.get(i)
+        if (t == "sudo" || t == "doas") {
+            i = i + 1
+            while (i < w.size && w.get(i).startsWith("-")) {
+                var o = w.get(i)
+                if (o == "-u" || o == "-g" || o == "-C" || o == "-D" || o == "-h" || o == "-p" || o == "-r" || o == "-t" || o == "-U") {
+                    i = i + 2
+                } else {
+                    i = i + 1
+                }
+            }
+        } else if (t == "env" || t == "nohup" || t == "time" || t == "command" || t == "exec") {
+            i = i + 1
+        } else if (t == "nice") {
+            i = i + 1
+            if (i < w.size && w.get(i) == "-n") {
+                i = i + 2
+            }
+        } else if (t.contains("=") && !t.startsWith("-") && !t.startsWith("/")) {
+            i = i + 1
+        } else {
+            return i
+        }
+    }
+    return -1
+}
+
+String riskCommand(List<String> w) {
+    var i = riskCommandIndex(w)
+    if (i < 0) {
+        return ""
+    }
+    var c = w.get(i)
+    var slash = c.lastIndexOf("/")
+    if (slash >= 0) {
+        c = c.substring(slash + 1, c.length())
+    }
+    return c
+}
+
+Boolean riskPrivileged(List<String> w, Boolean root) {
+    if (root) {
+        return true
+    }
+    for (var t in w) {
+        if (t == "sudo" || t == "doas") {
+            return true
         }
     }
     return false
+}
+
+// Alvo sem barra no fim e com o ~ e $HOME escritos de um jeito só.
+String riskNorm(String t) {
+    var v = t.replace("${HOME}", "~").replace("$HOME", "~")
+    while (v.length() > 1 && v.endsWith("/")) {
+        v = v.substring(0, v.length() - 1)
+    }
+    return v
+}
+
+// O alvo apaga o sistema inteiro, uma pasta do sistema ou a pasta pessoal?
+Boolean riskCritical(String target, String dir) {
+    var t = riskNorm(target)
+    if (t == "/" || t == "/*" || t == "~" || t == "~/*" || t == "~/.") {
+        return true
+    }
+    if (RiskWords.SYSTEM.contains(" " + t + " ")) {
+        return true
+    }
+    if (t.endsWith("/*") && RiskWords.SYSTEM.contains(" " + t.substring(0, t.length() - 2) + " ")) {
+        return true
+    }
+    // "*" e "." valem a pasta atual: perigo na raiz, na pasta pessoal ou se não sabemos onde estamos
+    if (t == "*" || t == "." || t == "./*" || t == ".*") {
+        var d = riskNorm(dir)
+        return d.length() == 0 || d == "/" || d == "~" || d == "/root" || riskIsHome(d) || RiskWords.SYSTEM.contains(" " + d + " ")
+    }
+    return false
+}
+
+// /home/<nome> exatamente (a pasta pessoal de alguém).
+Boolean riskIsHome(String d) {
+    if (!d.startsWith("/home/")) {
+        return false
+    }
+    return !d.substring(6, d.length()).contains("/")
+}
+
+// Dentro de uma pasta do sistema (/etc/nginx, /usr/lib/x...).
+Boolean riskInSystem(String target) {
+    var t = riskNorm(target)
+    for (var d in splitWords(RiskWords.SYSTEM, " ")) {
+        if (t.startsWith(d + "/")) {
+            return true
+        }
+    }
+    return false
+}
+
+Boolean riskDisk(String target) {
+    for (var d in splitWords(RiskWords.DISK, " ")) {
+        if (target.startsWith(d)) {
+            return true
+        }
+    }
+    return false
+}
+
+Risk segmentRisk(List<String> w, Boolean root, String dir) {
+    var none = Risk(RiskLevel.NONE, "")
+    var ci = riskCommandIndex(w)
+    var priv = riskPrivileged(w, root)
+    // redirecionamento ">" (sobrescreve) para disco, arquivo vital ou arquivo do sistema
+    var k = 0
+    while (k < w.size) {
+        var t = w.get(k)
+        var target = ""
+        if ((t == ">" || t == "1>" || t == ">|") && k + 1 < w.size) {
+            target = w.get(k + 1)
+        } else if (t.startsWith(">") && !t.startsWith(">>") && !t.startsWith(">&") && t.length() > 1) {
+            target = t.substring(1, t.length())
+        }
+        if (target.length() > 0) {
+            if (riskDisk(target)) {
+                return Risk(RiskLevel.DANGER, "escreve direto no disco " + target + " e apaga o que há nele.")
+            }
+            if (RiskWords.VITAL.contains(" " + target + " ")) {
+                return Risk(RiskLevel.DANGER, "apaga o conteúdo de " + target + ", um arquivo vital do sistema. Use >> para acrescentar.")
+            }
+            if (riskInSystem(target)) {
+                none = Risk(RiskLevel.CAUTION, "sobrescreve " + target + ", um arquivo do sistema. Faça uma cópia antes.")
+            }
+        }
+        k = k + 1
+    }
+    if (ci < 0) {
+        return none
+    }
+    var cmd = riskCommand(w)
+    var recursive = false
+    var force = false
+    var append = false
+    var opts = listOf<String>()
+    var targets = listOf<String>()
+    var j = ci + 1
+    while (j < w.size) {
+        var a = w.get(j)
+        if (a == "--recursive" || a == "--no-preserve-root" || a.startsWith("-") && !a.startsWith("--") && (a.contains("r") || a.contains("R"))) {
+            recursive = true
+        }
+        if (a == "--force" || a.startsWith("-") && !a.startsWith("--") && a.contains("f")) {
+            force = true
+        }
+        if (a == "-a" || a == "--append") {
+            append = true
+        }
+        if (a.startsWith("-")) {
+            opts.add(a)
+        } else if (!a.startsWith(">") && !a.startsWith("<") && !a.startsWith("2>")) {
+            targets.add(a)
+        }
+        j = j + 1
+    }
+
+    if (cmd == "rm" && recursive) {
+        for (var t in targets) {
+            if (riskCritical(t, dir)) {
+                return Risk(RiskLevel.DANGER, "apaga " + riskWhat(t, dir) + " inteiro, com tudo dentro e sem lixeira.")
+            }
+        }
+        for (var t in targets) {
+            if (riskInSystem(t) && priv) {
+                return Risk(RiskLevel.CAUTION, "apaga " + riskNorm(t) + " do sistema, com tudo dentro e sem lixeira. Confira o caminho duas vezes.")
+            }
+        }
+    }
+    if ((cmd == "chmod" || cmd == "chown" || cmd == "chgrp") && recursive) {
+        for (var t in targets) {
+            if (riskCritical(t, dir)) {
+                return Risk(RiskLevel.DANGER, "muda as permissões de " + riskWhat(t, dir) + " inteiro; o sistema pode parar de funcionar.")
+            }
+        }
+    }
+    if (cmd == "chmod") {
+        for (var t in targets) {
+            if (RiskWords.VITAL.contains(" " + riskNorm(t) + " ")) {
+                return Risk(RiskLevel.DANGER, "abre as permissões de " + riskNorm(t) + "; senhas e regras de acesso ficam expostas.")
+            }
+        }
+    }
+    if (cmd == "mv" && targets.size >= 2) {
+        var s = 0
+        while (s < targets.size - 1) {
+            if (riskCritical(targets.get(s), dir)) {
+                return Risk(RiskLevel.DANGER, "tira " + riskWhat(targets.get(s), dir) + " do lugar; o sistema para de funcionar.")
+            }
+            s = s + 1
+        }
+    }
+    if (cmd.startsWith("mkfs") || cmd == "wipefs" || cmd == "mkswap" || cmd == "shred") {
+        for (var t in targets) {
+            if (riskDisk(t) || cmd.startsWith("mkfs")) {
+                return Risk(RiskLevel.DANGER, "apaga " + t + ": tudo o que está no disco ou na partição se perde.")
+            }
+        }
+    }
+    if (cmd == "dd") {
+        for (var t in targets) {
+            if (t.startsWith("of=") && riskDisk(t.substring(3, t.length()))) {
+                return Risk(RiskLevel.DANGER, "grava por cima do disco " + t.substring(3, t.length()) + " e apaga tudo nele.")
+            }
+        }
+    }
+    if (cmd == "fdisk" || cmd == "parted" || cmd == "gdisk" || cmd == "sfdisk" || cmd == "cfdisk") {
+        for (var t in targets) {
+            if (riskDisk(t)) {
+                return Risk(RiskLevel.CAUTION, "altera as partições de " + t + "; um erro apaga os dados do disco.")
+            }
+        }
+    }
+    if (cmd == "find" && targets.size > 0 && riskCritical(targets.get(0), dir)) {
+        for (var o in w) {
+            if (o == "-delete" || o == "rm") {
+                return Risk(RiskLevel.DANGER, "apaga arquivos em " + riskWhat(targets.get(0), dir) + " inteiro.")
+            }
+        }
+    }
+    if (cmd == "tee" && !append) {
+        for (var t in targets) {
+            if (RiskWords.VITAL.contains(" " + riskNorm(t) + " ")) {
+                return Risk(RiskLevel.DANGER, "apaga o conteúdo de " + riskNorm(t) + ". Para acrescentar, use tee -a.")
+            }
+            if (riskInSystem(t) && priv) {
+                return Risk(RiskLevel.CAUTION, "sobrescreve " + riskNorm(t) + ". Para acrescentar, use tee -a.")
+            }
+        }
+    }
+    if (cmd == "shutdown" || cmd == "reboot" || cmd == "poweroff" || cmd == "halt" ||
+            cmd == "init" && targets.size > 0 && (targets.get(0) == "0" || targets.get(0) == "6") ||
+            cmd == "systemctl" && targets.size > 0 && (targets.get(0) == "poweroff" || targets.get(0) == "reboot" || targets.get(0) == "halt")) {
+        return Risk(RiskLevel.CAUTION, "desliga ou reinicia a máquina. Se você estiver por SSH, a conexão cai.")
+    }
+    if (cmd == "killall5" || cmd == "kill" && targets.size > 0 && targets.get(targets.size - 1) == "-1" || cmd == "kill" && opts.size > 0 && opts.get(opts.size - 1) == "-1") {
+        return Risk(RiskLevel.CAUTION, "encerra todos os seus programas de uma vez, inclusive esta sessão.")
+    }
+    if (cmd == "iptables" || cmd == "ip6tables") {
+        for (var o in w) {
+            if (o == "-F" || o == "--flush" || o == "DROP") {
+                return Risk(RiskLevel.CAUTION, "muda o firewall e pode cortar o seu acesso pela rede, inclusive por SSH.")
+            }
+        }
+    }
+    if (cmd == "nft" && w.size > ci + 1 && (w.get(ci + 1) == "flush" || w.get(ci + 1) == "delete")) {
+        return Risk(RiskLevel.CAUTION, "apaga regras do firewall; a máquina pode ficar exposta ou sem acesso.")
+    }
+    if (cmd == "ufw" && w.size > ci + 1 && w.get(ci + 1) == "reset") {
+        return Risk(RiskLevel.CAUTION, "apaga todas as regras do firewall.")
+    }
+    if (cmd == "crontab" && opts.size > 0 && opts.get(0) == "-r") {
+        return Risk(RiskLevel.CAUTION, "apaga todas as suas tarefas agendadas, sem perguntar.")
+    }
+    if (cmd == "userdel" && recursive || cmd == "deluser") {
+        for (var o in w) {
+            if (o == "-r" || o == "--remove-home" || o == "--remove-all-files") {
+                return Risk(RiskLevel.CAUTION, "apaga o usuário e a pasta pessoal dele, sem lixeira.")
+            }
+        }
+    }
+    if (cmd == "git" && w.size > ci + 1 && w.get(ci + 1) == "push" && force) {
+        return Risk(RiskLevel.CAUTION, "reescreve o histórico no servidor; o trabalho de outras pessoas pode se perder.")
+    }
+    return none
+}
+
+// Nome amigável do alvo: "a pasta pessoal", "o sistema", "/etc"...
+String riskWhat(String target, String dir) {
+    var t = riskNorm(target)
+    if (t == "/" || t == "/*") {
+        return "o sistema"
+    }
+    if (t == "~" || t == "~/*" || t == "~/.") {
+        return "a sua pasta pessoal"
+    }
+    if (t == "*" || t == "." || t == "./*" || t == ".*") {
+        var d = riskNorm(dir)
+        if (d.length() == 0) {
+            return "a pasta atual"
+        }
+        return d
+    }
+    if (t.endsWith("/*")) {
+        return t.substring(0, t.length() - 2)
+    }
+    return t
 }
 
 // O nome do comando (pulando sudo e VAR=valor).
@@ -557,6 +931,45 @@ test "comandos perigosos" {
     assert(!isDangerous("rm -rf ./build"), "pasta local e ok")
     assert(!isDangerous("rm notas.txt"), "arquivo e ok")
     assert(!isDangerous("dd if=/dev/zero of=teste.img bs=1M count=1"), "dd para arquivo e ok")
+}
+
+test "perigo em qualquer parte da linha e escrito de outro jeito" {
+    var D = RiskLevel.DANGER
+    assert(lineRisk("echo ok; rm -rf /", false, "").level == D, "depois do ;")
+    assert(lineRisk("cd / && rm -rf *", false, "/home/aluno/projeto").level == D, "cd / antes do *")
+    assert(lineRisk("rm -rf /etc/", false, "").level == D, "barra no fim")
+    assert(lineRisk("rm -rf /home/*", false, "").level == D, "tudo dentro de /home")
+    assert(lineRisk("sudo -u root rm -rf /", false, "").level == D, "sudo com opcao")
+    assert(lineRisk("rm -rf $HOME", false, "").level == D, "$HOME")
+    assert(lineRisk("echo x > /etc/passwd", false, "").level == D, "sobrescreve arquivo vital")
+    assert(lineRisk("echo x>/dev/sda", false, "").level == D, "disco sem espaco")
+    assert(lineRisk("sudo chmod 777 /etc/shadow", false, "").level == D, "abre o shadow")
+    assert(lineRisk("sudo mv /etc /tmp/x", false, "").level == D, "tira /etc do lugar")
+    assert(lineRisk("sudo wipefs -a /dev/sdb", false, "").level == D, "wipefs")
+    assert(lineRisk("sudo shred -n 1 /dev/sda", false, "").level == D, "shred no disco")
+    assert(lineRisk("sudo find / -name x -delete", false, "").level == D, "find / -delete")
+    assert(lineRisk("echo 1.2.3.4 x | sudo tee /etc/passwd", false, "").level == D, "tee sem -a em arquivo vital")
+}
+
+test "atencao depende do privilegio e da pasta" {
+    var C = RiskLevel.CAUTION
+    var N = RiskLevel.NONE
+    assert(lineRisk("rm -rf /etc/nginx", false, "").level == N, "sem sudo falha sozinho")
+    assert(lineRisk("sudo rm -rf /etc/nginx", false, "").level == C, "com sudo, atencao")
+    assert(lineRisk("rm -rf /etc/nginx", true, "").level == C, "como root, atencao")
+    assert(lineRisk("rm -rf *", false, "/home/aluno/projeto/build").level == N, "* dentro do projeto")
+    assert(lineRisk("rm -rf *", false, "/home/aluno").level == RiskLevel.DANGER, "* na pasta pessoal")
+    assert(lineRisk("curl -fsSL https://x.sh | sh", false, "").level == C, "curl | sh")
+    assert(lineRisk("sudo reboot", false, "").level == C, "reboot")
+    assert(lineRisk("sudo iptables -F", false, "").level == C, "iptables -F")
+    assert(lineRisk("kill -9 -1", false, "").level == C, "kill -1")
+    assert(lineRisk("crontab -r", false, "").level == C, "crontab -r")
+    assert(lineRisk("git push --force", false, "").level == C, "push --force")
+    assert(lineRisk("sudo fdisk /dev/sda", false, "").level == C, "fdisk")
+    assert(lineRisk("echo '1.2.3.4 alvo' | sudo tee -a /etc/hosts", false, "").level == N, "tee -a e ok")
+    assert(lineRisk("rm -rf build", false, "").level == N, "pasta comum")
+    assert(lineRisk("ls -la 2>&1 | less", false, "").level == N, "2>&1 nao separa")
+    assert(lineRisk("sudo reboot", false, "").reason.contains("SSH"), "explica o motivo")
 }
 
 test "perigoso nunca e aprendido nem sugerido" {

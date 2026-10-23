@@ -169,7 +169,7 @@ class Brain {
         if (mark >= 0) {
             g = g.substring(0, mark)
         }
-        if (g.length() > 0 && isDangerous(line + g)) {
+        if (g.length() > 0 && lineRisk(line + g, asRoot, cwd).level == RiskLevel.DANGER) {
             return ""
         }
         return g

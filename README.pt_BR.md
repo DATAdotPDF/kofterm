@@ -96,7 +96,7 @@ Outros comandos: `kofterm doctor` confere a instalação, `kofterm uninstall` re
 | **Sugestão em cinza** | O resto da linha aparece em cinza, como no VS Code, e o **TAB** aceita. Ele aprende com o que você roda, só na sua máquina. |
 | **Lê o contexto** | "Permissão negada" sugere o mesmo comando com `sudo`; `gti status` vira `git status`; programa que falta vira `sudo apt install` com o pacote certo. |
 | **Funciona como root** | Depois de `sudo -i`, tudo continua funcionando, e as sugestões saem sem `sudo`. |
-| **Perigo em vermelho** | `rm -rf /`, `mkfs`, `dd` em disco: nunca sugeridos e sempre destacados. |
+| **Risco pelo contexto** | Olha todos os comandos da linha, o `sudo` (ou se você é root) e a pasta atual. **PERIGO** (`rm -rf /`, `> /etc/passwd`, `dd` num disco) fica vermelho e nunca é sugerido; **Atenção** (`sudo rm -rf /etc/nginx`, `curl … \| sh`, `reboot`) aparece em amarelo, sempre com o motivo. |
 
 ## Por que o KofTerm existe
 
