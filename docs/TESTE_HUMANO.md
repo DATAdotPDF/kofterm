@@ -1,4 +1,4 @@
-# Roteiro de teste humano — KofTerm 0.7.1
+# Roteiro de teste humano — KofTerm 0.7.2
 
 Roteiro completo para uma **pessoa de verdade, numa janela de terminal de verdade**, conferir
 cada funcionalidade do KofTerm como um aluno usaria. Cada passo diz o que fazer e o que deve
@@ -33,8 +33,8 @@ script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|
-| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.7.1 instalado" | |
-| 0.2 ★ | `kofterm version` | `KofTerm 0.7.1` | |
+| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.7.2 instalado" | |
+| 0.2 ★ | `kofterm version` | `KofTerm 0.7.2` | |
 | 0.3 | `kofterm doctor` | `indice: 148 entradas`, pasta de dados `(pasta 0700, arquivos 0600)`, `bash: true` | |
 | 0.4 | `kofterm help` | Lista os subcomandos e as teclas | |
 | 0.5 | `kofterm --qualquer-coisa` | Mostra a ajuda; nada quebra | |
@@ -278,6 +278,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | P.1 | `kofterm uninstall` | Remove o programa; `history` e `events` continuam em `~/.local/share/kofterm` | |
 | P.2 | `cd ~/kofterm && ./install.sh` | Instala de novo; o que você ensinou continua (C.4 ainda sugere) | |
 | N.6 | Na pasta pessoal, digite sem Enter `python3 -m http.server 8000`; depois `python3 -m http.server 8000 --bind 127.0.0.1` | O primeiro mostra o aviso amarelo de Atenção (compartilha a pasta pessoal, inclusive ~/.ssh); o segundo não mostra aviso | |
+| N.7 | Digite `EXIT` (maiúsculas) e Enter | "comando não encontrado"; o cinza sugere `exit` e a coluna explica que maiúsculas importam | |
 | P.3 | `kofterm update` | Mostra `cd ~/kofterm && git pull && ./install.sh` e avisa que nada foi baixado nem executado | |
 
 ## Q. Impressões gerais (texto livre)

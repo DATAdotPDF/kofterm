@@ -14,7 +14,7 @@ PtyChild ptySpawn(Long termios, Long ws, Int closeInChild, String rcPath) {
         // processo filho
         sigUnblockAll()
         close(closeInChild)
-        setenv("KOFTERM", "1", 1)
+        setenv("KOFTERM", Version.NUMBER, 1) // a versao desta janela (antes da 0.7.2 era "1")
         // argv = { "bash", "--noediting", "--rcfile", rcPath, "-i", NULL }
         var argv = malloc(48L)
         var bash = strdup("bash")

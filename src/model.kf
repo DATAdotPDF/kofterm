@@ -332,6 +332,28 @@ String aptInstallHint(String outputLower) {
     return pkg
 }
 
+class CaseWords {
+    // comandos internos do Bash: nao estao no PATH nem sempre no indice
+    static String BUILTINS = " exit cd pwd echo export alias unalias history source type unset read jobs fg bg help logout umask "
+}
+
+// O nome em minusculas, se `w` tem maiusculas e esse nome e um comando conhecido; senao "".
+String caseFix(Model m, String w, List<String> known) {
+    var lower = w.toLowerCase()
+    if (lower == w || lower.length() < 2) {
+        return ""
+    }
+    if (CaseWords.BUILTINS.contains(" " + lower + " ") || m.count(m.firstWords, lower) > 0) {
+        return lower
+    }
+    for (var k in known) {
+        if (k == lower) {
+            return lower
+        }
+    }
+    return ""
+}
+
 // Correcao para a linha vazia depois de um erro: "sudo <comando>" ou o nome corrigido.
 String fixLine(Model m, String prev, Int status, String outputLower, List<String> known) {
     var p = prev.trim()
@@ -340,6 +362,12 @@ String fixLine(Model m, String prev, Int status, String outputLower, List<String
     }
     if (status == 127) {
         var w = commandName(p)
+        // "EXIT" com o Caps Lock ligado: o nome certo e o mesmo em minusculas
+        var lower = caseFix(m, w, known)
+        if (lower.length() > 0) {
+            var at = p.indexOf(w)
+            return p.substring(0, at) + lower + p.substring(at + w.length(), p.length())
+        }
         var c = m.closestCommand(w, known)
         // o command-not-found do Debian/Kali diz o pacote ("pode ser instalado com: sudo apt
         // install ufw"), mas tambem oferece pacotes de brincadeira como "gti": um erro so de
@@ -1090,6 +1118,18 @@ test "corrige sudo e nome errado" {
     assert(fixLine(m, "gti status", 127, "", known) == "git status", "typo")
     assert(fixLine(m, "sudo cta x", 127, "", known) == "sudo cat x", "typo com sudo")
     assert(fixLine(m, "ls", 0, "permission denied", known) == "", "sem erro, sem correcao")
+}
+
+test "caps lock ligado vira o comando em minusculas" {
+    var m = Model()
+    m.observe("", "git status", "", 1)
+    var known = listOf("ls", "cat")
+    assert(fixLine(m, "EXIT", 127, "", known) == "exit", "comando interno")
+    assert(fixLine(m, "LS -la", 127, "", known) == "ls -la", "so o nome muda, as opcoes ficam")
+    assert(fixLine(m, "Git status", 127, "", known) == "git status", "comando que a pessoa usa")
+    assert(fixLine(m, "sudo CAT /etc/hosts", 127, "", known) == "sudo cat /etc/hosts", "com sudo")
+    assert(caseFix(m, "XYZQ", known) == "", "desconhecido nao vira nada")
+    assert(caseFix(m, "ls", known) == "", "ja em minusculas")
 }
 
 test "pacote que nao existe sugere procurar o nome" {

@@ -2,7 +2,7 @@
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
-    static String NUMBER = "0.7.1"
+    static String NUMBER = "0.7.2"
 }
 
 printHelp() {
@@ -229,6 +229,25 @@ Int runUninstall(List<String> args) {
     return 0
 }
 
+// Dentro de uma janela do KofTerm, KOFTERM guarda a versao dela. Se o instalado e outro, a
+// janela continua na versao antiga ate ser reaberta: avisa. "" quando esta tudo certo.
+String windowVersionNote() {
+    var p = secure_getenv("KOFTERM")
+    if (p == 0L) {
+        return ""
+    }
+    var v = strndup(p, strlen(p))
+    if (v == Version.NUMBER) {
+        return ""
+    }
+    var win = "uma versão anterior à 0.7.2"
+    if (v != "1") {
+        win = "o KofTerm " + v
+    }
+    return "Atenção: esta janela está com " + win + ", e o instalado é o " + Version.NUMBER + ".\n" +
+        "Digite exit e abra o kofterm de novo para usar a versão instalada."
+}
+
 // Caminho absoluto e sem "..", ou o proprio caminho se nao existir.
 String absolutePath(String path) {
     var p = realpath(path, 0L)
@@ -340,6 +359,10 @@ Int runSubcommand(List<String> args) {
     }
     if (cmd == "version" || cmd == "--version" || cmd == "-V") {
         println("KofTerm " + Version.NUMBER)
+        var note = windowVersionNote()
+        if (note.length() > 0) {
+            println(note)
+        }
         return 0
     }
     printHelp()

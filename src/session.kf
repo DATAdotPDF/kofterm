@@ -601,6 +601,22 @@ class Session {
             }
             return out
         }
+        // "EXIT" nao encontrado e o cinza sugere "exit": explica a diferenca entre maiusculas e minusculas
+        if (ed.line.trim().length() == 0 && brain.lastStatus == 127) {
+            var typed = commandName(brain.lastCmd.trim())
+            var lower = typed.toLowerCase()
+            if (typed != lower && commandName(ghost.trim()) == lower) {
+                out.add("")
+                for (var t in wrapText("Maiúsculas importam: para o Linux, " + typed + " e " + lower + " são nomes diferentes, e os comandos quase sempre são em minúsculas. O Caps Lock está ligado?", w - 1)) {
+                    out.add(" " + esc() + "[1;33m" + t + esc() + "[0m")
+                }
+                out.add("")
+                for (var t in wrapText("TAB coloca " + lower + " na linha; nada roda sem o seu Enter.", w - 1)) {
+                    out.add(" " + esc() + "[90m" + t + esc() + "[0m")
+                }
+                return out
+            }
+        }
         // risco pelo contexto (todos os comandos da linha, sudo/root e a pasta atual), com o motivo
         var risk = lineRisk(ed.line, recipes.asRoot, cwd)
         if (risk.level == RiskLevel.DANGER) {

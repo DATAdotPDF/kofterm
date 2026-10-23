@@ -26,6 +26,10 @@ main() {
     // coluna de fora congelada e a de dentro espremida: melhor explicar e nao abrir.
     if (secure_getenv("KOFTERM") != 0L) {
         println("O KofTerm já está aberto nesta janela: você está dentro dele.")
+        var note = windowVersionNote()
+        if (note.length() > 0) {
+            println(note)
+        }
         println("Para gravar a sessão com script, abra uma aba nova do terminal (sem o KofTerm) e rode:")
         println("  script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm")
         process.exit(0)

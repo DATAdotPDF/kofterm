@@ -2,6 +2,14 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [0.7.2] - 23/10/2026
+
+Two small helps that came from Pedro's test of 0.7.1.
+
+### Added
+- Caps Lock: after "command not found", if the same name in lowercase is a known command (`EXIT`, `LS -la`, `Pwd`, `sudo CAT ...`), the grey suggestion is the lowercase command with the rest of the line unchanged, and the column explains that Linux treats uppercase and lowercase as different names
+- Each KofTerm window remembers its version (in the `KOFTERM` variable). Inside a window older than the installed program, `kofterm version` and the "KofTerm is already open" message say so and ask you to type `exit` and open `kofterm` again; before, `kofterm version` showed the installed version and hid that the window was still the old one
+
 ## [0.7.1] - 23/10/2026
 
 Networking recipes for labs, `kofterm update`, and a safer test web server, from Pedro's test of 0.7.0.
