@@ -2,7 +2,9 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
-## [Unreleased]
+## [0.7.1] - 23/10/2026
+
+Networking recipes for labs, `kofterm update`, and a safer test web server, from Pedro's test of 0.7.0.
 
 ### Added
 - `kofterm update` shows how to update this installation: `cd <your clone> && git pull && ./install.sh` when it was installed from source, or the release steps when it came from the ready-made package. It downloads and runs nothing (KofTerm stays offline); `kofterm install` now notes where it came from in `~/.local/share/kofterm/origem`, and installs made before that are recognized when the clone is in `~/kofterm`

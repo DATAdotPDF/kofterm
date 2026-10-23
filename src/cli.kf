@@ -2,7 +2,7 @@
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
-    static String NUMBER = "0.7.0"
+    static String NUMBER = "0.7.1"
 }
 
 printHelp() {
