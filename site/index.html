@@ -111,6 +111,7 @@ pre.code .p { color: var(--green); user-select: none; }
 .join h2 { font-size: clamp(30px, 3.6vw, 48px); }
 .join p:not(.eyebrow) { color: var(--muted); font-size: 18px; max-width: 40em; margin: 16px auto 28px; }
 .join .cta { justify-content: center; }
+.video video { display: block; width: 100%; height: auto; border-radius: 14px; border: 2px solid var(--line-2); background: #000; box-shadow: 0 24px 60px rgba(0,0,0,.4); }
 footer { border-top: 1px solid var(--line); padding: 28px 0 36px; font-size: 14px; color: var(--dim); position: relative; }
 footer::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--flag); }
 footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -142,6 +143,7 @@ footer a { color: var(--muted); }
     <div class="wrap">
       <a class="logo" href="#">Kof<b>term</b></a>
       <nav aria-label="Principal">
+        <a href="#video">Vídeo</a>
         <a href="#recursos">Recursos</a>
         <a href="#instalar">Instalar</a>
         <a href="#contribuir">Contribuir</a>
@@ -222,6 +224,19 @@ nada roda sem o seu Enter.</span></div>
 </div>
 
 <main>
+  <section id="video" class="video">
+    <div class="wrap">
+      <div class="head">
+        <div><p class="eyebrow">Veja em 90 segundos</p><h2>O comercial do <span>KofTerm.</span></h2></div>
+        <p>As telas são gravações reais do KofTerm no Kali Linux. Narração, pagode e muito orgulho de ser feito no Brasil.</p>
+      </div>
+      <video controls preload="none" playsinline poster="media/kofterm_comercial_capa.jpg" width="1920" height="1080">
+        <source src="media/kofterm_comercial.mp4" type="video/mp4">
+        Seu navegador não toca vídeo aqui: <a href="media/kofterm_comercial.mp4">baixe o comercial (10 MB)</a>.
+      </video>
+    </div>
+  </section>
+
   <section id="recursos">
     <div class="wrap">
       <div class="head">
