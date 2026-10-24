@@ -156,11 +156,20 @@ class IndexTab {
         if (selected >= listTop + visible) {
             listTop = selected - visible + 1
         }
+        // a coluna dos nomes cresce ate o maior nome da lista (ex.: /etc/resolv.conf), sem passar de 1/4 da tela
         var nameW = 12
+        for (var f in found) {
+            if (f.name.length() > nameW) {
+                nameW = f.name.length()
+            }
+        }
+        if (nameW > cols / 4) {
+            nameW = cols / 4
+        }
         var i = listTop
         while (i < found.size && i < listTop + visible) {
             var e = found.get(i)
-            var text = " " + pad(clip(e.name, nameW), nameW) + "  " + clip(e.summary, cols - nameW - 4)
+            var text = " " + pad(clipDots(e.name, nameW), nameW) + "  " + clipDots(e.summary, cols - nameW - 4)
             if (i == selected) {
                 out.add(esc() + "[7m" + pad(text, cols) + esc() + "[0m")
             } else {
@@ -246,6 +255,11 @@ class IndexTab {
         for (var o in opts) {
             var text = wrapText(o.text, w - nameW - 5)
             var first = true
+            if (o.names.length() > nameW) {
+                // nome longo: numa linha propria, explicacao embaixo (como na coluna)
+                body.add("   " + esc() + "[33m" + clip(o.names, w - 3) + esc() + "[0m")
+                first = false
+            }
             for (var t in text) {
                 if (first) {
                     body.add("   " + esc() + "[33m" + pad(clip(o.names, nameW), nameW) + esc() + "[0m  " + t)
@@ -266,6 +280,17 @@ String clip(String s, Int n) {
         return s
     }
     return s.substring(0, n)
+}
+
+// Como clip, mas um texto cortado termina em "…", para mostrar que tem mais (Enter abre inteiro).
+String clipDots(String s, Int n) {
+    if (n <= 0) {
+        return ""
+    }
+    if (s.length() <= n) {
+        return s
+    }
+    return s.substring(0, n - 1) + "…"
 }
 
 String pad(String s, Int n) {

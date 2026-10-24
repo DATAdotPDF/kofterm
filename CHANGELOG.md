@@ -11,6 +11,10 @@ English for the index and the screens. Portuguese stays the default.
 - The `?` recipes are still in Portuguese; their English version comes later
 - `kofterm doctor` shows which index file is in use
 
+### Fixed
+- The welcome line breaks between items, never in the middle of a word (it used to show "mous / e")
+- F1 tab: the name column grows to the longest name in the list (`/etc/resolv.conf` was cut to `/etc/resolv.`), and a description longer than the screen ends in `…` instead of stopping mid-word at the edge. In a command's page, a long option name (`--remove-home`) goes on its own line, like in the column
+
 ## [0.8.0] - 23/10/2026
 
 Finding things: the history, the files of a folder and the output that already scrolled away.

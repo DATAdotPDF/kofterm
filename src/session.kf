@@ -159,11 +159,31 @@ class Session {
     }
 
     // Linha de boas-vindas no topo da tela (passa pelo emulador, como se o bash a escrevesse).
+    // Quebra entre os itens (" · "), nunca no meio de uma palavra.
     banner() {
-        var s = esc() + "[90mKofTerm " + Version.NUMBER + tr(" · TAB aceita a sugestão em cinza · F2 índice ao lado · F1 busca · " +
-            "Ctrl+R histórico · roda do mouse rola (F3) · ? peça do seu jeito, ex.: ? instalar o htop",
-            " · TAB accepts the grey suggestion · F2 index on the side · F1 search · " +
-            "Ctrl+R history · mouse wheel scrolls (F3) · ? recipes (in Portuguese for now), e.g. ? instalar o htop") + esc() + "[0m\r\n"
+        var parts = splitOn(tr("TAB aceita a sugestão em cinza|F2 índice ao lado|F1 busca|" +
+            "Ctrl+R histórico|roda do mouse rola (F3)|? peça do seu jeito, ex.: ? instalar o htop",
+            "TAB accepts the grey suggestion|F2 index on the side|F1 search|" +
+            "Ctrl+R history|mouse wheel scrolls (F3)|? recipes (in Portuguese for now), e.g. ? instalar o htop"), "|")
+        var w = leftWidth()
+        var cur = "KofTerm " + Version.NUMBER
+        var s = ""
+        for (var part in parts) {
+            if (cur.length() + 3 + part.length() <= w) {
+                cur = cur + " · " + part
+            } else {
+                s = s + esc() + "[90m" + cur + esc() + "[0m\r\n"
+                // um item maior que a linha quebra nos espacos
+                var pieces = wrapText(part, w)
+                var k = 0
+                while (k < pieces.size - 1) {
+                    s = s + esc() + "[90m" + pieces.get(k) + esc() + "[0m\r\n"
+                    k = k + 1
+                }
+                cur = pieces.get(pieces.size - 1)
+            }
+        }
+        s = s + esc() + "[90m" + cur + esc() + "[0m\r\n"
         var p = strdup(s)
         var n = strlen(p)
         var i = 0L
