@@ -2,7 +2,9 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
-## [Unreleased]
+## [0.9.1] - 23/10/2026
+
+Emoji no longer close KofTerm, and a narrow window says why the column is gone.
 
 ### Fixed
 - KofTerm 0.9.0 closed with `substring cannot split an astral code point` when an emoji above U+FFFF (😀, 👍🏽) was typed, was in the name of the current folder, or was in the output of a command that failed. Every cut of a text now steps over the two halves of such a character together
