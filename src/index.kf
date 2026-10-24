@@ -197,7 +197,7 @@ class CommandIndex {
             } else if (!flag.startsWith("--")) {
                 var i = 1
                 while (i < flag.length()) {
-                    var single = e.option("-" + flag.substring(i, i + 1))
+                    var single = e.option("-" + ixAt(flag, i))
                     if (single != null) {
                         addOnce(out, single)
                     }
@@ -237,8 +237,8 @@ Boolean isProgramName(String n) {
     }
     var i = 0
     while (i < n.length()) {
-        var c = n.substring(i, i + 1)
-        if (!"abcdefghijklmnopqrstuvwxyz0123456789-._+".contains(c)) {
+        var c = ixAt(n, i)
+        if (c.length() == 0 || !"abcdefghijklmnopqrstuvwxyz0123456789-._+".contains(c)) {
             return false
         }
         i = i + 1
@@ -302,18 +302,51 @@ List<String> commandWords(String line) {
     return words
 }
 
+// O caractere que comeca na posicao i. Um emoji acima de U+FFFF ocupa duas posicoes (par
+// UTF-16): o par vem inteiro, e na segunda metade vem "". O substring do KOF nativo aborta
+// se cortar um par no meio (known-bugs 43).
+String ixAt(String s, Int i) {
+    var c = s.charAt(i) as Int
+    if (c >= 55296 && c <= 56319) {
+        if (i + 1 < s.length()) {
+            var d = s.charAt(i + 1) as Int
+            if (d >= 56320 && d <= 57343) {
+                return s.substring(i, i + 2)
+            }
+        }
+        return ""
+    }
+    if (c >= 56320 && c <= 57343) {
+        return ""
+    }
+    return s.substring(i, i + 1)
+}
+
+// Um corte em n que nao separa um par UTF-16 (emoji): recua uma posicao se cairia no meio.
+Int ixCut(String s, Int n) {
+    if (n <= 0) {
+        return 0
+    }
+    if (n >= s.length()) {
+        return s.length()
+    }
+    var c = s.charAt(n) as Int
+    if (c >= 56320 && c <= 57343) {
+        return n - 1
+    }
+    return n
+}
+
+// Pedacos entre cada `sep` (os vazios ficam). Procura com indexOf: os cortes caem sempre
+// no separador, nunca no meio de um emoji.
 List<String> splitOn(String s, String sep) {
     var out = listOf<String>()
     var start = 0
-    var i = 0
-    while (i + sep.length() <= s.length()) {
-        if (s.substring(i, i + sep.length()) == sep) {
-            out.add(s.substring(start, i))
-            i = i + sep.length()
-            start = i
-        } else {
-            i = i + 1
-        }
+    var at = s.indexOf(sep, 0)
+    while (at >= 0) {
+        out.add(s.substring(start, at))
+        start = at + sep.length()
+        at = s.indexOf(sep, start)
     }
     out.add(s.substring(start, s.length()))
     return out
@@ -385,7 +418,7 @@ String clipVisible(String s, Int n) {
             i = j + 1
         } else {
             if (count == n) {
-                return s.substring(0, i)
+                return s.substring(0, ixCut(s, i))
             }
             count = count + 1
             i = i + 1
@@ -414,7 +447,16 @@ String fitParts(String s, Int w) {
     if (s.length() <= w || parts.get(0).length() <= w) {
         return parts.get(0)
     }
-    return parts.get(0).substring(0, w)
+    return parts.get(0).substring(0, ixCut(parts.get(0), w))
+}
+
+test "emoji nao quebra splitOn, clipVisible nem fitParts" {
+    var p = splitOn("a 😀 b", " ")
+    assert(p.size == 3 && p.get(1) == "😀", "splitOn")
+    assert(splitOn("x,,y", ",").size == 3, "vazios ficam")
+    assert(clipVisible("ab😀", 3) == "ab", "clipVisible recua antes do par")
+    assert(fitParts("😀😀", 3) == "😀", "fitParts")
+    assert(ixAt("😀", 0) == "😀" && ixAt("😀", 1) == "", "ixAt")
 }
 
 test "fitParts tira itens inteiros do fim" {

@@ -127,6 +127,26 @@ erro aponta uma linha abaixo da chamada. Achado escrevendo o `kofterm selftest` 
 
 ---
 
+## 7. `substring` aborta no meio de um emoji (native, known-bugs 43)
+
+```kof
+main() {
+    var s = "a😀b"            // length() == 4: o emoji são duas unidades UTF-16
+    print(s.substring(0, 2))   // Runtime error: substring cannot split an astral code point
+}
+```
+
+O alvo native guarda a String em UTF-8 mas conta em UTF-16; um corte que cai entre as duas metades
+de um caractere acima de U+FFFF encerra o programa (código 1). No KofTerm isso fechava a 0.9.0
+quando um emoji aparecia na linha, na pasta atual ou na saída de um comando. Também `cp as Char`
+acima de U+FFFF dá uma String quebrada.
+**Contorno:** comparar com `charAt(i) as Int` em vez de `substring(i, i + 1)`; antes de cortar,
+recuar o fim se ele cair depois de uma metade alta (55296–56319); montar o caractere com
+`"" + (hi as Char) + (lo as Char)`. Como `kof test` compila cada arquivo sozinho, cada módulo
+testado tem sua cópia (`vtCut`, `ixCut`, `anonAt`…).
+
+---
+
 ## Outras observações (não são bugs, mas valem para a documentação)
 
 - `charAt(i)` devolve um caractere, não `String`: `s.charAt(0) == " "` é sempre falso. Usar

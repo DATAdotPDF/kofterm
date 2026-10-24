@@ -178,7 +178,7 @@ entre versões.
 
 - **0.7.x:** correções do teste da 0.7.0 e receitas de redes.
 - **0.8.0, achar coisas (feita):** busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e a rodinha do mouse rolando a saída antiga.
-- **0.9.0, para todo mundo (inglês feito):** índice, telas e receitas em inglês (`kofterm lang en`). Na 0.9.x: emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais. É a candidata à 1.0.
+- **0.9.0, para todo mundo (inglês feito):** índice, telas e receitas em inglês (`kofterm lang en`). Na 0.9.x: emoji com a largura certa e aviso claro quando o terminal for estreito demais (feito). É a candidata à 1.0.
 - **1.0.0**, quando tudo isto for verdade:
   1. o [roteiro de teste](docs/TESTE_HUMANO.md) rodado por pelo menos 2 ou 3 pessoas além do autor, em mais de uma distribuição (Kali, Ubuntu, Debian) e de um terminal (QTerminal, GNOME Terminal, xterm, tmux);
   2. nenhuma limitação conhecida que atrapalhe o uso no dia a dia;

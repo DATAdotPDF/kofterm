@@ -173,13 +173,13 @@ Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_O
 | --- | --- |
 | **0.7.x** | Correções do teste da 0.7.0 e mais receitas de redes |
 | **0.8.0**, achar coisas (feita) | Busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e a rodinha do mouse rolando a saída antiga |
-| **0.9.0**, para todo mundo (inglês feito) | Índice, telas e receitas em inglês (feito, `kofterm lang en`); emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais vêm na 0.9.x |
+| **0.9.0**, para todo mundo (inglês feito) | Índice, telas e receitas em inglês (feito, `kofterm lang en`); na 0.9.x, emoji com a largura certa e aviso claro quando o terminal for estreito demais (feito) |
 | **1.0.0**, estável | Testado por outras pessoas em várias distribuições e terminais, sem limitação que atrapalhe, formatos de arquivo estáveis |
 | **Depois** | Um modelo neural pequeno em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais |
 
 Como as versões são numeradas e os critérios da 1.0: [CONTRIBUTING, seção Versões](CONTRIBUTING.md#7-versões). Veja também o [CHANGELOG](CHANGELOG.md) e as [issues](https://github.com/DATAdotPDF/kofterm/issues).
 
-**Limitações conhecidas:** com a roda ligada, selecionar texto com o mouse pede Shift (ou F3 para desligar a roda); a saída antiga guarda as últimas 2.000 linhas; a coluna precisa que sobrem pelo menos 40 colunas para o Bash; emoji acima de U+FFFF aparecem como `�`.
+**Limitações conhecidas:** com a roda ligada, selecionar texto com o mouse pede Shift (ou F3 para desligar a roda); a saída antiga guarda as últimas 2.000 linhas; a coluna precisa que sobrem pelo menos 40 colunas para o Bash; numa janela com menos de 69 colunas a coluna se esconde e um aviso diz por quê.
 
 ## Contribuidores
 

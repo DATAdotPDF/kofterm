@@ -93,7 +93,7 @@ class IndexTab {
             selected = 0
         } else if (kind == K.BACKSPACE) {
             if (query.length() > 0) {
-                query = query.substring(0, query.length() - 1)
+                query = query.substring(0, vtCut(query, query.length() - 1))
             }
             selected = 0
         } else if (kind == K.CTRL_U) {
@@ -279,7 +279,7 @@ String clip(String s, Int n) {
     if (s.length() <= n) {
         return s
     }
-    return s.substring(0, n)
+    return s.substring(0, vtCut(s, n))
 }
 
 // Como clip, mas um texto cortado termina em "…", para mostrar que tem mais (Enter abre inteiro).
@@ -290,7 +290,7 @@ String clipDots(String s, Int n) {
     if (s.length() <= n) {
         return s
     }
-    return s.substring(0, n - 1) + "…"
+    return s.substring(0, vtCut(s, n - 1)) + "…"
 }
 
 String pad(String s, Int n) {

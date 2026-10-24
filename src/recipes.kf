@@ -246,7 +246,10 @@ List<String> recipeWords(String s) {
     var low = s.toLowerCase()
     var i = 0
     while (i < low.length()) {
-        var c = recipeFold(low.substring(i, i + 1))
+        var c = recipeAt(low, i)
+        if (c.length() > 0) {
+            c = recipeFold(c) // "" (segunda metade de um emoji) nao passa pelo fold: "áàâãä" contem ""
+        }
         var keep = "abcdefghijklmnopqrstuvwxyz0123456789{}-_./~+:@"
         if (keep.contains(c)) {
             cur = cur + c
@@ -338,7 +341,7 @@ Boolean recipeSame(String a, String b) {
         return false
     }
     // verbo conjugado: "instalo", "instala" e "instalar" tem o mesmo comeco
-    if (a.length() >= 6 && b.length() >= 6 && a.substring(0, 6) == b.substring(0, 6)) {
+    if (a.length() >= 6 && b.length() >= 6 && recipeSamePrefix(a, b, 6)) {
         return true
     }
     // prefixo: "arquivos" acha "arquivo", "pastas" acha "pasta"
@@ -351,6 +354,38 @@ Boolean recipeSame(String a, String b) {
     return recipeLev1(a, b)
 }
 
+// As primeiras n posicoes iguais (charAt: nunca corta um emoji ao meio).
+Boolean recipeSamePrefix(String a, String b, Int n) {
+    var i = 0
+    while (i < n) {
+        if (a.charAt(i) as Int != b.charAt(i) as Int) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+// O caractere que comeca na posicao i. Um emoji acima de U+FFFF ocupa duas posicoes (par
+// UTF-16): o par vem inteiro, e na segunda metade vem "". O substring do KOF nativo aborta
+// se cortar um par no meio (known-bugs 43).
+String recipeAt(String s, Int i) {
+    var c = s.charAt(i) as Int
+    if (c >= 55296 && c <= 56319) {
+        if (i + 1 < s.length()) {
+            var d = s.charAt(i + 1) as Int
+            if (d >= 56320 && d <= 57343) {
+                return s.substring(i, i + 2)
+            }
+        }
+        return ""
+    }
+    if (c >= 56320 && c <= 57343) {
+        return ""
+    }
+    return s.substring(i, i + 1)
+}
+
 Boolean recipeLev1(String a, String b) {
     var la = a.length()
     var lb = b.length()
@@ -361,7 +396,7 @@ Boolean recipeLev1(String a, String b) {
     var j = 0
     var edits = 0
     while (i < la && j < lb) {
-        if (a.substring(i, i + 1) == b.substring(j, j + 1)) {
+        if (a.charAt(i) as Int == b.charAt(j) as Int) {
             i = i + 1
             j = j + 1
         } else {
@@ -375,7 +410,7 @@ Boolean recipeLev1(String a, String b) {
                 j = j + 1
             } else {
                 // troca de duas letras vizinhas conta como um erro
-                if (i + 1 < la && j + 1 < lb && a.substring(i, i + 1) == b.substring(j + 1, j + 2) && a.substring(i + 1, i + 2) == b.substring(j, j + 1)) {
+                if (i + 1 < la && j + 1 < lb && a.charAt(i) as Int == b.charAt(j + 1) as Int && a.charAt(i + 1) as Int == b.charAt(j) as Int) {
                     i = i + 2
                     j = j + 2
                 } else {
@@ -545,6 +580,12 @@ test "receitas em ingles: palavras vazias e sinonimos do ingles" {
     var none = b.search("bake a chocolate cake", 3)
     assert(none.size == 0, "nada inventado")
     RecipeLang.en = false
+}
+
+test "pedido com emoji nao derruba a busca" {
+    var r = sampleBook().search("instalar 😀 htop 😀😀", 3)
+    assert(r.size >= 1 && r.get(0).recipe.name == "instalar programa", "achou mesmo com emoji")
+    assert(recipeWords("ver 😀 ip").size == 2, "emoji separa palavras, sem abortar")
 }
 
 test "a receita certa vence as parecidas" {

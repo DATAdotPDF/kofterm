@@ -356,7 +356,7 @@ String aptInstallHint(String outputLower) {
     var pkg = ""
     var stop = false
     while (i < outputLower.length() && !stop) {
-        var c = outputLower.substring(i, i + 1)
+        var c = modelAt(outputLower, i)
         if ("abcdefghijklmnopqrstuvwxyz0123456789-.+".contains(c)) {
             pkg = pkg + c
             i = i + 1
@@ -528,7 +528,7 @@ List<String> riskSegments(String line) {
     var quote = ""
     var i = 0
     while (i < line.length()) {
-        var c = line.substring(i, i + 1)
+        var c = modelAt(line, i)
         if (quote.length() > 0) {
             if (c == quote) {
                 quote = ""
@@ -546,7 +546,7 @@ List<String> riskSegments(String line) {
                     out.add(cur)
                 }
                 cur = ""
-                if (i + 1 < line.length() && line.substring(i + 1, i + 2) == c) {
+                if (i + 1 < line.length() && modelAt(line, i + 1) == c) {
                     i = i + 1
                 }
             }
@@ -973,23 +973,40 @@ String commandName(String line) {
 List<String> splitWords(String s, String sep) {
     var out = listOf<String>()
     var start = 0
-    var i = 0
-    while (i + sep.length() <= s.length()) {
-        if (s.substring(i, i + sep.length()) == sep) {
-            if (i > start) {
-                out.add(s.substring(start, i))
-            }
-            i = i + sep.length()
-            start = i
-        } else {
-            i = i + 1
+    var at = s.indexOf(sep, 0)
+    while (at >= 0) {
+        if (at > start) {
+            out.add(s.substring(start, at))
         }
+        start = at + sep.length()
+        at = s.indexOf(sep, start)
     }
     if (s.length() > start) {
         out.add(s.substring(start, s.length()))
     }
     return out
 }
+
+// O caractere que comeca na posicao i. Um emoji acima de U+FFFF ocupa duas posicoes (par
+// UTF-16): o par vem inteiro, e na segunda metade vem "". O substring do KOF nativo aborta
+// se cortar um par no meio (known-bugs 43).
+String modelAt(String s, Int i) {
+    var c = s.charAt(i) as Int
+    if (c >= 55296 && c <= 56319) {
+        if (i + 1 < s.length()) {
+            var d = s.charAt(i + 1) as Int
+            if (d >= 56320 && d <= 57343) {
+                return s.substring(i, i + 2)
+            }
+        }
+        return ""
+    }
+    if (c >= 56320 && c <= 57343) {
+        return ""
+    }
+    return s.substring(i, i + 1)
+}
+
 
 // Distancia de edicao em que duas letras vizinhas trocadas contam como um erro so
 // (Damerau restrita): "sl" esta a 1 de "ls", como "nl"; o desempate e pelo uso.
@@ -1009,7 +1026,7 @@ Int levenshtein(String a, String b) {
         j = 1
         while (j <= b.length()) {
             var cost = 1
-            if (a.substring(i - 1, i) == b.substring(j - 1, j)) {
+            if (a.charAt(i - 1) as Int == b.charAt(j - 1) as Int) {
                 cost = 0
             }
             var best = prev.get(j) + 1
@@ -1019,8 +1036,8 @@ Int levenshtein(String a, String b) {
             if (prev.get(j - 1) + cost < best) {
                 best = prev.get(j - 1) + cost
             }
-            if (i > 1 && j > 1 && a.substring(i - 1, i) == b.substring(j - 2, j - 1) &&
-                    a.substring(i - 2, i - 1) == b.substring(j - 1, j) && prev2.get(j - 2) + 1 < best) {
+            if (i > 1 && j > 1 && a.charAt(i - 1) as Int == b.charAt(j - 2) as Int &&
+                    a.charAt(i - 2) as Int == b.charAt(j - 1) as Int && prev2.get(j - 2) + 1 < best) {
                 best = prev2.get(j - 2) + 1
             }
             cur.add(best)

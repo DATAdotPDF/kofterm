@@ -138,7 +138,7 @@ String exeDir() {
     }
     free(buf)
     var cut = path.length()
-    while (cut > 0 && path.substring(cut - 1, cut) != "/") {
+    while (cut > 0 && path.charAt(cut - 1) as Int != 47) {
         cut = cut - 1
     }
     if (cut <= 1) {

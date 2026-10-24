@@ -139,7 +139,7 @@ class Brain {
     noteOutput(String chunk) {
         outputTail = outputTail + chunk.toLowerCase()
         if (outputTail.length() > 2000) {
-            outputTail = outputTail.substring(outputTail.length() - 2000, outputTail.length())
+            outputTail = outputTail.substring(vtCut(outputTail, outputTail.length() - 2000), outputTail.length())
         }
     }
 
@@ -279,10 +279,10 @@ class Brain {
         var common = matches.get(0)
         for (var m in matches) {
             var i = 0
-            while (i < common.length() && i < m.length() && common.substring(i, i + 1) == m.substring(i, i + 1)) {
+            while (i < common.length() && i < m.length() && common.charAt(i) as Int == m.charAt(i) as Int) {
                 i = i + 1
             }
-            common = common.substring(0, i)
+            common = common.substring(0, vtCut(common, i))
         }
         if (common.length() <= base.length()) {
             return ""
@@ -293,7 +293,7 @@ class Brain {
     // O pedaco do token depois da ultima "/" (o nome que esta sendo completado).
     String pathBase(String tok) {
         var cut = tok.length()
-        while (cut > 0 && tok.substring(cut - 1, cut) != "/") {
+        while (cut > 0 && tok.charAt(cut - 1) as Int != 47) {
             cut = cut - 1
         }
         return tok.substring(cut, tok.length())
@@ -307,7 +307,7 @@ class Brain {
             return matches
         }
         var cut = tok.length()
-        while (cut > 0 && tok.substring(cut - 1, cut) != "/") {
+        while (cut > 0 && tok.charAt(cut - 1) as Int != 47) {
             cut = cut - 1
         }
         var dirPart = tok.substring(0, cut)

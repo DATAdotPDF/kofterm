@@ -53,6 +53,7 @@ class Session {
     Boolean mouseOn = true
     Boolean mouseCaptured = false
     String notice = ""
+    Boolean smallShown = false // o aviso de janela pequena demais ja esta na tela
     String SPACE1 = " "
 
     // tela real
@@ -246,6 +247,9 @@ class Session {
         resetCaches()
         applyPtySize()
         banner()
+        if (panelOn && !panelFits()) {
+            notice = narrowNotice()
+        }
     }
 
     resetCaches() {
@@ -311,9 +315,54 @@ class Session {
         }
     }
 
+    // Menor que isso nem o bash cabe direito: o KofTerm so mostra um aviso ate a janela crescer.
+    Boolean tooSmall() {
+        return cols < 20 || rows < 5
+    }
+
+    drawTooSmall() {
+        print(esc() + "[0m" + esc() + "[2J" + esc() + "[H")
+        var lines = wrapText(tr("KofTerm: janela pequena demais (" + cols + "×" + rows + "). Aumente para pelo menos 20×5.", "KofTerm: window too small (" + cols + "×" + rows + "). Make it at least 20×5."), cols)
+        var i = 0
+        while (i < lines.size && i < rows) {
+            print(clip(lines.get(i), cols))
+            if (i + 1 < lines.size && i + 1 < rows) {
+                print("\r\n")
+            }
+            i = i + 1
+        }
+        smallShown = true
+    }
+
+    // Por que a coluna sumiu e como trazer de volta (antes era so um bipe no F2).
+    String narrowNotice() {
+        return tr("Janela estreita (" + cols + " colunas): a coluna do índice volta com " + panelMinCols() + " ou mais. Alargue a janela ou diminua a fonte (Ctrl -).",
+            "Narrow window (" + cols + " columns): the index column comes back at " + panelMinCols() + " or more. Widen the window or make the font smaller (Ctrl -).")
+    }
+
+    Boolean isNarrowNotice() {
+        return notice.startsWith(tr("Janela estreita", "Narrow window"))
+    }
+
+    // Colunas para a coluna do indice caber: a menor coluna (28), a barra e 40 para o bash.
+    Int panelMinCols() {
+        return 28 + 1 + 40
+    }
+
     onResize(Int r, Int c) {
+        var fitBefore = panelFits()
         rows = r
         cols = c
+        smallShown = false
+        if (panelOn && fitBefore && !panelFits()) {
+            notice = narrowNotice()
+        } else if (isNarrowNotice()) {
+            if (panelFits()) {
+                notice = ""
+            } else {
+                notice = narrowNotice() // o numero de colunas mudou
+            }
+        }
         vt.resizeKeepCursor(rows, leftWidth())
         if (editing) {
             startRow = vt.cy
@@ -323,7 +372,9 @@ class Session {
         tab.resize(r, c)
         print(esc() + "[2J")
         resetCaches()
-        if (tab.open) {
+        if (tooSmall()) {
+            drawTooSmall()
+        } else if (tab.open) {
             tab.draw()
         } else {
             render()
@@ -332,7 +383,7 @@ class Session {
 
     togglePanel() {
         if (!panelFits()) {
-            print("\u0007") // tela estreita demais para o indice
+            notice = narrowNotice() // tela estreita demais para o indice: diz o porque
             return
         }
         panelOn = !panelOn
@@ -400,6 +451,12 @@ class Session {
     // Redesenha so as linhas que mudaram. Enquanto o usuario digita, a linha e a sugestao
     // viram celulas por cima da tela do emulador; se a linha passar do fim, a tela rola.
     render() {
+        if (tooSmall()) {
+            if (!smallShown) {
+                drawTooSmall()
+            }
+            return
+        }
         var w = leftWidth()
         if (view > 0) {
             renderPast(w)
@@ -451,7 +508,10 @@ class Session {
             if (lineRisk(ed.line, recipes.asRoot, cwd).level == RiskLevel.DANGER) {
                 lineAttr = "1;31" // perigoso: em vermelho
             }
-            var total = startCol + ed.line.length() + ghost.length()
+            // a linha em celulas (emoji e CJK ocupam duas), como o emulador as poria
+            var lineCells = vt.cellsOf(ed.line, startCol, w)
+            var ghostCells = vt.cellsOf(ghost, startCol + lineCells.size, w)
+            var total = startCol + lineCells.size + ghostCells.size
             var endRow = startRow
             if (total > 0) {
                 endRow = startRow + (total - 1) / w
@@ -497,13 +557,17 @@ class Session {
             }
             // as linhas sobrepostas sao copias da tela do emulador; o texto e a sugestao vao por cima
             var i = 0
-            var all = ed.line + ghost
-            while (i < all.length()) {
+            var nCells = lineCells.size + ghostCells.size
+            while (i < nCells) {
                 var at = startCol + i
                 var idx = at / w
                 if (idx < ovCh.size) {
-                    ovCh.get(idx).set(at % w, all.substring(i, i + 1))
-                    if (i < ed.line.length()) {
+                    if (i < lineCells.size) {
+                        ovCh.get(idx).set(at % w, lineCells.get(i))
+                    } else {
+                        ovCh.get(idx).set(at % w, ghostCells.get(i - lineCells.size))
+                    }
+                    if (i < lineCells.size) {
                         ovAt.get(idx).set(at % w, lineAttr)
                     } else {
                         ovAt.get(idx).set(at % w, "90")
@@ -520,11 +584,12 @@ class Session {
                     if (text.startsWith("›")) {
                         attr = "7" // o escolhido
                     }
+                    var cells = vt.cellsOf(text, 0, w) // nomes com emoji ocupam as celulas certas
                     var j = 0
                     while (j < w) {
                         var c = SPACE1
-                        if (j < text.length()) {
-                            c = text.substring(j, j + 1)
+                        if (j < cells.size) {
+                            c = cells.get(j)
                         }
                         ovCh.get(idx).set(j, c)
                         ovAt.get(idx).set(j, attr)
@@ -533,7 +598,7 @@ class Session {
                 }
                 b = b + 1
             }
-            var pos = startCol + ed.cursor
+            var pos = startCol + vt.cellsOf(ed.line.substring(0, ed.cursor), startCol, w).size
             curRow = startRow + pos / w
             curCol = pos % w
         }
@@ -605,7 +670,7 @@ class Session {
     // O ultimo pedaco da linha (depois do ultimo espaco): o caminho que o TAB completa.
     String lastToken() {
         var i = ed.line.length()
-        while (i > 0 && ed.line.substring(i - 1, i) != " ") {
+        while (i > 0 && ed.line.charAt(i - 1) as Int != 32) {
             i = i - 1
         }
         return ed.line.substring(i, ed.line.length())

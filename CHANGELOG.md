@@ -2,6 +2,18 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [Unreleased]
+
+### Fixed
+- KofTerm 0.9.0 closed with `substring cannot split an astral code point` when an emoji above U+FFFF (😀, 👍🏽) was typed, was in the name of the current folder, or was in the output of a command that failed. Every cut of a text now steps over the two halves of such a character together
+
+### Added
+- Emoji and wide characters take the right number of columns: the widths come from glibc's `wcwidth` (131 wide ranges, 375 zero-width ranges), so 😀 and Chinese, Japanese and Korean characters take two columns, and combining accents and skin tones join the character before them. The typed line, the cursor, the column and the TAB list stay aligned
+- The arrows, Backspace, Delete and Ctrl+W move over and delete an emoji whole
+- A narrow window says why the column is gone: "Narrow window (N columns): the index column comes back at 69 or more. Widen the window or make the font smaller (Ctrl -)". F2 in a narrow window shows the same notice instead of a beep
+- A window smaller than 20×5 shows "KofTerm: window too small" with the size, instead of a broken screen; it comes back when the window grows
+- `kofterm selftest` has 22 checks: an emoji in the typed line, in a folder name and in the output of a failed command
+
 ## [0.9.0] - 23/10/2026
 
 KofTerm in English: the index, the screens and the `?` recipes. Portuguese stays the default.

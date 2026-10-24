@@ -422,7 +422,16 @@ Int runSelftest() {
     s.settle(300)
     s.send("\u0004")
     s.settle(600)
-    // 12. linha com senha não vai para o histórico; linha comum vai
+    // 12. emoji acima de U+FFFF digitado, no nome da pasta, na saída de um comando que falha e
+    // numa linha cancelada: o substring do KOF nativo aborta se corta o par UTF-16 (a 0.9.0 caía)
+    s.send("mkdir -p \"$HOME/e😀\" && cd \"$HOME/e😀\" && echo 😀; false\r")
+    s.settle(800)
+    s.send("echo 😀😀\u0003")
+    s.settle(500)
+    s.send("cd / && rmdir \"$HOME/e😀\" && echo VIVO_$((40+6))\r")
+    rep.check(s.expect("VIVO_46", 10000), "emoji na linha, na pasta e na saída", "o KofTerm caiu (substring no meio de um emoji)")
+    s.settle(600)
+    // 13. linha com senha não vai para o histórico; linha comum vai
     s.send("echo comum_$((1+0)) --password=falsa_456\r")
     // espera o prompt voltar: o que se digita com um comando rodando vai direto ao bash
     s.expect("comum_1", 10000)

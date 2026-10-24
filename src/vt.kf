@@ -10,8 +10,10 @@
 // num vetor reaproveitado, atributos de cor sao guardados num cache e as linhas sao
 // reaproveitadas ao rolar.
 //
-// Limitacoes conhecidas: caracteres de largura dupla (CJK, emoji) ocupam uma coluna; emoji
-// acima de U+FFFF aparece como U+FFFD; sem modo de insercao (IRM) nem mouse proprio.
+// Largura de cada caractere: a mesma do wcwidth da glibc (tabela VtWidths), a que o bash usa
+// para medir a linha. Emoji e CJK ocupam duas colunas, acentos combinantes (U+0301, U+FE0F,
+// U+200D) juntam-se ao caractere anterior.
+// Limitacoes conhecidas: sem modo de insercao (IRM) nem mouse proprio.
 
 class VtRow {
     List<String> ch = listOf<String>()
@@ -62,6 +64,9 @@ class Vt {
     String oscText = ""
     Int utfNeed = 0
     Int utfCp = 0
+    // ultima celula escrita: um acento combinante que chega depois junta-se a ela
+    Int lastX = -1
+    Int lastY = -1
 
     // tabelas prontas (criadas uma vez)
     Boolean tablesReady = false
@@ -71,6 +76,10 @@ class Vt {
     List<String> cacheFg = listOf<String>()
     List<String> cacheBg = listOf<String>()
     List<String> cacheVal = listOf<String>()
+    List<Int> wideLo = listOf<Int>()
+    List<Int> wideHi = listOf<Int>()
+    List<Int> zeroLo = listOf<Int>()
+    List<Int> zeroHi = listOf<Int>()
 
     // respostas para o programa (DSR, DA) e sequencias a repetir no terminal real
     String reply = ""
@@ -114,7 +123,114 @@ class Vt {
             csiArgs.add(-1)
             i = i + 1
         }
+        parseRanges(VtWidths.WIDE, wideLo, wideHi)
+        parseRanges(VtWidths.ZERO, zeroLo, zeroHi)
         tablesReady = true
+    }
+
+    // "300-36F 483-489" -> inicios e fins (hexadecimal), em ordem.
+    parseRanges(String spec, List<Int> lo, List<Int> hi) {
+        var a = 0
+        var b = 0
+        var second = false
+        var i = 0
+        while (i <= spec.length()) {
+            var c = 32
+            if (i < spec.length()) {
+                c = spec.charAt(i) as Int
+            }
+            if (c == 45) {
+                second = true
+            } else if (c == 32) {
+                if (second) {
+                    lo.add(a)
+                    hi.add(b)
+                }
+                a = 0
+                b = 0
+                second = false
+            } else {
+                var d = c - 48
+                if (c >= 65) {
+                    d = c - 55
+                }
+                if (second) {
+                    b = b * 16 + d
+                } else {
+                    a = a * 16 + d
+                }
+            }
+            i = i + 1
+        }
+    }
+
+    Boolean inRanges(Int cp, List<Int> lo, List<Int> hi) {
+        var a = 0
+        var b = lo.size - 1
+        while (a <= b) {
+            var m = (a + b) / 2
+            if (cp < lo.get(m)) {
+                b = m - 1
+            } else if (cp > hi.get(m)) {
+                a = m + 1
+            } else {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Colunas que o caractere ocupa: 0 (combinante), 1 ou 2 (emoji, CJK).
+    Int charWidth(Int cp) {
+        if (cp < 768) {
+            return 1
+        }
+        buildTables()
+        if (inRanges(cp, zeroLo, zeroHi)) {
+            return 0
+        }
+        if (inRanges(cp, wideLo, wideHi)) {
+            return 2
+        }
+        return 1
+    }
+
+    // As celulas de um texto escrito a partir da coluna `col` numa tela de largura `w`, como o
+    // emulador as poria: o largo ocupa duas (a segunda vazia; sem espaco no fim da linha, ele
+    // vai inteiro para a de baixo) e o combinante junta-se ao anterior. Usado na linha digitada.
+    List<String> cellsOf(String s, Int col, Int w) {
+        var out = listOf<String>()
+        var i = 0
+        while (i < s.length()) {
+            var cp = s.charAt(i) as Int
+            var n = 1
+            if (cp >= 55296 && cp <= 56319 && i + 1 < s.length()) {
+                var low = s.charAt(i + 1) as Int
+                if (low >= 56320 && low <= 57343) {
+                    cp = 65536 + (cp - 55296) * 1024 + (low - 56320)
+                    n = 2
+                }
+            }
+            var ch = s.substring(i, i + n)
+            var wd = charWidth(cp)
+            if (wd == 0 && out.size > 0) {
+                var k = out.size - 1
+                if (out.get(k) == EMPTY && k > 0) {
+                    k = k - 1
+                }
+                out.set(k, out.get(k) + ch)
+            } else if (wd == 2) {
+                if (w > 1 && (col + out.size) % w == w - 1) {
+                    out.add(SPACE)
+                }
+                out.add(ch)
+                out.add(EMPTY)
+            } else {
+                out.add(ch)
+            }
+            i = i + n
+        }
+        return out
     }
 
     VtRow blankRow() {
@@ -384,13 +500,28 @@ class Vt {
             put(decChar(cp))
         } else if (cp < 128) {
             put(ascii.get(cp))
-        } else if (cp > 65535) {
+        } else if (cp > 1114111) {
             put("�")
-        } else if (vtWide(cp)) {
-            putWide("" + (cp as Char))
         } else {
-            put("" + (cp as Char))
+            var wd = charWidth(cp)
+            if (wd == 0) {
+                combine(vtCharOf(cp))
+            } else if (wd == 2) {
+                putWide(vtCharOf(cp))
+            } else {
+                put(vtCharOf(cp))
+            }
         }
+    }
+
+    // Acento combinante (ou o U+FE0F e o U+200D dos emoji): junta-se a ultima celula escrita.
+    combine(String s) {
+        if (lastY < 0 || lastY >= rows || lastX < 0 || lastX >= cols) {
+            return
+        }
+        var row = screen().get(lastY)
+        row.ch.set(lastX, row.ch.get(lastX) + s)
+        dirty.set(lastY, true)
     }
 
     // Caractere de largura dupla (o ㉿ do prompt do Kali, CJK): ocupa duas celulas. A segunda
@@ -437,6 +568,8 @@ class Vt {
         row.ch.set(cx, s)
         row.at.set(cx, attr)
         dirty.set(cy, true)
+        lastX = cx
+        lastY = cy
         if (cx >= cols - 1) {
             wrapPending = true
         } else {
@@ -448,8 +581,17 @@ class Vt {
     putText(String s) {
         var i = 0
         while (i < s.length()) {
-            put(s.substring(i, i + 1))
-            i = i + 1
+            var cp = s.charAt(i) as Int
+            var n = 1
+            if (cp >= 55296 && cp <= 56319 && i + 1 < s.length()) {
+                var low = s.charAt(i + 1) as Int
+                if (low >= 56320 && low <= 57343) {
+                    cp = 65536 + (cp - 55296) * 1024 + (low - 56320)
+                    n = 2
+                }
+            }
+            putCodepoint(cp)
+            i = i + n
         }
     }
 
@@ -588,6 +730,8 @@ class Vt {
         fg = EMPTY
         bg = EMPTY
         attr = EMPTY
+        lastX = -1
+        lastY = -1
         init(rows, cols)
         autowrap = true
         cursorVisible = true
@@ -996,7 +1140,7 @@ class Vt {
     String trimmed(Int r) {
         var t = textAt(r)
         var end = t.length()
-        while (end > 0 && t.substring(end - 1, end) == " ") {
+        while (end > 0 && t.charAt(end - 1) as Int == 32) {
             end = end - 1
         }
         return t.substring(0, end)
@@ -1019,18 +1163,55 @@ String vtChar(Int b) {
     return "" + (b as Char)
 }
 
-// Largura dupla (East Asian Wide/Fullwidth) nas faixas comuns do plano basico.
-Boolean vtWide(Int cp) {
-    return cp >= 4352 && cp <= 4447 ||      // Hangul Jamo
-        cp >= 11904 && cp <= 12350 ||       // radicais CJK, pontuacao CJK
-        cp >= 12353 && cp <= 13311 ||       // kana, ... caracteres circulados (inclui o ㉿ U+327F)
-        cp >= 13312 && cp <= 19903 ||       // CJK extensao A
-        cp >= 19968 && cp <= 42191 ||       // CJK unificado, Yi
-        cp >= 44032 && cp <= 55203 ||       // Hangul
-        cp >= 63744 && cp <= 64255 ||       // CJK de compatibilidade
-        cp >= 65072 && cp <= 65103 ||       // formas verticais CJK
-        cp >= 65280 && cp <= 65376 ||       // formas de largura total
-        cp >= 65504 && cp <= 65510
+// O caractere que comeca na posicao i. Um emoji acima de U+FFFF ocupa duas posicoes (par
+// UTF-16): o par vem inteiro, e na segunda metade vem "". O substring do KOF nativo aborta
+// se cortar um par no meio (known-bugs 43).
+String vtAt(String s, Int i) {
+    var c = s.charAt(i) as Int
+    if (c >= 55296 && c <= 56319) {
+        if (i + 1 < s.length()) {
+            var d = s.charAt(i + 1) as Int
+            if (d >= 56320 && d <= 57343) {
+                return s.substring(i, i + 2)
+            }
+        }
+        return ""
+    }
+    if (c >= 56320 && c <= 57343) {
+        return ""
+    }
+    return s.substring(i, i + 1)
+}
+
+// Um corte em n que nao separa um par UTF-16 (emoji): recua uma posicao se cairia no meio.
+Int vtCut(String s, Int n) {
+    if (n <= 0) {
+        return 0
+    }
+    if (n >= s.length()) {
+        return s.length()
+    }
+    var c = s.charAt(n) as Int
+    if (c >= 56320 && c <= 57343) {
+        return n - 1
+    }
+    return n
+}
+
+// Codepoint -> String; acima de U+FFFF o KOF guarda um par (UTF-16) e escreve os 4 bytes.
+String vtCharOf(Int cp) {
+    if (cp < 65536) {
+        return "" + (cp as Char)
+    }
+    var v = cp - 65536
+    return "" + ((55296 + v / 1024) as Char) + ((56320 + v % 1024) as Char)
+}
+
+// Faixas do wcwidth da glibc 2.43 (Kali), de U+0300 em diante: WIDE ocupa 2 colunas, ZERO
+// nenhuma. Geradas na VM com python3 e ctypes (libc.wcwidth, locale C.UTF-8).
+class VtWidths {
+    static String WIDE = "1100-115F 231A-231B 2329-232A 23E9-23EC 23F0-23F0 23F3-23F3 25FD-25FE 2614-2615 2630-2637 2648-2653 267F-267F 268A-268F 2693-2693 26A1-26A1 26AA-26AB 26BD-26BE 26C4-26C5 26CE-26CE 26D4-26D4 26EA-26EA 26F2-26F3 26F5-26F5 26FA-26FA 26FD-26FD 2705-2705 270A-270B 2728-2728 274C-274C 274E-274E 2753-2755 2757-2757 2795-2797 27B0-27B0 27BF-27BF 2B1B-2B1C 2B50-2B50 2B55-2B55 2E80-2E99 2E9B-2EF3 2F00-2FD5 2FF0-3029 302E-303E 3041-3096 309B-30FF 3105-312F 3131-3163 3165-318E 3190-31E5 31EF-321E 3220-A48C A490-A4C6 A960-A97C AC00-D7A3 F900-FA6D FA70-FAD9 FE10-FE19 FE30-FE52 FE54-FE66 FE68-FE6B FF01-FF60 FFE0-FFE6 16FE0-16FE3 16FF0-16FF6 17000-18CD5 18CFF-18D1E 18D80-18DF2 1AFF0-1AFF3 1AFF5-1AFFB 1AFFD-1AFFE 1B000-1B122 1B132-1B132 1B150-1B152 1B155-1B155 1B164-1B167 1B170-1B2FB 1D300-1D356 1D360-1D376 1F004-1F004 1F0CF-1F0CF 1F18E-1F18E 1F191-1F19A 1F200-1F202 1F210-1F23B 1F240-1F248 1F250-1F251 1F260-1F265 1F300-1F320 1F32D-1F335 1F337-1F37C 1F37E-1F393 1F3A0-1F3CA 1F3CF-1F3D3 1F3E0-1F3F0 1F3F4-1F3F4 1F3F8-1F43E 1F440-1F440 1F442-1F4FC 1F4FF-1F53D 1F54B-1F54E 1F550-1F567 1F57A-1F57A 1F595-1F596 1F5A4-1F5A4 1F5FB-1F64F 1F680-1F6C5 1F6CC-1F6CC 1F6D0-1F6D2 1F6D5-1F6D8 1F6DC-1F6DF 1F6EB-1F6EC 1F6F4-1F6FC 1F7E0-1F7EB 1F7F0-1F7F0 1F90C-1F93A 1F93C-1F945 1F947-1F9FF 1FA70-1FA7C 1FA80-1FA8A 1FA8E-1FAC6 1FAC8-1FAC8 1FACD-1FADC 1FADF-1FAEA 1FAEF-1FAF8 20000-2A6DF 2A700-2B81D 2B820-2CEAD 2CEB0-2EBE0 2EBF0-2EE5D 2F800-2FA1D 30000-3134A 31350-33479"
+    static String ZERO = "300-36F 483-489 591-5BD 5BF-5BF 5C1-5C2 5C4-5C5 5C7-5C7 610-61A 61C-61C 64B-65F 670-670 6D6-6DC 6DF-6E4 6E7-6E8 6EA-6ED 711-711 730-74A 7A6-7B0 7EB-7F3 7FD-7FD 816-819 81B-823 825-827 829-82D 859-85B 897-89F 8CA-8E1 8E3-902 93A-93A 93C-93C 941-948 94D-94D 951-957 962-963 981-981 9BC-9BC 9C1-9C4 9CD-9CD 9E2-9E3 9FE-9FE A01-A02 A3C-A3C A41-A42 A47-A48 A4B-A4D A51-A51 A70-A71 A75-A75 A81-A82 ABC-ABC AC1-AC5 AC7-AC8 ACD-ACD AE2-AE3 AFA-AFF B01-B01 B3C-B3C B3F-B3F B41-B44 B4D-B4D B55-B56 B62-B63 B82-B82 BC0-BC0 BCD-BCD C00-C00 C04-C04 C3C-C3C C3E-C40 C46-C48 C4A-C4D C55-C56 C62-C63 C81-C81 CBC-CBC CBF-CBF CC6-CC6 CCC-CCD CE2-CE3 D00-D01 D3B-D3C D41-D44 D4D-D4D D62-D63 D81-D81 DCA-DCA DD2-DD4 DD6-DD6 E31-E31 E34-E3A E47-E4E EB1-EB1 EB4-EBC EC8-ECE F18-F19 F35-F35 F37-F37 F39-F39 F71-F7E F80-F84 F86-F87 F8D-F97 F99-FBC FC6-FC6 102D-1030 1032-1037 1039-103A 103D-103E 1058-1059 105E-1060 1071-1074 1082-1082 1085-1086 108D-108D 109D-109D 1160-11FF 135D-135F 1712-1714 1732-1733 1752-1753 1772-1773 17B4-17B5 17B7-17BD 17C6-17C6 17C9-17D3 17DD-17DD 180B-180F 1885-1886 18A9-18A9 1920-1922 1927-1928 1932-1932 1939-193B 1A17-1A18 1A1B-1A1B 1A56-1A56 1A58-1A5E 1A60-1A60 1A62-1A62 1A65-1A6C 1A73-1A7C 1A7F-1A7F 1AB0-1ADD 1AE0-1AEB 1B00-1B03 1B34-1B34 1B36-1B3A 1B3C-1B3C 1B42-1B42 1B6B-1B73 1B80-1B81 1BA2-1BA5 1BA8-1BA9 1BAB-1BAD 1BE6-1BE6 1BE8-1BE9 1BED-1BED 1BEF-1BF1 1C2C-1C33 1C36-1C37 1CD0-1CD2 1CD4-1CE0 1CE2-1CE8 1CED-1CED 1CF4-1CF4 1CF8-1CF9 1DC0-1DFF 200B-200F 202A-202E 2060-2064 2066-206F 20D0-20F0 2CEF-2CF1 2D7F-2D7F 2DE0-2DFF 302A-302D 3099-309A 3164-3164 A66F-A672 A674-A67D A69E-A69F A6F0-A6F1 A802-A802 A806-A806 A80B-A80B A825-A826 A82C-A82C A8C4-A8C5 A8E0-A8F1 A8FF-A8FF A926-A92D A947-A951 A980-A982 A9B3-A9B3 A9B6-A9B9 A9BC-A9BD A9E5-A9E5 AA29-AA2E AA31-AA32 AA35-AA36 AA43-AA43 AA4C-AA4C AA7C-AA7C AAB0-AAB0 AAB2-AAB4 AAB7-AAB8 AABE-AABF AAC1-AAC1 AAEC-AAED AAF6-AAF6 ABE5-ABE5 ABE8-ABE8 ABED-ABED D7B0-D7C6 D7CB-D7FB FB1E-FB1E FE00-FE0F FE20-FE2F FEFF-FEFF FFA0-FFA0 101FD-101FD 102E0-102E0 10376-1037A 10A01-10A03 10A05-10A06 10A0C-10A0F 10A38-10A3A 10A3F-10A3F 10AE5-10AE6 10D24-10D27 10D69-10D6D 10EAB-10EAC 10EFA-10EFF 10F46-10F50 10F82-10F85 11001-11001 11038-11046 11070-11070 11073-11074 1107F-11081 110B3-110B6 110B9-110BA 110C2-110C2 11100-11102 11127-1112B 1112D-11134 11173-11173 11180-11181 111B6-111BE 111C9-111CC 111CF-111CF 1122F-11231 11234-11234 11236-11237 1123E-1123E 11241-11241 112DF-112DF 112E3-112EA 11300-11301 1133B-1133C 11340-11340 11366-1136C 11370-11374 113BB-113C0 113CE-113CE 113D0-113D0 113D2-113D2 113E1-113E2 11438-1143F 11442-11444 11446-11446 1145E-1145E 114B3-114B8 114BA-114BA 114BF-114C0 114C2-114C3 115B2-115B5 115BC-115BD 115BF-115C0 115DC-115DD 11633-1163A 1163D-1163D 1163F-11640 116AB-116AB 116AD-116AD 116B0-116B5 116B7-116B7 1171D-1171D 1171F-1171F 11722-11725 11727-1172B 1182F-11837 11839-1183A 1193B-1193C 1193E-1193E 11943-11943 119D4-119D7 119DA-119DB 119E0-119E0 11A01-11A0A 11A33-11A38 11A3B-11A3E 11A47-11A47 11A51-11A56 11A59-11A5B 11A8A-11A96 11A98-11A99 11B60-11B60 11B62-11B64 11B66-11B66 11C30-11C36 11C38-11C3D 11C3F-11C3F 11C92-11CA7 11CAA-11CB0 11CB2-11CB3 11CB5-11CB6 11D31-11D36 11D3A-11D3A 11D3C-11D3D 11D3F-11D45 11D47-11D47 11D90-11D91 11D95-11D95 11D97-11D97 11EF3-11EF4 11F00-11F01 11F36-11F3A 11F40-11F40 11F42-11F42 11F5A-11F5A 13440-13440 13447-13455 1611E-16129 1612D-1612F 16AF0-16AF4 16B30-16B36 16F4F-16F4F 16F8F-16F92 16FE4-16FE4 1BC9D-1BC9E 1BCA0-1BCA3 1CF00-1CF2D 1CF30-1CF46 1D167-1D169 1D173-1D182 1D185-1D18B 1D1AA-1D1AD 1D242-1D244 1DA00-1DA36 1DA3B-1DA6C 1DA75-1DA75 1DA84-1DA84 1DA9B-1DA9F 1DAA1-1DAAF 1E000-1E006 1E008-1E018 1E01B-1E021 1E023-1E024 1E026-1E02A 1E08F-1E08F 1E130-1E136 1E2AE-1E2AE 1E2EC-1E2EF 1E4EC-1E4EF 1E5EE-1E5EF 1E6E3-1E6E3 1E6E6-1E6E6 1E6EE-1E6EF 1E6F5-1E6F5 1E8D0-1E8D6 1E944-1E94A E0001-E0001 E0020-E007F E0100-E01EF"
 }
 
 Int clampInt(Int v, Int lo, Int hi) {
@@ -1241,6 +1422,37 @@ test "redimensionar mantem o conteudo e o cursor" {
     assert(v.rows == 2 && v.cols == 6, "tamanho")
     assert(v.trimmed(1) == "d", "a linha do cursor continua visivel")
     assert(v.cy == 1, "cursor na ultima linha")
+}
+
+test "texto com emoji nunca e cortado no meio do par" {
+    var s = "a😀b"
+    assert(vtAt(s, 1) == "😀" && vtAt(s, 2) == "" && vtAt(s, 3) == "b", "vtAt")
+    assert(vtCut(s, 2) == 1 && vtCut(s, 3) == 3 && vtCut(s, 9) == 4 && vtCut(s, 0) == 0, "vtCut")
+    var v = vtNew(2, 10)
+    v.putText("x😀y")
+    assert(v.screen().get(0).ch.get(1) == "😀" && v.screen().get(0).ch.get(3) == "y", "putText com emoji")
+    v.feedAll(vtBytes("\r\n"))
+    v.putText("ok  ")
+    assert(v.trimmed(1) == "ok", "trimmed")
+}
+
+test "emoji acima de U+FFFF ocupa duas colunas; acento combinante junta-se" {
+    var v = vtNew(3, 8)
+    // "a" + 😀 (U+1F600, F0 9F 98 80) + "b"
+    v.feedAll(listOf(97, 240, 159, 152, 128, 98))
+    var row = v.screen().get(0)
+    assert(row.ch.get(1) == "😀" && row.ch.get(2) == "" && row.ch.get(3) == "b", "par UTF-16 e metade vazia")
+    assert(v.cx == 4, "cursor andou quatro colunas")
+    // "e" + U+0301 (CC 81): uma celula so
+    v.feedAll(listOf(13, 10, 101, 204, 129, 120))
+    var r1 = v.screen().get(1)
+    assert(r1.ch.get(0) == "e" + (769 as Char) && r1.ch.get(1) == "x", "e com acento numa celula")
+    assert(v.charWidth(128512) == 2 && v.charWidth(65) == 1 && v.charWidth(769) == 0 && v.charWidth(13183) == 2, "larguras")
+    assert(v.charWidth(8205) == 0 && v.charWidth(65039) == 0, "ZWJ e VS16 sem largura")
+    var c = v.cellsOf("a😀b", 0, 10)
+    assert(c.size == 4 && c.get(1) == "😀" && c.get(2) == "" && c.get(3) == "b", "celulas da linha digitada")
+    var e = v.cellsOf("😀", 9, 10)
+    assert(e.size == 3 && e.get(0) == " " && e.get(1) == "😀", "largo no fim da linha vai para baixo")
 }
 
 test "caractere largo ocupa duas colunas (o ㉿ do prompt do Kali)" {

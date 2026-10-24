@@ -97,10 +97,10 @@ class History {
 // Primeira "palavra" de uma sugestao, com os espacos da frente (Ctrl+seta direita).
 String firstWord(String ghost) {
     var i = 0
-    while (i < ghost.length() && ghost.substring(i, i + 1) == " ") {
+    while (i < ghost.length() && ghost.charAt(i) as Int == 32) {
         i = i + 1
     }
-    while (i < ghost.length() && ghost.substring(i, i + 1) != " ") {
+    while (i < ghost.length() && ghost.charAt(i) as Int != 32) {
         i = i + 1
     }
     return ghost.substring(0, i)

@@ -18,9 +18,9 @@ class LineEditor {
         return cursor == line.length()
     }
 
-    // charAt devolve um caractere, nao uma String: comparar com " " seria sempre falso.
+    // charAt devolve um numero (a posicao UTF-16), nunca corta um emoji ao meio.
     Boolean spaceAt(Int i) {
-        return line.substring(i, i + 1) == " "
+        return line.charAt(i) as Int == 32
     }
 
     insert(String text) {
@@ -28,28 +28,54 @@ class LineEditor {
         cursor = cursor + text.length()
     }
 
+    // Emoji acima de U+FFFF ocupa duas posicoes na String (par UTF-16): a segunda metade nunca
+    // fica sozinha, entao o cursor pula as duas e apagar leva as duas.
+    Boolean lowHalfAt(Int i) {
+        if (i <= 0 || i >= line.length()) {
+            return false
+        }
+        var c = line.charAt(i) as Int
+        return c >= 56320 && c <= 57343
+    }
+
+    // Quantas posicoes tem o caractere que termina em `i` (exclusive) / comeca em `i`.
+    Int sizeBefore(Int i) {
+        if (lowHalfAt(i - 1)) {
+            return 2
+        }
+        return 1
+    }
+
+    Int sizeAt(Int i) {
+        if (lowHalfAt(i + 1)) {
+            return 2
+        }
+        return 1
+    }
+
     backspace() {
         if (cursor > 0) {
-            line = line.substring(0, cursor - 1) + line.substring(cursor, line.length())
-            cursor = cursor - 1
+            var n = sizeBefore(cursor)
+            line = line.substring(0, cursor - n) + line.substring(cursor, line.length())
+            cursor = cursor - n
         }
     }
 
     deleteForward() {
         if (cursor < line.length()) {
-            line = line.substring(0, cursor) + line.substring(cursor + 1, line.length())
+            line = line.substring(0, cursor) + line.substring(cursor + sizeAt(cursor), line.length())
         }
     }
 
     left() {
         if (cursor > 0) {
-            cursor = cursor - 1
+            cursor = cursor - sizeBefore(cursor)
         }
     }
 
     right() {
         if (cursor < line.length()) {
-            cursor = cursor + 1
+            cursor = cursor + sizeAt(cursor)
         }
     }
 
@@ -148,4 +174,27 @@ test "acentos contam como um caractere" {
     e.left()
     e.deleteForward()
     assert(e.line == "açã", "delete")
+}
+
+test "emoji acima de U+FFFF anda e apaga inteiro" {
+    var e = LineEditor()
+    e.insert("a😀b")
+    assert(e.line.length() == 4 && e.cursor == 4, "o emoji ocupa duas posicoes")
+    e.left()
+    assert(e.cursor == 3, "antes do b")
+    e.left()
+    assert(e.cursor == 1, "pulou o emoji inteiro")
+    e.right()
+    assert(e.cursor == 3, "e de volta")
+    e.backspace()
+    assert(e.line == "ab" && e.cursor == 1, "apagou o par")
+    e.set("x😀")
+    e.home()
+    e.right()
+    e.deleteForward()
+    assert(e.line == "x", "delete leva o par")
+    e.set("ls 😀😀 ok")
+    e.killWordBack()
+    e.killWordBack()
+    assert(e.line == "ls ", "ctrl-w passa por emoji")
 }

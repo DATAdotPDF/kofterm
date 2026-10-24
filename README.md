@@ -173,13 +173,13 @@ Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_COND
 | --- | --- |
 | **0.7.x** | Fixes from testing 0.7.0 and more networking recipes |
 | **0.8.0**, finding things (done) | History search with Ctrl+R, a candidate list when completing files, and the mouse wheel scrolling old output |
-| **0.9.0**, for everyone (English done) | English index, screens and recipes (done, `kofterm lang en`); emoji above U+FFFF and a clear warning when the terminal is too narrow come in 0.9.x |
+| **0.9.0**, for everyone (English done) | English index, screens and recipes (done, `kofterm lang en`); in 0.9.x, emoji with the right width and a clear warning when the terminal is too narrow (done) |
 | **1.0.0**, stable | Tested by other people on several distributions and terminals, no limitation that gets in the way, stable file formats |
 | **Later** | A small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes |
 
 How versions are numbered and the 1.0 criteria: [CONTRIBUTING, section Versões](CONTRIBUTING.md#7-versões) (in Portuguese). See also the [CHANGELOG](CHANGELOG.md) and the [issues](https://github.com/DATAdotPDF/kofterm/issues).
 
-**Known limitations:** while the wheel is on, selecting text with the mouse needs Shift (or F3 to turn the wheel off); old output keeps the last 2,000 lines; the column needs at least 40 columns left for Bash; emoji above U+FFFF show as `�`.
+**Known limitations:** while the wheel is on, selecting text with the mouse needs Shift (or F3 to turn the wheel off); old output keeps the last 2,000 lines; the column needs at least 40 columns left for Bash; in a window narrower than 69 columns the column hides and a notice says why.
 
 ## Contributors
 

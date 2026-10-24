@@ -130,7 +130,7 @@ Digite o texto **sem apertar Enter**, faça a ação e confira a linha.
 | F.10 | Um comando que não está no índice, ex.: `cowsay oi` | A coluna diz que ainda não conhece e sugere F1 | |
 | F.11 ★ | F2 | A coluna some, o terminal ocupa a largura toda (`stty size` mostra a largura cheia) | |
 | F.12 | F2 de novo, `exit`, abra o KofTerm outra vez | A coluna volta ligada (a escolha é lembrada) | |
-| F.13 | Diminua a janela até ficar estreita | Com pouco espaço, a coluna se esconde sozinha; ao aumentar, volta | |
+| F.13 | Diminua a janela até ficar estreita | Com pouco espaço, a coluna se esconde sozinha e a linha de baixo diz "Janela estreita (N colunas)"; ao aumentar, volta | |
 
 ## G. Busca no índice (F1 / Ctrl+T)
 
@@ -268,7 +268,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | N.1 ★ | `exit` | A tela de **antes** de abrir o KofTerm volta (como no vim) | |
 | N.2 | Feche a janela com o KofTerm aberto; abra outra e rode `stty -a \| head -3` | Nada estranho; `pgrep -a kofterm` não mostra processos esquecidos | |
 | N.3 | No terminal de fora: `kofterm < /dev/null` | Mensagem "a entrada padrão não é um terminal", sem travar | |
-| N.4 ★ | No terminal de fora: `kofterm selftest` | Cerca de 30 s de linhas `ok`, termina com "21 ok, 0 falharam"; nenhuma pasta `/tmp/kofterm-selftest-*` fica para trás | |
+| N.4 ★ | No terminal de fora: `kofterm selftest` | Cerca de 30 s de linhas `ok`, termina com "22 ok, 0 falharam"; nenhuma pasta `/tmp/kofterm-selftest-*` fica para trás | |
 | N.5 | Num KofTerm aberto **depois** de instalar a 0.7 (feche e abra de novo): `printf '\033]7770;0;1000;/tmp\007'; read -r x`, digite `teste456` e Enter; depois `grep -cx teste456 ~/.local/share/kofterm/history` | O `read` termina normalmente e o grep mostra `0` (um marcador falso não captura o que você digita). O `-x` conta só linhas iguais a `teste456`, não a própria linha do grep | |
 
 ## P. Instalação (opcional, no fim)
@@ -307,6 +307,17 @@ coluna. Nada é instalado sem você apertar Enter.
 | S.4 | F1 | A aba diz "Offline index · 150 commands" | |
 | S.6 ★ | Ainda em inglês: digite `? install htop`, depois `? what is my ip` (sem Enter) | O cinza mostra `→ sudo apt update && sudo apt install -y htop` e depois `→ ip a`; a coluna diz "RECIPE" | |
 | S.5 ★ | `kofterm lang pt`, `exit` e abra `kofterm` de novo | Tudo volta para o português | |
+
+## T. Emoji e janela estreita (0.9.x)
+
+| # | Fazer | Deve acontecer | Resultado |
+|---|---|---|---|
+| T.1 ★ | Digite `echo 😀 ok` e Enter | Aparece `😀 ok`; o KofTerm continua aberto (a 0.9.0 fechava aqui) | |
+| T.2 ★ | Digite `echo 😀 ok` de novo, sem Enter; aperte ← três vezes e depois Backspace | O cursor anda certinho e o Backspace apaga o emoji inteiro (sobra `echo ok`) | |
+| T.3 | `mkdir ~/t😀 && cd ~/t😀`, depois `cd ~ && rmdir ~/t😀` | Entra e sai da pasta sem fechar; a coluna à direita continua alinhada | |
+| T.4 | `printf 'caf\u00e9 ❤️ 👍🏽 ㉿\n'` | Tudo aparece na mesma linha e a barra da coluna não entorta | |
+| T.5 ★ | Aumente a fonte com **Ctrl +** várias vezes até a janela ter menos de 69 colunas | A coluna some e a linha de baixo diz "Janela estreita (N colunas)…"; F2 mostra o mesmo aviso; Ctrl 0 volta tudo | |
+| T.6 | Continue com Ctrl + até a janela ficar minúscula | Aparece "KofTerm: janela pequena demais (C×R)"; ao voltar o tamanho, a tela volta | |
 
 ## Q. Impressões gerais (texto livre)
 
