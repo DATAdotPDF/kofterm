@@ -1,4 +1,4 @@
-# Roteiro de teste humano — KofTerm 0.8.0
+# Roteiro de teste humano — KofTerm 0.9.0
 
 Roteiro completo para uma **pessoa de verdade, numa janela de terminal de verdade**, conferir
 cada funcionalidade do KofTerm como um aluno usaria. Cada passo diz o que fazer e o que deve
@@ -33,8 +33,8 @@ script -q -I /tmp/kt-in.log -O /tmp/kt-out.log -c kofterm
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|
-| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.8.0 instalado" | |
-| 0.2 ★ | `kofterm version` | `KofTerm 0.8.0` | |
+| 0.1 ★ | O `install.sh` termina | Mensagem "KofTerm 0.9.0 instalado" | |
+| 0.2 ★ | `kofterm version` | `KofTerm 0.9.0` | |
 | 0.3 | `kofterm doctor` | `indice: 148 entradas`, pasta de dados `(pasta 0700, arquivos 0600)`, `bash: true` | |
 | 0.4 | `kofterm help` | Lista os subcomandos e as teclas | |
 | 0.5 | `kofterm --qualquer-coisa` | Mostra a ajuda; nada quebra | |
@@ -297,7 +297,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | R.10 | F3, depois role a roda | A coluna avisa "roda do mouse desligada"; a roda não rola mais (o terminal faz o que fazia antes); F3 de novo liga | |
 | R.11 | Abra `vim`, use a roda lá dentro e saia com `:q` | O vim decide o que a roda faz; de volta ao prompt, a roda rola a saída antiga de novo | |
 
-## S. Inglês (opcional)
+## S. Inglês (0.9.0, opcional)
 
 | # | Fazer | Deve acontecer | Resultado |
 |---|---|---|---|

@@ -2,7 +2,7 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
-## [Unreleased]
+## [0.9.0] - 23/10/2026
 
 KofTerm in English: the index, the screens and the `?` recipes. Portuguese stays the default.
 
