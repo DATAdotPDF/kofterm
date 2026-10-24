@@ -125,6 +125,28 @@ class StSession {
         return false
     }
 
+    // Espera os dois textos, em qualquer ordem (o KofTerm pode pedir o mouse no mesmo quadro
+    // em que desenha a saída, antes ou depois dela); descarta a saída até o último dos dois.
+    Boolean expectBoth(String a, String b, Int ms) {
+        var end = stNow() + (ms as Long)
+        while (true) {
+            var ia = out.indexOf(a)
+            var ib = out.indexOf(b)
+            if (ia >= 0 && ib >= 0) {
+                var cut = ia + a.length()
+                if (ib + b.length() > cut) {
+                    cut = ib + b.length()
+                }
+                out = out.substring(cut, out.length())
+                return true
+            }
+            if (stNow() >= end || !pump(100)) {
+                return false
+            }
+        }
+        return false
+    }
+
     send(String s) {
         var c = strdup(s)
         writeAll(p.master, c, strlen(c))
@@ -385,10 +407,13 @@ Int runSelftest() {
     rep.check(sockets == 0, "nenhum socket de rede aberto", "" + sockets + " sockets")
     // 10. a roda do mouse rola a saída antiga (o mouse volta a ser do KofTerm no prompt)
     s.send("seq 1 500; echo FIM_$((3+3))\r")
-    s.expect("FIM_6", 15000)
-    var captured = s.expect("\u001b[?1000h", 5000)
+    var captured = s.expectBoth("FIM_6", "\u001b[?1000h", 15000)
     s.send("\u001b[<64;5;5M")
-    rep.check(captured && s.expect("linhas acima", 5000), "roda do mouse rola a saída antiga", "a faixa não apareceu")
+    if (captured) {
+        rep.check(s.expect("linhas acima", 5000), "roda do mouse rola a saída antiga", "a faixa não apareceu")
+    } else {
+        rep.check(false, "roda do mouse rola a saída antiga", "o KofTerm não pediu o mouse de volta no prompt")
+    }
     s.send("a\u0015")
     s.settle(400)
     // 11. ao rodar um programa, o mouse volta para o terminal (cliques não vão parar no cat)
