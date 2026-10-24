@@ -345,7 +345,7 @@ Int runLang(List<String> args) {
     if (want == "en") {
         saveFile(dir + "/lang", "en\n")
         println("KofTerm in English from the next window: type exit and open kofterm again.")
-        println("The index and the screens are in English; the ? recipes are still in Portuguese.")
+        println("The index, the screens and the ? recipes are in English.")
         return 0
     }
     if (want == "pt" || want == "pt_BR") {

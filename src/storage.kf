@@ -208,6 +208,17 @@ String indexPath(String dataDirPath) {
     return p
 }
 
+// As receitas do ? no idioma escolhido; sem recipes/en.txt (instalacao antiga), o portugues.
+String recipesPath(String dataDirPath) {
+    if (Lang.en) {
+        var p = findShared(dataDirPath, "recipes/en.txt")
+        if (access(p, 0) == 0) {
+            return p
+        }
+    }
+    return findShared(dataDirPath, "recipes/pt_BR.txt")
+}
+
 // Arquivos de uma pasta que terminam com `suffix` (caminhos completos).
 List<String> listFiles(String dir, String suffix) {
     var out = listOf<String>()

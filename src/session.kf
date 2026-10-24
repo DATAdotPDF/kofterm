@@ -164,7 +164,7 @@ class Session {
         var parts = splitOn(tr("TAB aceita a sugestão em cinza|F2 índice ao lado|F1 busca|" +
             "Ctrl+R histórico|roda do mouse rola (F3)|? peça do seu jeito, ex.: ? instalar o htop",
             "TAB accepts the grey suggestion|F2 index on the side|F1 search|" +
-            "Ctrl+R history|mouse wheel scrolls (F3)|? recipes (in Portuguese for now), e.g. ? instalar o htop"), "|")
+            "Ctrl+R history|mouse wheel scrolls (F3)|? ask in your own words, e.g. ? install htop"), "|")
         var w = leftWidth()
         var cur = "KofTerm " + Version.NUMBER
         var s = ""
@@ -439,7 +439,7 @@ class Session {
                 } else if (recipeQuery().trim().length() > 0) {
                     ghost = tr("  (nenhuma receita ainda · F1 busca no índice)", "  (no recipe yet · F1 searches the index)")
                 } else {
-                    ghost = tr("  diga o que quer fazer, ex.: instalar o htop", "  say what you want to do, in Portuguese, e.g. instalar o htop")
+                    ghost = tr("  diga o que quer fazer, ex.: instalar o htop", "  say what you want to do, e.g. install htop")
                 }
             } else if (ed.atEnd()) {
                 ghost = brain.suggest(ed.line, cwd, feats)
@@ -807,13 +807,13 @@ class Session {
 
     List<String> recipePanel(Int w) {
         var out = listOf<String>()
-        out.add(esc() + "[7m" + pad(fitParts(tr(" Receitas · TAB usa · F2 fecha", " Recipes (Portuguese) · TAB uses · F2 closes"), w), w) + esc() + "[0m")
+        out.add(esc() + "[7m" + pad(fitParts(tr(" Receitas · TAB usa · F2 fecha", " Recipes · TAB uses · F2 closes"), w), w) + esc() + "[0m")
         out.add("")
         if (recipeHits.size == 0) {
-            for (var t in wrapText(tr("Escreva depois do ? o que você quer fazer, do seu jeito. Exemplos:", "After the ?, write what you want to do. Recipes are in Portuguese for now. Examples:"), w - 1)) {
+            for (var t in wrapText(tr("Escreva depois do ? o que você quer fazer, do seu jeito. Exemplos:", "After the ?, write what you want to do, in your own words. Examples:"), w - 1)) {
                 out.add(" " + t)
             }
-            for (var ex in listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? compactar pasta fotos", "? qual meu ip")) {
+            for (var ex in recipeExamples(true)) {
                 out.add(" " + esc() + "[33m" + clip(ex, w - 1) + esc() + "[0m")
             }
             return out
@@ -1001,8 +1001,8 @@ class Session {
                 keyRow(out, tr("roda", "wheel"), tr("saída antiga (F3 liga/desliga)", "old output (F3 on/off)"), w)
                 keyRow(out, "F1", tr("busca no índice", "searches the index"), w)
                 keyRow(out, "F2", tr("mostra/esconde esta coluna", "shows/hides this column"), w)
-                keyRow(out, "?", tr("peça do seu jeito:", "recipes, in Portuguese:"), w)
-                for (var ex in listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? qual meu ip", "? acessar root")) {
+                keyRow(out, "?", tr("peça do seu jeito:", "ask in your own words:"), w)
+                for (var ex in recipeExamples(false)) {
                     var first = true
                     for (var t in wrapText(ex, w - 9)) {
                         if (first) {
@@ -1103,6 +1103,20 @@ class Session {
             }
         }
         return out
+    }
+
+    // Exemplos de pedido no idioma das receitas carregadas (o arquivo em ingles pode faltar).
+    List<String> recipeExamples(Boolean recipeMode) {
+        if (RecipeLang.en) {
+            if (recipeMode) {
+                return listOf("? install htop", "? how much space is left", "? find file report", "? compress folder photos", "? what is my ip")
+            }
+            return listOf("? install htop", "? how much space is left", "? find file report", "? what is my ip", "? become root")
+        }
+        if (recipeMode) {
+            return listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? compactar pasta fotos", "? qual meu ip")
+        }
+        return listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? qual meu ip", "? acessar root")
     }
 
     // Uma tecla da lista "o que dá para fazer": a explicacao quebra nos espacos, alinhada.

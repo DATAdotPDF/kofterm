@@ -280,20 +280,30 @@ String trimDots(String w) {
     return t
 }
 
+// Idioma das receitas carregadas (recipes/en.txt): muda as palavras vazias e os sinonimos.
+class RecipeLang {
+    static Boolean en = false
+}
+
 // Palavras diferentes que pedem a mesma coisa viram uma so (vale para receitas e pedidos).
 class RecipeSyn {
     static String PAIRS = " acessar=entrar deletar=apagar excluir=apagar achar=procurar encontrar=procurar buscar=procurar localizar=procurar mostrar=ver exibir=ver olhar=ver diretorio=pasta aplicativo=programa app=programa software=programa maquina=computador pc=computador administrador=root admin=root superusuario=root "
+    static String PAIRS_EN = " access=enter login=enter erase=delete find=search locate=search look=search show=see display=see view=see directory=folder dir=folder application=program app=program software=program tool=program machine=computer pc=computer box=computer administrator=root admin=root superuser=root "
 }
 
 String recipeSynonym(String w) {
+    var pairs = RecipeSyn.PAIRS
+    if (RecipeLang.en) {
+        pairs = RecipeSyn.PAIRS_EN
+    }
     var key = " " + w + "="
-    var at = RecipeSyn.PAIRS.indexOf(key)
+    var at = pairs.indexOf(key)
     if (at < 0) {
         return w
     }
     var start = at + key.length()
-    var end = RecipeSyn.PAIRS.indexOf(" ", start)
-    return RecipeSyn.PAIRS.substring(start, end)
+    var end = pairs.indexOf(" ", start)
+    return pairs.substring(start, end)
 }
 
 String recipeFold(String c) {
@@ -309,9 +319,13 @@ String recipeFold(String c) {
 // Palavras que nao decidem nada no pedido, separadas por espaco (uma String so, criada uma vez).
 class RecipeStops {
     static String WORDS = " o a os as um uma uns umas de do da dos das no na nos nas em para pra pro por pelo pela que e eu meu minha meus minhas me se com como quero queria gostaria preciso posso faco fazer favor esse essa este esta isso aqui todo toda todos todas qual quais onde agora ja so tem ter "
+    static String WORDS_EN = " a an the to of in on at for from into by with about my me i im you your is are am be been it its this that these those want wanna need like would could should can will please how do does did what whats which where there here now just some any all so get called named "
 }
 
 Boolean recipeStop(String w) {
+    if (RecipeLang.en) {
+        return RecipeStops.WORDS_EN.contains(" " + w + " ")
+    }
     return RecipeStops.WORDS.contains(" " + w + " ")
 }
 
@@ -505,6 +519,32 @@ test "no shell de root: sem sudo, sem virar root, pasta do root" {
     }
     var i = b.search("instalar htop", 3)
     assert(i.get(0).command == "apt update && apt install -y htop", "sem sudo")
+}
+
+test "receitas em ingles: palavras vazias e sinonimos do ingles" {
+    RecipeLang.en = true
+    var b = RecipeBook()
+    b.load(listOf(
+        "# install a program",
+        "? install {package}",
+        "$ sudo apt update && sudo apt install -y {package}",
+        "> Installs {package}.",
+        "# find a file by name",
+        "? find file {name}",
+        "$ find . -iname \"*{name}*\"",
+        "# become root",
+        "? enter as root",
+        "$ sudo -i"
+    ))
+    var i = b.search("I want to install the htop", 3)
+    assert(i.size >= 1 && i.get(0).command == "sudo apt update && sudo apt install -y htop", "install htop")
+    var f = b.search("locate the file called report", 3)
+    assert(f.size >= 1 && f.get(0).command == "find . -iname \"*report*\"", "locate=search=find, called nao entra")
+    var a = b.search("access root", 3)
+    assert(a.size >= 1 && a.get(0).command == "sudo -i", "access=enter")
+    var none = b.search("bake a chocolate cake", 3)
+    assert(none.size == 0, "nada inventado")
+    RecipeLang.en = false
 }
 
 test "a receita certa vence as parecidas" {

@@ -76,7 +76,9 @@ main() {
     session.loadMouseSetting()
     setLang(loadLines(dir + "/lang"))
     session.tab.index.load(loadLines(indexPath(dir)))
-    session.recipes.load(loadLines(findShared(dir, "recipes/pt_BR.txt")))
+    var recipeFile = recipesPath(dir)
+    RecipeLang.en = recipeFile.endsWith("/recipes/en.txt")
+    session.recipes.load(loadLines(recipeFile))
 
     // o "cerebro": indice compartilhado com a aba, corpus do projeto e o que o usuario ja fez
     var brain = session.brain

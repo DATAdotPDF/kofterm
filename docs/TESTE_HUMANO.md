@@ -305,6 +305,7 @@ coluna. Nada é instalado sem você apertar Enter.
 | S.2 ★ | `kofterm lang en`, depois `exit` e abra `kofterm` de novo | A linha de boas-vindas e a coluna estão em inglês; digite `ls -la` devagar e a coluna explica em inglês | |
 | S.3 | Digite `sudo rm -rf /` (sem Enter!) | A coluna avisa "⚠ DANGER" com o motivo em inglês | |
 | S.4 | F1 | A aba diz "Offline index · 150 commands" | |
+| S.6 ★ | Ainda em inglês: digite `? install htop`, depois `? what is my ip` (sem Enter) | O cinza mostra `→ sudo apt update && sudo apt install -y htop` e depois `→ ip a`; a coluna diz "RECIPE" | |
 | S.5 ★ | `kofterm lang pt`, `exit` e abra `kofterm` de novo | Tudo volta para o português | |
 
 ## Q. Impressões gerais (texto livre)

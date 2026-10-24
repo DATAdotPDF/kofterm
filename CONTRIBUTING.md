@@ -48,7 +48,7 @@ receitas do modo `?` e entradas do índice, escritas em português simples.
 | 🟢 Fácil | **Testar** numa distribuição ou terminal diferente e contar o que aconteceu | Issue com o modelo "Bug" | Usar o terminal |
 | 🟢 Fácil | **Seguir o roteiro** de teste humano e devolver as linhas ⚠️ e ❌ | [`docs/TESTE_HUMANO.md`](docs/TESTE_HUMANO.md) | Usar o terminal |
 | 🟡 Médio | **Contribuir com o seu aprendizado** anonimizado (o modelo fica mais esperto) | `kofterm contribute` → `datasets/contrib/` | Nada; veja [datasets/contrib](datasets/contrib/README.md) |
-| 🟡 Médio | **Traduzir** as receitas para inglês, ou melhorar o inglês do índice. Quem muda uma entrada em `index/pt_BR.txt` muda a mesma entrada em `index/en.txt` (mesmos nomes, na mesma ordem) | [`index/en.txt`](index/en.txt), `recipes/en.txt` (novo) | Inglês |
+| 🟡 Médio | **Melhorar o inglês** do índice e das receitas. Quem muda uma entrada em `index/pt_BR.txt` ou uma receita em `recipes/pt_BR.txt` muda a mesma em `index/en.txt` ou `recipes/en.txt` (mesmos nomes e comandos, na mesma ordem) | [`index/en.txt`](index/en.txt), [`recipes/en.txt`](recipes/en.txt) | Inglês |
 | 🔴 Técnico | **Código em KOF**: editor, modelo, emulador de terminal, painel | [`src/`](src) | KOF (parecido com Kotlin/Java) |
 | 🔴 Técnico | **Biblioteca KOF paralela** para algo que falta na linguagem | Repositório próprio | KOF |
 

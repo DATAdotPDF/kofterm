@@ -112,7 +112,7 @@ Then close and reopen any KofTerm windows that were open: each one keeps running
 
 Try this: type `ls -la` slowly and watch the column; run `cat /etc/shadow` and look at the next line; ask `? qual meu ip`. To try everything calmly, follow the [test script](docs/TESTE_HUMANO.md) (Portuguese).
 
-**In English:** run `kofterm lang en` and open a new KofTerm window. The index and every screen switch to English; the `?` recipes are still in Portuguese for now. `kofterm lang pt` switches back.
+**In English:** run `kofterm lang en` and open a new KofTerm window. The index, every screen and the `?` recipes switch to English (`? install htop`). `kofterm lang pt` switches back.
 
 Other commands: `kofterm doctor` checks the installation, `kofterm uninstall` removes the program (your history stays; `--purge` deletes everything).
 
@@ -173,7 +173,7 @@ Full guide: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_COND
 | --- | --- |
 | **0.7.x** | Fixes from testing 0.7.0 and more networking recipes |
 | **0.8.0**, finding things (done) | History search with Ctrl+R, a candidate list when completing files, and the mouse wheel scrolling old output |
-| **0.9.0**, for everyone | English index and screens (done, `kofterm lang en`), English recipes, emoji above U+FFFF, and a clear warning when the terminal is too narrow |
+| **0.9.0**, for everyone | English index, screens and recipes (done, `kofterm lang en`), emoji above U+FFFF, and a clear warning when the terminal is too narrow |
 | **1.0.0**, stable | Tested by other people on several distributions and terminals, no limitation that gets in the way, stable file formats |
 | **Later** | A small neural model in pure KOF (`kof-nn`) that understands looser requests, always pointing to real recipes |
 

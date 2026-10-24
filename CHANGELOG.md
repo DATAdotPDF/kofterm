@@ -4,11 +4,11 @@ All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
 ## [Unreleased]
 
-English for the index and the screens. Portuguese stays the default.
+KofTerm in English: the index, the screens and the `?` recipes. Portuguese stays the default.
 
 ### Added
 - `kofterm lang en` switches KofTerm to English from the next window: the 150 index entries (`index/en.txt`, a full translation of `index/pt_BR.txt`), the column, the danger and caution reasons, the F1 tab, the welcome line and the key list. `kofterm lang pt` goes back, and `kofterm lang` shows the current one. The choice is saved in `~/.local/share/kofterm/lang` (removed by `uninstall --purge`)
-- The `?` recipes are still in Portuguese; their English version comes later
+- The `?` recipes in English (`recipes/en.txt`): the same 142 recipes and commands as in Portuguese, asked in English (`? install htop`, `? what is my ip`, `? who is using port 80`). The matcher has English filler words (`the`, `to`, `my`, `called`…) and synonyms (`find`, `locate` and `look` mean search; `show` and `view` mean see; `directory` means folder; `admin` means root). If `recipes/en.txt` is missing, the Portuguese recipes are used
 - `kofterm doctor` shows which index file is in use
 
 ### Fixed

@@ -1,0 +1,1025 @@
+; KofTerm — recipes for the "?" mode (English)
+; Text written by the KofTerm project, GPLv3 license. Same recipes, in the same order, as pt_BR.txt.
+;
+; Type "?" and what you want to do, for example:  ? install htop
+; KofTerm looks for the closest recipe and shows the command in grey. TAB puts the command
+; on the line; nothing runs by itself. The index (F2) explains each part.
+;
+; Format:  # name   ? way of asking (several)   $ command   % command in a root shell   > explanation
+; {name} is a gap filled with the words of the request. Commands that delete use -i
+; (they ask first). To contribute: commands that work on Debian, Ubuntu and Kali.
+; The % line is optional: without it, someone who is already root (sudo -i) gets the command without "sudo"; "% -" hides the recipe.
+
+; ───────────── Programs ─────────────
+
+# install a program
+? install {package}
+? install the program {package}
+? download the program {package}
+? i want {package}
+? how to install {package}
+$ sudo apt update && sudo apt install -y {package}
+> Updates the package list and installs {package}. Asks for your password (sudo).
+
+# remove a program
+? remove {package}
+? uninstall {package}
+? remove the program {package}
+$ sudo apt remove {package}
+> Uninstalls {package}. Shows what it will remove and asks first.
+
+# update the system
+? update the system
+? update everything
+? update the programs
+? update and upgrade
+$ sudo apt update && sudo apt upgrade
+> Downloads the list of new versions and updates the installed programs.
+
+# search for a program to install
+? search program {name}
+? is there a program for {name}
+? search package {name}
+? package name for {name}
+? package not found {name}
+$ apt search {name}
+> Looks for packages whose name or description has {name}.
+
+# where is the program
+? where is the program {name}
+? path of {name}
+$ which {name}
+> Shows which folder the program {name} is in.
+
+; ───────────── Folders and files ─────────────
+
+# which folder am I in
+? which folder am i in
+? current folder
+? where am i
+$ pwd
+> Shows the full path of the current folder.
+
+# list files with details
+? list files
+? see files in the folder
+? show everything in the folder including hidden
+$ ls -la
+> Lists everything, hidden files included, with permissions, size and date.
+
+# go into a folder
+? enter folder {folder}
+? go to folder {folder}
+? open folder {folder}
+$ cd {folder}
+> Moves to the folder {folder}.
+
+# go back to the previous folder
+? go back to previous folder
+? back folder
+$ cd -
+> Goes back to the folder you were in before.
+
+# go to the home folder
+? go to my home folder
+? go back home
+$ cd ~
+> Goes to your home folder (/home/your-user).
+
+# create a folder
+? create folder {folder}
+? make directory {folder}
+? new folder {folder}
+$ mkdir -p {folder}
+> Creates the folder {folder} (and any missing folders on the path).
+
+# create an empty file
+? create file {file}
+? new file {file}
+$ touch {file}
+> Creates {file} empty, if it does not exist yet.
+
+# copy a file
+? copy file {source} to {target}
+? copy {source} to {target}
+$ cp -i {source} {target}
+> Copies {source} to {target}. Asks before overwriting.
+
+# copy a whole folder
+? copy folder {source} to {target}
+$ cp -ri {source} {target}
+> Copies the folder {source} with everything inside. Asks before overwriting.
+
+# move or rename
+? move {source} to {target}
+? rename {source} to {target}
+$ mv -i {source} {target}
+> Moves or renames {source}. Asks before overwriting.
+
+# delete a file
+? delete file {file}
+? remove file {file}
+? delete {file}
+$ rm -i {file}
+> Deletes {file}, asking first. The terminal has no trash.
+
+# delete a folder
+? delete folder {folder}
+? remove folder {folder}
+? remove directory {folder}
+$ rm -ri {folder}
+> Deletes the folder {folder} and everything inside, asking item by item.
+
+# see what is in a file
+? see contents of file {file}
+? show file {file}
+? read file {file}
+$ less {file}
+> Opens {file} to read with scrolling. q quits, / searches.
+
+# edit a file
+? edit file {file}
+? open file to edit {file}
+$ nano {file}
+> Opens {file} in the nano editor. Ctrl-O saves, Ctrl-X quits.
+
+# last lines of a file
+? see end of file {file}
+? last lines of file {file}
+$ tail -n 20 {file}
+> Shows the last 20 lines of {file}.
+
+# follow a log live
+? follow log {file}
+? watch file live {file}
+$ tail -f {file}
+> Shows the new lines of {file} as they arrive. Ctrl-C to quit.
+
+# count lines
+? count lines of file {file}
+? how many lines in {file}
+$ wc -l {file}
+> Counts the lines of {file}.
+
+; ───────────── Searching ─────────────
+
+# find a file by name
+? find file {name}
+? search for a file called {name}
+? look for file {name}
+? where is the file {name}
+$ find . -iname "*{name}*"
+> Looks for files with {name} in the name, starting from the current folder.
+
+# find text inside files
+? search text {text}
+? find text {text} in files
+? search word {text}
+$ grep -rni "{text}" .
+> Looks for {text} in every file of the current folder, showing file and line.
+
+# biggest files
+? which files take most space
+? biggest files in the folder
+? what is using space
+$ du -sh * | sort -rh | head -n 10
+> Shows the 10 items that take the most space in the current folder.
+
+; ───────────── Permissions ─────────────
+
+# make executable
+? make executable {file}
+? give execute permission {file}
+? allow running script {file}
+$ chmod +x {file}
+> Lets you run {file} as a program (./{file}).
+
+# see permissions
+? see permissions of file {file}
+? who can change file {file}
+$ ls -l {file}
+> Shows owner, group and permissions (r read, w write, x execute) of {file}.
+
+# become the owner of a file
+? change owner of file {file}
+? take ownership of {file}
+$ sudo chown $USER:$USER {file}
+> Gives {file} to your user.
+
+# become administrator (root)
+? access root
+? enter as root
+? become root
+? login as root
+? access as administrator
+? enter the root folder
+? access the folder of root
+$ sudo -i
+% -
+> Opens a terminal as root, the administrator. As root nothing asks for confirmation: be careful. Type exit to go back to your user.
+
+# see the root folder
+? see folder of root
+? list root folder
+? see files of root
+$ sudo ls -la /root
+% ls -la /root
+> Lists root's home folder (/root), which only the administrator can read.
+
+# go into a folder inside root
+? enter {folder} in the root folder
+? enter {folder} inside root
+? enter folder {folder} of root
+? open {folder} of the root folder
+? see {folder} inside root
+$ sudo ls -la /root/{folder}
+% cd /root/{folder}
+> Only root can enter /root. As a user, sudo lists {folder}; as root (after sudo -i), you can go into it.
+
+# repeat with sudo
+? repeat last command with sudo
+? permission denied
+$ sudo !!
+% -
+> Repeats the last command as administrator.
+
+; ───────────── System ─────────────
+
+# disk space
+? see free disk space
+? how much space is left
+? disk full
+$ df -h
+> Shows the free and used space of each disk.
+
+# size of a folder
+? size of folder {folder}
+? how much space folder {folder} takes
+$ du -sh {folder}
+> Shows how much {folder} takes in total.
+
+# free memory
+? see free memory
+? how much ram
+? computer memory
+$ free -h
+> Shows the total, used and free RAM.
+
+# see processes
+? see running processes
+? what is running
+? open programs
+$ ps aux
+> Lists all processes, with CPU and memory use.
+
+# live monitor
+? system monitor
+? see cpu usage
+? what is slowing down
+$ top
+> Shows the processes live, sorted by CPU use. q quits.
+
+# close a program by name
+? close program {name}
+? kill process {name}
+? stop {name}
+$ pkill {name}
+> Asks the processes called {name} to end.
+
+# system version
+? which linux version
+? see system version
+? which distribution
+$ cat /etc/os-release
+> Shows the name and version of the Linux distribution.
+
+# kernel version
+? which kernel version
+$ uname -r
+> Shows the kernel version.
+
+# who am I
+? my user name
+? who am i
+$ whoami
+> Shows your user name.
+
+# change password
+? change my password
+? new password
+$ passwd
+> Changes your password. Asks for the current one and the new one twice.
+
+# restart the computer
+? restart the computer
+? reboot the computer
+$ sudo reboot
+> Restarts the computer. Save your files first.
+
+# shut down the computer
+? shut down the computer
+? turn off the computer
+$ sudo shutdown now
+> Turns the computer off now. Save your files first.
+
+# service: see state
+? status of service {service}
+? see if service {service} is running
+$ systemctl status {service}
+> Shows whether the service {service} is active and its last messages. q quits.
+
+# service: restart
+? restart service {service}
+$ sudo systemctl restart {service}
+> Restarts the service {service}.
+
+# see system messages
+? see system logs
+? see system errors
+$ journalctl -p err -b
+> Shows the errors logged since the last boot. q quits.
+
+; ───────────── Network ─────────────
+
+# see my ip
+? see my ip
+? my ip
+? see the ip of the computer
+? what is my ip
+? see ip address
+? see my network address
+$ ip a
+> Shows the addresses of each network card.
+
+# test the internet
+? test internet
+? test connection to {site}
+? is the site {site} up
+? ping {site}
+? send ping to {site}
+? does {site} answer ping
+$ ping -c 4 {site}
+> Sends 4 packets to {site} and shows whether it answered.
+
+# open ports
+? see open ports
+? which port is in use
+? who is using the port
+$ sudo ss -tulpn
+> Shows the open ports and which program uses each one.
+
+# download a file from the internet
+? download file {url}
+? download from {url}
+$ curl -LO {url}
+> Downloads the file at {url} into the current folder.
+
+# reach another computer
+? access server {host}
+? connect to server {host}
+$ ssh {host}
+> Opens a terminal on the computer {host} (e.g. user@server).
+
+# copy to another computer
+? copy {file} to server {host}
+? send file {file} to {host}
+$ scp {file} {host}:
+> Copies {file} to the home folder on the computer {host}.
+
+; ───────────── Archives ─────────────
+
+# compress a folder
+? compress folder {folder}
+? zip folder {folder}
+? back up folder {folder}
+$ tar -czvf {folder}.tar.gz {folder}
+> Packs and compresses {folder} into {folder}.tar.gz.
+
+# extract tar.gz
+? uncompress {file}
+? extract {file}
+? open compressed file {file}
+$ tar -xzvf {file}
+> Extracts {file} (.tar.gz) into the current folder.
+
+# extract zip
+? unzip {file}
+? extract zip {file}
+$ unzip {file}
+> Extracts {file} (.zip) into the current folder.
+
+; ───────────── Git ─────────────
+
+# start a git repository
+? create git repository
+? start git in the folder
+$ git init
+> Turns the current folder into a Git repository.
+
+# download a repository
+? clone repository {url}
+? download project from github {url}
+$ git clone {url}
+> Downloads the repository {url} with its whole history.
+
+# save changes in git
+? save changes in git
+? make a commit
+? commit everything
+$ git add . && git commit -m ""
+> Picks every change and records it. Write the message between the quotes.
+
+# send to github
+? send to github
+? upload changes
+? git push
+$ git push
+> Sends the commits to the remote repository.
+
+# see what changed
+? see what changed in git
+? git status
+$ git status
+> Shows the new, changed and picked files for the next commit.
+
+; ───────────── Terminal ─────────────
+
+# command history
+? see commands i used
+? command history
+$ history
+> Lists the commands you already typed, numbered.
+
+# clear the screen
+? clear the screen
+? clear terminal
+$ clear
+> Clears the screen. In KofTerm, Ctrl-L does the same and keeps what you are typing.
+
+# manual of a command
+? manual of {command}
+? how to use {command}
+? help for {command}
+$ man {command}
+> Opens the manual of {command}. q quits, / searches.
+
+; ───────────── Networking (study and lab) ─────────────
+
+# see the gateway
+? see the gateway
+? which gateway
+? which is the network router
+? see the routes
+? routing table
+$ ip r
+> Shows the routes. The line "default via X" tells you the gateway (the router).
+
+# see interfaces and MAC
+? see the network interfaces
+? see the network cards
+? what is my mac
+? see mac address
+$ ip link
+> Lists the interfaces, whether they are UP or DOWN, and the MAC (link/ether).
+
+# see ip in short
+? see ip short
+? ip of each interface
+? see ipv4 of the interfaces
+$ ip -br a
+> One line per interface: name, state and addresses.
+
+# bring an interface up
+? bring up interface {interface}
+? turn on the card {interface}
+? enable interface {interface}
+$ sudo ip link set {interface} up
+> Turns on the interface {interface}.
+
+# bring an interface down
+? bring down interface {interface}
+? turn off the card {interface}
+? disable interface {interface}
+$ sudo ip link set {interface} down
+> Turns off the interface {interface} (the connection through it drops).
+
+# arp table
+? see arp table
+? see the network neighbors
+? network arp
+$ ip neigh
+> IPs of the local network already seen and the MAC of each (the old arp -a).
+
+# which dns am I using
+? which dns am i using
+? see dns server
+? see the configured dns
+$ cat /etc/resolv.conf
+> The "nameserver" lines are the DNS servers in use.
+
+# find the ip of a site
+? find ip of site {site}
+? what is the ip of site {site}
+? resolve the name {site}
+? dns lookup {site}
+? test dns of {site}
+$ dig +short {site}
+> Asks DNS for the address of {site}.
+
+# name of an ip
+? name of ip {ip}
+? reverse dns of {ip}
+$ dig -x {ip} +short
+> Reverse DNS: which name is tied to the IP {ip}.
+
+# path to a site
+? path to {site}
+? route to {site}
+? hops to {site}
+? traceroute to {site}
+$ traceroute -n {site}
+> Shows each router on the way to {site}. * * * are hops that do not answer.
+
+# owner of a domain
+? who owns the domain {site}
+? whois {site}
+? who registered {site}
+$ whois {site}
+> Registration data of the domain {site}.
+
+# active connections
+? see active connections
+? connections open now
+? who is connected to my computer
+? see network connections
+$ sudo ss -tunp
+> Established TCP/UDP connections and which program uses each one.
+
+# who uses a port
+? who uses port {port}
+? who is using port {port}
+? which program is on port {port}
+? what is running on port {port}
+$ sudo lsof -i :{port}
+> Shows the program (and the PID) using port {port}.
+
+# test whether a port answers
+? test port {port} on {host}
+? is port {port} open on {host}
+? check port {port} on {host}
+$ nc -zv {host} {port}
+> Tries to connect to port {port} of {host} and says whether it is open.
+
+# discover computers on the network
+? discover computers on network {network}
+? who is up on network {network}
+? scan the network {network}
+? sweep the network {network}
+? live hosts on network {network}
+$ nmap -sn {network}
+> Finds who answers on {network} (e.g. 192.168.56.0/24), without testing ports. Only on your lab network.
+
+# devices on the local network
+? see devices on the local network
+? discover devices on the local network
+? list computers on the local network
+$ sudo arp-scan --localnet
+> Sweeps your interface's network by ARP: IP, MAC and vendor. Only on your network.
+
+# scan the ports of a computer
+? scan ports of {host}
+? see open ports of {host}
+? which services run on {host}
+? run nmap on {host}
+$ nmap -sV {host}
+> Open ports and service versions on {host}. Only on machines in your lab or with permission.
+
+# capture packets
+? capture packets
+? capture network traffic
+? see the network traffic
+? sniff the network
+$ sudo tcpdump -i any -n
+> Shows the packets of every interface. Ctrl-C to stop.
+
+# capture ping
+? capture ping
+? see icmp packets
+$ sudo tcpdump -i any -n icmp
+> Only ICMP packets (ping). Run a ping in another terminal to see them.
+
+# capture dns
+? capture dns queries
+? see dns packets
+$ sudo tcpdump -i any -n port 53
+> Only DNS (port 53).
+
+# record a capture
+? record capture to {file}
+? save packets to {file}
+? capture for wireshark
+$ sudo tcpdump -i any -w {file}.pcap
+> Records the packets to {file}.pcap to open in Wireshark later.
+
+# see firewall rules
+? see firewall rules
+? see the firewall
+? list firewall
+? see iptables
+$ sudo nft list ruleset
+> Shows every nftables rule (Kali's iptables uses it underneath).
+
+# headers of a site
+? see headers of site {url}
+? headers of {url}
+? test http response of {url}
+$ curl -I {url}
+> Only the response headers: code (200, 301, 404...) and server.
+
+# certificate of a site
+? see certificate of site {site}
+? tls certificate of {site}
+? test https of {site}
+$ openssl s_client -connect {site}:443
+> Opens TLS with {site} and shows the certificate. Ctrl-C to quit.
+
+# network state
+? network state
+? see network manager connections
+? see wifi
+$ nmcli device status
+> State of each interface in NetworkManager (connected, disconnected).
+
+# route to an ip
+? where does traffic to {ip} go out
+? which route to {ip}
+? which interface goes to {ip}
+$ ip route get {ip}
+> Shows which route, gateway and interface Linux uses to reach {ip}.
+
+# put an ip on an interface
+? put ip {ip} on interface {interface}
+? add ip {ip} to the card {interface}
+? set ip {ip} on {interface}
+$ sudo ip addr add {ip} dev {interface}
+> Puts the address {ip} (with the mask, e.g. 192.168.56.10/24) on {interface}. Gone after a reboot.
+
+# take an ip off an interface
+? take ip {ip} off interface {interface}
+? remove ip {ip} from the card {interface}
+$ sudo ip addr del {ip} dev {interface}
+> Takes the address {ip} off {interface} (write it with the mask, as in ip -br a).
+
+# renew the ip by dhcp
+? renew the ip of interface {interface}
+? ask dhcp for a new ip on {interface}
+? reconnect interface {interface}
+$ nmcli device disconnect {interface} && nmcli device connect {interface}
+> Disconnects and reconnects {interface} through NetworkManager, which asks DHCP for a new IP.
+
+# restart the network
+? restart the network
+? restart network manager
+? the network is stuck
+$ sudo systemctl restart NetworkManager
+> Restarts NetworkManager. The connections drop for a few seconds and come back.
+
+# wifi networks nearby
+? see wifi networks
+? list wifi networks nearby
+? which wifi are available
+$ nmcli device wifi list
+> Visible Wi-Fi networks, with signal and security. In a VM there are usually none.
+
+# see ipv6
+? see my ipv6
+? ipv6 addresses
+? see ip version 6
+$ ip -6 a
+> IPv6 addresses of each interface. fe80:: is the link-local address.
+
+# interface statistics
+? statistics of interface {interface}
+? packets and errors of interface {interface}
+? traffic of interface {interface}
+$ ip -s link show {interface}
+> Bytes and packets received (RX) and sent (TX) by {interface}, with errors and drops.
+
+# calculate a subnet
+? calculate subnet {network}
+? calculate the network {network}
+? mask of network {network}
+? how many hosts in {network}
+? broadcast of network {network}
+$ ipcalc {network}
+> For {network} (e.g. 192.168.10.0/26): mask, network address, broadcast, first and last IP and how many hosts fit.
+
+# mail server of a domain
+? mail server of {site}
+? mx record of {site}
+$ dig +short MX {site}
+> The servers that receive e-mail for {site} (MX record), with their priority.
+
+# dns servers of a domain
+? dns servers of domain {site}
+? ns record of {site}
+? who answers for domain {site}
+$ dig +short NS {site}
+> The DNS servers responsible for {site} (NS record).
+
+# txt records of a domain
+? txt records of {site}
+? see spf of {site}
+$ dig +short TXT {site}
+> Texts published in the DNS of {site}: SPF, service verifications and others.
+
+# ask a specific dns server
+? query {site} on dns {server}
+? ask server {server} about {site}
+$ dig @{server} {site}
+> Asks the DNS server {server} directly (e.g. 1.1.1.1 or the lab's DNS), instead of the configured one.
+
+# test a udp port
+? test udp port {port} on {host}
+? is udp port {port} open on {host}
+$ nc -zvu {host} {port}
+> Tests UDP port {port} of {host}. UDP does not confirm connections: "open" may only mean no answer.
+
+# listen on a port
+? listen on port {port}
+? wait for connection on port {port}
+? open port {port} for a test
+$ nc -lvnp {port}
+> Waits for a connection on port {port} and shows what arrives. Ctrl-C to stop.
+
+# quick web server
+? web server of folder {folder} on port {port}
+? share folder {folder} on port {port}
+? web server on port {port}
+? start an http server on port {port}
+? share the folder over the network on port {port}
+$ python3 -m http.server {port} --directory {folder}
+> Serves only the folder {folder} at http://YOUR_IP:{port}: anyone on the network can download what is in it. Replace {folder} with a folder holding only what you want to show (never your home, which has ~/.ssh). Stays on until Ctrl-C.
+
+# web server only on this computer
+? web server only for me on port {port}
+? local web server on port {port}
+? http server only on this computer on port {port}
+$ python3 -m http.server {port} --bind 127.0.0.1 --directory {folder}
+> Serves {folder} only to this computer, at http://127.0.0.1:{port}; nobody on the network can reach it. Stays on until Ctrl-C.
+
+# operating system of a computer
+? discover the system of {host}
+? which operating system on {host}
+? what system runs on {host}
+$ sudo nmap -O {host}
+> Tries to guess the operating system of {host} from its network answers. Only in your lab or with permission.
+
+# name a lab computer
+? give a name to an ip
+? edit the hosts file
+? nickname for a vm
+$ sudo nano /etc/hosts
+> Add a line "IP name" to use the name instead of the IP (ping name).
+
+; ───────────── SSH ─────────────
+
+# create an ssh key
+? create ssh key
+? generate ssh key
+? make key pair
+$ ssh-keygen -t ed25519
+> Creates ~/.ssh/id_ed25519 (private, do not share it) and .pub (public).
+
+# copy the key to the server
+? copy key to {host}
+? log in without password to {host}
+? install my key on {host}
+$ ssh-copy-id {host}
+> Puts your public key on {host}; after that ssh logs in without a password.
+
+# turn on the ssh server
+? turn on ssh
+? turn on the ssh server
+? enable ssh
+? keep ssh on
+$ sudo systemctl enable --now ssh
+> Turns the SSH server on now and at every boot.
+
+; ───────────── Users and security ─────────────
+
+# who is logged in
+? who is logged in
+? who is using the computer
+? connected users
+$ w
+> Who is logged in, from where and what they are running.
+
+# ssh login attempts
+? failed login attempts
+? see wrong logins
+? who tried to log in
+? see wrong password attempts
+$ sudo journalctl -u ssh | grep -i failed
+> SSH login attempts that failed (Kali has no /var/log/auth.log).
+
+# who used sudo
+? who used sudo
+? see sudo use
+? sudo log
+$ sudo journalctl _COMM=sudo
+> Each use of sudo: who, when and which command.
+
+# list users
+? list users
+? see the users of the system
+? which users exist
+$ cut -d: -f1 /etc/passwd
+> Every user, system users included.
+
+# users who log in
+? users with bash
+? real users
+? human users
+$ awk -F: '$3 >= 1000 {print $1}' /etc/passwd
+> Only the users that are people (uid 1000 or more).
+
+# create a user
+? create user {user}
+? add user {user}
+? new user {user}
+$ sudo adduser {user}
+> Creates {user} with a home folder and asks for the password.
+
+# give sudo to a user
+? give sudo to {user}
+? put {user} in the sudo group
+? make {user} administrator
+$ sudo usermod -aG sudo {user}
+> Adds {user} to the sudo group (takes effect at the next login).
+
+# my groups
+? my groups
+? see my groups
+? which groups i have
+? see my uid
+$ id
+> Your uid, gid and every group.
+
+# who can use sudo
+? who can use sudo
+? who is in the sudo group
+$ grep '^sudo' /etc/group
+> Members of the sudo group.
+
+# suid files
+? suid files
+? search suid binaries
+? audit suid permissions
+$ find / -perm -4000 -type f 2>/dev/null
+> Programs that run with their owner's permission (usually root). A classic audit list.
+
+# files anyone can change
+? files everyone can write
+? dangerous permissions
+$ find / -xdev -type f -perm -0002 2>/dev/null
+> Files writable by everyone (the "w" at the end of ls -l). Usually this should be empty.
+
+; ───────────── Files (analysis) ─────────────
+
+# file type
+? what type is file {file}
+? what file is {file}
+? real type of {file}
+$ file {file}
+> Tells the type from the contents, not from the extension.
+
+# text inside a binary
+? text inside {file}
+? strings of {file}
+? see text of binary {file}
+$ strings {file} | less
+> Readable pieces inside {file}. q to quit.
+
+# see in hexadecimal
+? see {file} in hexadecimal
+? hexdump of {file}
+? see the bytes of {file}
+$ xxd {file} | head -n 20
+> The first bytes of {file} in hex.
+
+# hash of a file
+? hash of file {file}
+? calculate sha256 of {file}
+? checksum of {file}
+$ sha256sum {file}
+> SHA-256 fingerprint of {file}. Compare it with the one on the official site.
+
+# check hashes
+? check hashes
+? verify sha256sums
+? check download
+$ sha256sum -c SHA256SUMS
+> Checks every file listed in SHA256SUMS (OK or FAILED).
+
+# encode base64
+? encode {text} in base64
+? base64 of {text}
+$ echo -n "{text}" | base64
+> Encodes {text} in Base64 (it is not encryption).
+
+# decode base64
+? decode base64 {text}
+? decode {text}
+$ echo "{text}" | base64 -d
+> Turns the Base64 {text} back into the original.
+
+# generate a random password
+? generate random password
+? create strong password
+$ openssl rand -base64 16
+> A random 16-byte password in Base64.
+
+# compare files
+? compare {file1} with {file2}
+? difference between {file1} and {file2}
+$ diff -u {file1} {file2}
+> Shows the lines that changed (- removed, + added).
+
+; ───────────── System ─────────────
+
+# running services
+? running services
+? see the active services
+? list services
+$ systemctl list-units --type=service --state=running
+> Every service that is running.
+
+# start a service at boot
+? turn on service {service} at boot
+? start {service} with the system
+? enable service {service}
+$ sudo systemctl enable --now {service}
+> Turns {service} on now and at every boot.
+
+# date and time
+? see date and time
+? set time zone
+? see time zone
+$ timedatectl
+> Date, time, time zone and whether the clock is synchronized.
+
+# computer name
+? computer name
+? see hostname
+? is this a virtual machine
+$ hostnamectl
+> Computer name, system and virtualization.
+
+# disks and partitions
+? see disks
+? see partitions
+? list disks and partitions
+$ lsblk -f
+> Disks, partitions, file system and where they are mounted.
+
+# kernel messages
+? kernel messages
+? see dmesg
+? see the plugged usb drive
+$ sudo dmesg -T | tail -n 30
+> Latest kernel messages (hardware, USB, network).
+
+# scheduled tasks
+? scheduled tasks
+? see cron
+? see the crontab
+$ crontab -l
+> Your scheduled tasks (crontab -e edits them).
+
+# see the processor
+? see the processor
+? how many cores
+? see cpu
+$ lscpu
+> Processor model and number of cores.
+
+# see the path
+? see the path
+? where bash looks for commands
+$ echo $PATH
+> Folders where bash looks for commands, separated by ":".
+
+# environment variables
+? environment variables
+? see variables
+$ env
+> Every environment variable.
+
+# record the terminal
+? record the terminal to {file}
+? record the session to {file}
+? save everything shown in the terminal to {file}
+? record the class to {file}
+$ script {file}.txt
+> Records everything shown in the terminal to {file}.txt until you type exit.
