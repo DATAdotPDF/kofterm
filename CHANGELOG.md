@@ -2,6 +2,15 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [Unreleased]
+
+English for the index and the screens. Portuguese stays the default.
+
+### Added
+- `kofterm lang en` switches KofTerm to English from the next window: the 150 index entries (`index/en.txt`, a full translation of `index/pt_BR.txt`), the column, the danger and caution reasons, the F1 tab, the welcome line and the key list. `kofterm lang pt` goes back, and `kofterm lang` shows the current one. The choice is saved in `~/.local/share/kofterm/lang` (removed by `uninstall --purge`)
+- The `?` recipes are still in Portuguese; their English version comes later
+- `kofterm doctor` shows which index file is in use
+
 ## [0.8.0] - 23/10/2026
 
 Finding things: the history, the files of a folder and the output that already scrolled away.

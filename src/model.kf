@@ -13,6 +13,44 @@
 // volta de 3.650 chaves; no JVM funciona. Lista e String nao tem o problema. Entao o mapa
 // abaixo e feito em KOF, com baldes de listas e String.hashCode().
 
+class Lang {
+    static Boolean en = false
+}
+
+// Idioma das telas e do indice: portugues e o padrao; `kofterm lang en` muda para ingles
+// (gravado em ~/.local/share/kofterm/lang). As receitas do ? continuam em portugues.
+// O texto no idioma escolhido: tr("Atenção", "Caution").
+String tr(String pt, String en) {
+    if (Lang.en) {
+        return en
+    }
+    return pt
+}
+
+// O conteudo do arquivo `lang` ("en" ou "pt") vira a escolha; qualquer outra coisa e portugues.
+setLang(List<String> lines) {
+    Lang.en = lines.size > 0 && lines.get(0).trim() == "en"
+}
+
+// O indice do idioma escolhido (relativo a pasta dos arquivos compartilhados).
+String indexFileName() {
+    if (Lang.en) {
+        return "index/en.txt"
+    }
+    return "index/pt_BR.txt"
+}
+
+test "portugues por padrao, ingles por opcao" {
+    setLang(listOf<String>())
+    assert(tr("Atenção", "Caution") == "Atenção", "padrao")
+    assert(indexFileName() == "index/pt_BR.txt", "indice pt")
+    setLang(listOf("en"))
+    assert(tr("Atenção", "Caution") == "Caution", "ingles")
+    assert(indexFileName() == "index/en.txt", "indice en")
+    setLang(listOf("xx"))
+    assert(!Lang.en, "desconhecido vira portugues")
+}
+
 // Balde de um mapa: chaves e valores lado a lado.
 class KtIntBucket {
     List<String> keys = listOf<String>()
@@ -441,12 +479,12 @@ Boolean isDangerous(String line) {
 Risk lineRisk(String line, Boolean root, String cwd) {
     var compact = line.replace(" ", "")
     if (compact.contains(":(){")) {
-        return Risk(RiskLevel.DANGER, "é uma \"fork bomb\": cria processos sem parar até travar a máquina.")
+        return Risk(RiskLevel.DANGER, tr("é uma \"fork bomb\": cria processos sem parar até travar a máquina.", "is a \"fork bomb\": it creates processes nonstop until the machine freezes."))
     }
     // "echo x>/dev/sda", sem espaço antes do >
     for (var d in splitWords(RiskWords.DISK, " ")) {
         if (compact.contains(">" + d) && !compact.contains(">>" + d)) {
-            return Risk(RiskLevel.DANGER, "escreve direto num disco e apaga o que há nele.")
+            return Risk(RiskLevel.DANGER, tr("escreve direto num disco e apaga o que há nele.", "writes straight to a disk and erases what is on it."))
         }
     }
     var best = Risk(RiskLevel.NONE, "")
@@ -467,7 +505,7 @@ Risk lineRisk(String line, Boolean root, String cwd) {
             var cmd = riskCommand(words)
             var ncmd = riskCommand(next)
             if ((cmd == "curl" || cmd == "wget") && RiskWords.SHELLS.contains(" " + ncmd + " ")) {
-                r = riskMax(r, Risk(RiskLevel.CAUTION, "roda um script baixado da internet sem você ler antes. Baixe, leia e só depois execute."))
+                r = riskMax(r, Risk(RiskLevel.CAUTION, tr("roda um script baixado da internet sem você ler antes. Baixe, leia e só depois execute.", "runs a script downloaded from the internet without you reading it first. Download it, read it, and only then run it.")))
             }
         }
         best = riskMax(best, r)
@@ -666,13 +704,13 @@ Risk segmentRisk(List<String> w, Boolean root, String dir) {
         }
         if (target.length() > 0) {
             if (riskDisk(target)) {
-                return Risk(RiskLevel.DANGER, "escreve direto no disco " + target + " e apaga o que há nele.")
+                return Risk(RiskLevel.DANGER, tr("escreve direto no disco ", "writes straight to the disk ") + target + tr(" e apaga o que há nele.", " and erases what is on it."))
             }
             if (RiskWords.VITAL.contains(" " + target + " ")) {
-                return Risk(RiskLevel.DANGER, "apaga o conteúdo de " + target + ", um arquivo vital do sistema. Use >> para acrescentar.")
+                return Risk(RiskLevel.DANGER, tr("apaga o conteúdo de ", "erases the contents of ") + target + tr(", um arquivo vital do sistema. Use >> para acrescentar.", ", a vital system file. Use >> to append."))
             }
             if (riskInSystem(target)) {
-                none = Risk(RiskLevel.CAUTION, "sobrescreve " + target + ", um arquivo do sistema. Faça uma cópia antes.")
+                none = Risk(RiskLevel.CAUTION, tr("sobrescreve ", "overwrites ") + target + tr(", um arquivo do sistema. Faça uma cópia antes.", ", a system file. Make a copy first."))
             }
         }
         k = k + 1
@@ -709,26 +747,26 @@ Risk segmentRisk(List<String> w, Boolean root, String dir) {
     if (cmd == "rm" && recursive) {
         for (var t in targets) {
             if (riskCritical(t, dir)) {
-                return Risk(RiskLevel.DANGER, "apaga " + riskWhat(t, dir) + " inteiro, com tudo dentro e sem lixeira.")
+                return Risk(RiskLevel.DANGER, tr("apaga ", "deletes everything in ") + riskWhat(t, dir) + tr(" inteiro, com tudo dentro e sem lixeira.", ", with no trash to recover it from."))
             }
         }
         for (var t in targets) {
             if (riskInSystem(t) && priv) {
-                return Risk(RiskLevel.CAUTION, "apaga " + riskNorm(t) + " do sistema, com tudo dentro e sem lixeira. Confira o caminho duas vezes.")
+                return Risk(RiskLevel.CAUTION, tr("apaga ", "deletes the system folder ") + riskNorm(t) + tr(" do sistema, com tudo dentro e sem lixeira. Confira o caminho duas vezes.", ", with everything inside and no trash. Check the path twice."))
             }
         }
     }
     if ((cmd == "chmod" || cmd == "chown" || cmd == "chgrp") && recursive) {
         for (var t in targets) {
             if (riskCritical(t, dir)) {
-                return Risk(RiskLevel.DANGER, "muda as permissões de " + riskWhat(t, dir) + " inteiro; o sistema pode parar de funcionar.")
+                return Risk(RiskLevel.DANGER, tr("muda as permissões de ", "changes the permissions of everything in ") + riskWhat(t, dir) + tr(" inteiro; o sistema pode parar de funcionar.", "; the system may stop working."))
             }
         }
     }
     if (cmd == "chmod") {
         for (var t in targets) {
             if (RiskWords.VITAL.contains(" " + riskNorm(t) + " ")) {
-                return Risk(RiskLevel.DANGER, "abre as permissões de " + riskNorm(t) + "; senhas e regras de acesso ficam expostas.")
+                return Risk(RiskLevel.DANGER, tr("abre as permissões de ", "opens up the permissions of ") + riskNorm(t) + tr("; senhas e regras de acesso ficam expostas.", "; passwords and access rules become exposed."))
             }
         }
     }
@@ -736,7 +774,7 @@ Risk segmentRisk(List<String> w, Boolean root, String dir) {
         var s = 0
         while (s < targets.size - 1) {
             if (riskCritical(targets.get(s), dir)) {
-                return Risk(RiskLevel.DANGER, "tira " + riskWhat(targets.get(s), dir) + " do lugar; o sistema para de funcionar.")
+                return Risk(RiskLevel.DANGER, tr("tira ", "moves ") + riskWhat(targets.get(s), dir) + tr(" do lugar; o sistema para de funcionar.", " out of place; the system stops working."))
             }
             s = s + 1
         }
@@ -744,74 +782,74 @@ Risk segmentRisk(List<String> w, Boolean root, String dir) {
     if (cmd.startsWith("mkfs") || cmd == "wipefs" || cmd == "mkswap" || cmd == "shred") {
         for (var t in targets) {
             if (riskDisk(t) || cmd.startsWith("mkfs")) {
-                return Risk(RiskLevel.DANGER, "apaga " + t + ": tudo o que está no disco ou na partição se perde.")
+                return Risk(RiskLevel.DANGER, tr("apaga ", "wipes ") + t + tr(": tudo o que está no disco ou na partição se perde.", ": everything on the disk or partition is lost."))
             }
         }
     }
     if (cmd == "dd") {
         for (var t in targets) {
             if (t.startsWith("of=") && riskDisk(t.substring(3, t.length()))) {
-                return Risk(RiskLevel.DANGER, "grava por cima do disco " + t.substring(3, t.length()) + " e apaga tudo nele.")
+                return Risk(RiskLevel.DANGER, tr("grava por cima do disco ", "writes over the disk ") + t.substring(3, t.length()) + tr(" e apaga tudo nele.", " and erases everything on it."))
             }
         }
     }
     if (cmd == "fdisk" || cmd == "parted" || cmd == "gdisk" || cmd == "sfdisk" || cmd == "cfdisk") {
         for (var t in targets) {
             if (riskDisk(t)) {
-                return Risk(RiskLevel.CAUTION, "altera as partições de " + t + "; um erro apaga os dados do disco.")
+                return Risk(RiskLevel.CAUTION, tr("altera as partições de ", "changes the partitions of ") + t + tr("; um erro apaga os dados do disco.", "; one mistake erases the data on the disk."))
             }
         }
     }
     if (cmd == "find" && targets.size > 0 && riskCritical(targets.get(0), dir)) {
         for (var o in w) {
             if (o == "-delete" || o == "rm") {
-                return Risk(RiskLevel.DANGER, "apaga arquivos em " + riskWhat(targets.get(0), dir) + " inteiro.")
+                return Risk(RiskLevel.DANGER, tr("apaga arquivos em ", "deletes files everywhere in ") + riskWhat(targets.get(0), dir) + tr(" inteiro.", "."))
             }
         }
     }
     if (cmd == "tee" && !append) {
         for (var t in targets) {
             if (RiskWords.VITAL.contains(" " + riskNorm(t) + " ")) {
-                return Risk(RiskLevel.DANGER, "apaga o conteúdo de " + riskNorm(t) + ". Para acrescentar, use tee -a.")
+                return Risk(RiskLevel.DANGER, tr("apaga o conteúdo de ", "erases the contents of ") + riskNorm(t) + tr(". Para acrescentar, use tee -a.", ". To append, use tee -a."))
             }
             if (riskInSystem(t) && priv) {
-                return Risk(RiskLevel.CAUTION, "sobrescreve " + riskNorm(t) + ". Para acrescentar, use tee -a.")
+                return Risk(RiskLevel.CAUTION, tr("sobrescreve ", "overwrites ") + riskNorm(t) + tr(". Para acrescentar, use tee -a.", ". To append, use tee -a."))
             }
         }
     }
     if (cmd == "shutdown" || cmd == "reboot" || cmd == "poweroff" || cmd == "halt" ||
             cmd == "init" && targets.size > 0 && (targets.get(0) == "0" || targets.get(0) == "6") ||
             cmd == "systemctl" && targets.size > 0 && (targets.get(0) == "poweroff" || targets.get(0) == "reboot" || targets.get(0) == "halt")) {
-        return Risk(RiskLevel.CAUTION, "desliga ou reinicia a máquina. Se você estiver por SSH, a conexão cai.")
+        return Risk(RiskLevel.CAUTION, tr("desliga ou reinicia a máquina. Se você estiver por SSH, a conexão cai.", "shuts down or restarts the machine. If you are connected over SSH, the connection drops."))
     }
     if (cmd == "killall5" || cmd == "kill" && targets.size > 0 && targets.get(targets.size - 1) == "-1" || cmd == "kill" && opts.size > 0 && opts.get(opts.size - 1) == "-1") {
-        return Risk(RiskLevel.CAUTION, "encerra todos os seus programas de uma vez, inclusive esta sessão.")
+        return Risk(RiskLevel.CAUTION, tr("encerra todos os seus programas de uma vez, inclusive esta sessão.", "ends all your programs at once, including this session."))
     }
     if (cmd == "iptables" || cmd == "ip6tables") {
         for (var o in w) {
             if (o == "-F" || o == "--flush" || o == "DROP") {
-                return Risk(RiskLevel.CAUTION, "muda o firewall e pode cortar o seu acesso pela rede, inclusive por SSH.")
+                return Risk(RiskLevel.CAUTION, tr("muda o firewall e pode cortar o seu acesso pela rede, inclusive por SSH.", "changes the firewall and may cut your network access, including SSH."))
             }
         }
     }
     if (cmd == "nft" && w.size > ci + 1 && (w.get(ci + 1) == "flush" || w.get(ci + 1) == "delete")) {
-        return Risk(RiskLevel.CAUTION, "apaga regras do firewall; a máquina pode ficar exposta ou sem acesso.")
+        return Risk(RiskLevel.CAUTION, tr("apaga regras do firewall; a máquina pode ficar exposta ou sem acesso.", "deletes firewall rules; the machine may end up exposed or unreachable."))
     }
     if (cmd == "ufw" && w.size > ci + 1 && w.get(ci + 1) == "reset") {
-        return Risk(RiskLevel.CAUTION, "apaga todas as regras do firewall.")
+        return Risk(RiskLevel.CAUTION, tr("apaga todas as regras do firewall.", "deletes all firewall rules."))
     }
     if (cmd == "crontab" && opts.size > 0 && opts.get(0) == "-r") {
-        return Risk(RiskLevel.CAUTION, "apaga todas as suas tarefas agendadas, sem perguntar.")
+        return Risk(RiskLevel.CAUTION, tr("apaga todas as suas tarefas agendadas, sem perguntar.", "deletes all your scheduled tasks without asking."))
     }
     if (cmd == "userdel" && recursive || cmd == "deluser") {
         for (var o in w) {
             if (o == "-r" || o == "--remove-home" || o == "--remove-all-files") {
-                return Risk(RiskLevel.CAUTION, "apaga o usuário e a pasta pessoal dele, sem lixeira.")
+                return Risk(RiskLevel.CAUTION, tr("apaga o usuário e a pasta pessoal dele, sem lixeira.", "deletes the user and their home folder, with no trash."))
             }
         }
     }
     if (cmd == "git" && w.size > ci + 1 && w.get(ci + 1) == "push" && force) {
-        return Risk(RiskLevel.CAUTION, "reescreve o histórico no servidor; o trabalho de outras pessoas pode se perder.")
+        return Risk(RiskLevel.CAUTION, tr("reescreve o histórico no servidor; o trabalho de outras pessoas pode se perder.", "rewrites the history on the server; other people's work may be lost."))
     }
     var web = riskWebShare(w, ci, cmd, dir, priv)
     if (web.level > none.level) {
@@ -885,16 +923,16 @@ Risk riskWebShare(List<String> w, Int ci, String cmd, String dir, Boolean priv) 
     var keys = d.endsWith("/.ssh") || d == "~/.ssh"
     var system = d == "/" || RiskWords.SYSTEM.contains(" " + d + " ")
     if (priv && (d == "/" || d == "/root" || d == "/etc")) {
-        return Risk(RiskLevel.DANGER, "como root, entrega " + riskWhat(d, dir) + " para qualquer um na rede, inclusive senhas (/etc/shadow) e chaves. Sirva só uma pasta com --directory.")
+        return Risk(RiskLevel.DANGER, tr("como root, entrega ", "as root, hands ") + riskWhat(d, dir) + tr(" para qualquer um na rede, inclusive senhas (/etc/shadow) e chaves. Sirva só uma pasta com --directory.", " to anyone on the network, including passwords (/etc/shadow) and keys. Serve a single folder with --directory."))
     }
     if (keys) {
-        return Risk(RiskLevel.CAUTION, "compartilha as suas chaves SSH com a rede: quem baixar entra nas suas máquinas.")
+        return Risk(RiskLevel.CAUTION, tr("compartilha as suas chaves SSH com a rede: quem baixar entra nas suas máquinas.", "shares your SSH keys with the network: whoever downloads them gets into your machines."))
     }
     if (home) {
-        return Risk(RiskLevel.CAUTION, "compartilha a sua pasta pessoal inteira com a rede, inclusive ~/.ssh (suas chaves). Use --directory com uma pasta só para isso, ou --bind 127.0.0.1.")
+        return Risk(RiskLevel.CAUTION, tr("compartilha a sua pasta pessoal inteira com a rede, inclusive ~/.ssh (suas chaves). Use --directory com uma pasta só para isso, ou --bind 127.0.0.1.", "shares your whole home folder with the network, including ~/.ssh (your keys). Use --directory with a folder just for this, or --bind 127.0.0.1."))
     }
     if (system) {
-        return Risk(RiskLevel.CAUTION, "compartilha " + riskWhat(d, dir) + " com a rede. Use --directory com uma pasta só para isso.")
+        return Risk(RiskLevel.CAUTION, tr("compartilha ", "shares ") + riskWhat(d, dir) + tr(" com a rede. Use --directory com uma pasta só para isso.", " with the network. Use --directory with a folder just for this."))
     }
     return none
 }
@@ -903,15 +941,15 @@ Risk riskWebShare(List<String> w, Int ci, String cmd, String dir, Boolean priv) 
 String riskWhat(String target, String dir) {
     var t = riskNorm(target)
     if (t == "/" || t == "/*") {
-        return "o sistema"
+        return tr("o sistema", "the system")
     }
     if (t == "~" || t == "~/*" || t == "~/.") {
-        return "a sua pasta pessoal"
+        return tr("a sua pasta pessoal", "your home folder")
     }
     if (t == "*" || t == "." || t == "./*" || t == ".*") {
         var d = riskNorm(dir)
         if (d.length() == 0) {
-            return "a pasta atual"
+            return tr("a pasta atual", "the current folder")
         }
         return d
     }

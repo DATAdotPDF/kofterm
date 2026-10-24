@@ -201,3 +201,10 @@ A dated record of how KofTerm was conceived and built. It complements the Git hi
 - KofTerm asks the terminal for the mouse (`?1000h ?1006h`) only while the prompt is being edited and gives it back in the same frame that sends the line to Bash, so a click never lands in `cat` or a password prompt. The selftest checks both: the bar appears after a wheel report, and `?1000l` comes before the program runs.
 - The TAB candidates come from `pathCandidates` (the folder read that `completePath` already did, now sorted byte-wise like `ls` with `LC_ALL=C`, capped at 500). `completePath` keeps the common prefix on top of it, so TAB still completes as far as it can and lists only when there is a real choice.
 - Verified on the VM: 88 unit tests (Ctrl+R, F3, Shift+PgUp, wheel, a click, a wheel report cut between two reads, history search, byte order, the ring); tmux runs at 160 and 60 columns; selftest 21/21.
+
+### After 0.8.0: English for the index and the screens
+- Pedro chose the scope: the 150 index entries and every fixed text of the column, the warnings and the banner; the `?` recipes stay Portuguese for now. Portuguese stays the default, and English is a choice (`kofterm lang en`), saved in `~/.local/share/kofterm/lang`.
+- `index/en.txt` is a full translation of `index/pt_BR.txt` with the same names, `!` packages and `@` links in the same order (checked with a diff of those lines). Examples use English file names (`notes.txt`, `photos`, `user@server`).
+- The screens use `tr("Atenção", "Caution")`: both texts sit side by side in the code, so a new message cannot forget its translation. `Lang` and `tr` live in `model.kf` because `kof test` on one file cannot see functions from another, and the risk reasons in `model.kf` need them.
+- If `index/en.txt` is missing, KofTerm falls back to the Portuguese index instead of opening with an empty column.
+- Verified on the VM: all unit tests, selftest 21/21, and a tmux run in English (banner, `ls -la`, the danger reason for `sudo rm -rf /`, Caps Lock, Ctrl+R, TAB, the scroll bar, F3, the F1 tab, `kofterm lang` and `doctor`).

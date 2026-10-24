@@ -146,8 +146,8 @@ class IndexTab {
     List<String> listLines() {
         var found = index.search(query)
         var out = listOf<String>()
-        out.add(bar(" KofTerm · Índice offline · " + index.entries.size + " comandos"))
-        out.add(" Buscar: " + esc() + "[1m" + clip(query, cols - 12) + esc() + "[0m")
+        out.add(bar(tr(" KofTerm · Índice offline · ", " KofTerm · Offline index · ") + index.entries.size + tr(" comandos", " commands")))
+        out.add(tr(" Buscar: ", " Search: ") + esc() + "[1m" + clip(query, cols - 12) + esc() + "[0m")
         out.add("")
         var visible = rows - 4
         if (selected < listTop) {
@@ -169,12 +169,12 @@ class IndexTab {
             i = i + 1
         }
         if (found.size == 0) {
-            out.add(" Nada encontrado. Tente outra palavra (ex.: copiar, apagar, rede).")
+            out.add(tr(" Nada encontrado. Tente outra palavra (ex.: copiar, apagar, rede).", " Nothing found. Try another word (e.g. copy, delete, network)."))
         }
         while (out.size < rows - 1) {
             out.add("")
         }
-        out.add(bar(" Digite para buscar · ↑↓ escolher · Enter abrir · Esc fechar"))
+        out.add(bar(tr(" Digite para buscar · ↑↓ escolher · Enter abrir · Esc fechar", " Type to search · ↑↓ pick · Enter opens · Esc closes")))
         return out
     }
 
@@ -189,17 +189,17 @@ class IndexTab {
         var used = index.optionsInLine(e, userLine)
         if (used.size > 0) {
             body.add("")
-            body.add(" " + esc() + "[1;32mNA SUA LINHA" + esc() + "[0m  " + clip(userLine, w - 15))
+            body.add(" " + esc() + "[1;32m" + tr("NA SUA LINHA", "ON YOUR LINE") + esc() + "[0m  " + clip(userLine, w - 15))
             optionRows(body, used, w)
         }
         if (e.options.size > 0) {
             body.add("")
-            body.add(" " + esc() + "[1;36mOPÇÕES" + esc() + "[0m")
+            body.add(" " + esc() + "[1;36m" + tr("OPÇÕES", "OPTIONS") + esc() + "[0m")
             optionRows(body, e.options, w)
         }
         if (e.examples.size > 0) {
             body.add("")
-            body.add(" " + esc() + "[1;36mEXEMPLOS" + esc() + "[0m")
+            body.add(" " + esc() + "[1;36m" + tr("EXEMPLOS", "EXAMPLES") + esc() + "[0m")
             for (var x in e.examples) {
                 body.add("   " + esc() + "[33m" + clip(x.cmd, w - 3) + esc() + "[0m")
                 for (var t in wrapText(x.text, w - 7)) {
@@ -209,7 +209,7 @@ class IndexTab {
         }
         if (e.links.size > 0) {
             body.add("")
-            body.add(" " + esc() + "[1;36mLEIA MAIS" + esc() + "[0m" + esc() + "[90m  (abra no navegador; o KofTerm não acessa a internet)" + esc() + "[0m")
+            body.add(" " + esc() + "[1;36m" + tr("LEIA MAIS", "READ MORE") + esc() + "[0m" + esc() + "[90m" + tr("  (abra no navegador; o KofTerm não acessa a internet)", "  (open in a browser; KofTerm does not use the internet)") + esc() + "[0m")
             for (var l in e.links) {
                 body.add("   " + esc() + "[4m" + clip(l, w - 3) + esc() + "[0m")
             }
@@ -235,9 +235,9 @@ class IndexTab {
         }
         var more = ""
         if (maxScroll > 0) {
-            more = " · ↑↓ rolar"
+            more = tr(" · ↑↓ rolar", " · ↑↓ scroll")
         }
-        out.add(bar(" Esc voltar para a lista" + more + " · F1 fechar"))
+        out.add(bar(tr(" Esc voltar para a lista", " Esc back to the list") + more + tr(" · F1 fechar", " · F1 closes")))
         return out
     }
 

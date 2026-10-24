@@ -199,6 +199,15 @@ String findShared(String dataDirPath, String rel) {
     return dataDirPath + "/" + rel
 }
 
+// O indice no idioma escolhido; sem o arquivo em ingles (instalacao antiga), o portugues.
+String indexPath(String dataDirPath) {
+    var p = findShared(dataDirPath, indexFileName())
+    if (access(p, 0) != 0) {
+        return findShared(dataDirPath, "index/pt_BR.txt")
+    }
+    return p
+}
+
 // Arquivos de uma pasta que terminam com `suffix` (caminhos completos).
 List<String> listFiles(String dir, String suffix) {
     var out = listOf<String>()

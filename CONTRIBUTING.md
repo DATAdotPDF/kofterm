@@ -8,8 +8,8 @@ mais clara, um teste numa distribuição diferente ou um ajuste no código em KO
 receitas do modo `?` e entradas do índice, escritas em português simples.
 
 > **English:** KofTerm is a Linux terminal front-end written in KOF that helps people learn
-> Bash, networking and security. Contributions in English are welcome (an English index is on
-> the roadmap). Open an issue or a pull request in English or Portuguese; we will answer in the
+> Bash, networking and security. Contributions in English are welcome (`kofterm lang en` already shows
+> the index and the screens in English). Open an issue or a pull request in English or Portuguese; we will answer in the
 > same language.
 
 ---
@@ -48,7 +48,7 @@ receitas do modo `?` e entradas do índice, escritas em português simples.
 | 🟢 Fácil | **Testar** numa distribuição ou terminal diferente e contar o que aconteceu | Issue com o modelo "Bug" | Usar o terminal |
 | 🟢 Fácil | **Seguir o roteiro** de teste humano e devolver as linhas ⚠️ e ❌ | [`docs/TESTE_HUMANO.md`](docs/TESTE_HUMANO.md) | Usar o terminal |
 | 🟡 Médio | **Contribuir com o seu aprendizado** anonimizado (o modelo fica mais esperto) | `kofterm contribute` → `datasets/contrib/` | Nada; veja [datasets/contrib](datasets/contrib/README.md) |
-| 🟡 Médio | **Traduzir** entradas e receitas para inglês | `index/en.txt`, `recipes/en.txt` (novos) | Inglês |
+| 🟡 Médio | **Traduzir** as receitas para inglês, ou melhorar o inglês do índice. Quem muda uma entrada em `index/pt_BR.txt` muda a mesma entrada em `index/en.txt` (mesmos nomes, na mesma ordem) | [`index/en.txt`](index/en.txt), `recipes/en.txt` (novo) | Inglês |
 | 🔴 Técnico | **Código em KOF**: editor, modelo, emulador de terminal, painel | [`src/`](src) | KOF (parecido com Kotlin/Java) |
 | 🔴 Técnico | **Biblioteca KOF paralela** para algo que falta na linguagem | Repositório próprio | KOF |
 

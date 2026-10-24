@@ -74,7 +74,8 @@ main() {
     session.loadPanelSetting()
     session.mousePath = dir + "/mouse"
     session.loadMouseSetting()
-    session.tab.index.load(loadLines(findShared(dir, "index/pt_BR.txt")))
+    setLang(loadLines(dir + "/lang"))
+    session.tab.index.load(loadLines(indexPath(dir)))
     session.recipes.load(loadLines(findShared(dir, "recipes/pt_BR.txt")))
 
     // o "cerebro": indice compartilhado com a aba, corpus do projeto e o que o usuario ja fez

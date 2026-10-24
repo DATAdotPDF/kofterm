@@ -1,0 +1,1128 @@
+; KofTerm — offline command index (English)
+; Text written by the KofTerm project, GPLv3 license. Nothing copied from SS64 or other sources;
+; the links (@) point to further reading and are never opened by KofTerm.
+; A translation of index/pt_BR.txt: keep the same entries, in the same order.
+;
+; Format:  # name   > summary   - option | explanation   $ example | explanation   @ link   ! apt package
+; To contribute: keep sentences short, written for people who are learning.
+
+; ───────────── Navigation and files ─────────────
+
+# ls
+> Lists the files and folders in a directory.
+- -l | Long format: permissions, owner, group, size and date of each item.
+- -a, --all | Also shows hidden items (the ones starting with a dot, like .bashrc).
+- -A | Like -a, but without the . (current folder) and .. (parent folder) entries.
+- -d | Shows the folder itself, not what is inside it. Useful with -l to see a folder's permissions.
+- -h | Readable sizes (K, M, G) instead of bytes. Works together with -l.
+- -t | Sorts by modification date, newest first.
+- -r | Reverses the order.
+- -S | Sorts by size, largest first.
+- -R | Goes into subfolders (recursive).
+- -1 | One item per line.
+$ ls -la | Everything, hidden items included, in long format.
+$ ls -lh | Long format with sizes in K, M, G.
+$ ls -ld /etc | Permissions of the /etc folder itself.
+$ ls -lt | The most recently modified come first.
+@ https://ss64.com/bash/ls.html
+@ https://man7.org/linux/man-pages/man1/ls.1.html
+
+# cd
+> Changes the current folder.
+- - | Goes back to the folder you were in before (cd -).
+$ cd /etc | Goes to /etc (absolute path, starts with /).
+$ cd .. | Goes up one folder.
+$ cd ~ | Goes to your home folder (plain cd works too).
+$ cd - | Goes back to the previous folder.
+@ https://ss64.com/bash/cd.html
+@ https://www.gnu.org/software/bash/manual/bash.html#Bourne-Shell-Builtins
+
+# pwd
+> Shows the full path of the current folder.
+$ pwd | Prints something like /home/you/projects.
+@ https://ss64.com/bash/pwd.html
+
+# mkdir
+> Creates folders.
+- -p | Creates any missing folders in the path and does not complain if the folder already exists.
+- -v | Shows each folder created.
+$ mkdir photos | Creates the photos folder inside the current folder.
+$ mkdir -p projects/kof/src | Creates the three folders at once.
+@ https://ss64.com/bash/mkdir.html
+@ https://man7.org/linux/man-pages/man1/mkdir.1.html
+
+# touch
+> Creates an empty file or updates the date of an existing file.
+$ touch notes.txt | Creates notes.txt if it does not exist.
+@ https://ss64.com/bash/touch.html
+
+# cp
+> Copies files and folders.
+- -r, -R | Copies folders with everything inside (recursive).
+- -i | Asks before overwriting a file.
+- -v | Shows each file copied.
+- -p | Keeps permissions, owner and dates.
+$ cp a.txt b.txt | Copies a.txt to b.txt.
+$ cp -r photos backup/ | Copies the whole photos folder into backup.
+@ https://ss64.com/bash/cp.html
+@ https://man7.org/linux/man-pages/man1/cp.1.html
+
+# mv
+> Moves or renames files and folders.
+- -i | Asks before overwriting.
+- -v | Shows each item moved.
+- -n | Never overwrites a file that already exists.
+$ mv old.txt new.txt | Renames the file.
+$ mv photo.jpg ~/Pictures/ | Moves the file to another folder.
+@ https://ss64.com/bash/mv.html
+
+# rm
+> Deletes files and folders. There is no trash: what is deleted is gone.
+- -r | Deletes folders with everything inside (recursive).
+- -f | Asks nothing and does not complain about files that do not exist. Careful.
+- -i | Asks before deleting each file. Good for beginners.
+- -v | Shows each item deleted.
+$ rm notes.txt | Deletes a file.
+$ rm -ri folder | Deletes the folder, asking item by item.
+@ https://ss64.com/bash/rm.html
+@ https://man7.org/linux/man-pages/man1/rm.1.html
+
+# ln
+> Creates shortcuts (links) to files and folders.
+- -s | Symbolic link, the usual shortcut. Without -s, it creates a hard link.
+$ ln -s /real/path shortcut | Creates a shortcut pointing to /real/path.
+@ https://ss64.com/bash/ln.html
+
+; ───────────── Reading and searching ─────────────
+
+# cat
+> Shows the contents of files (or joins several).
+- -n | Numbers the lines.
+$ cat notes.txt | Shows the whole file on the screen.
+$ cat a.txt b.txt > all.txt | Joins two files into one.
+@ https://ss64.com/bash/cat.html
+
+# less
+> Opens a file to read with scrolling. q quits, / searches.
+- -N | Shows line numbers.
+$ less /etc/services | Reads a big file (the list of well-known ports) without flooding the screen.
+@ https://man7.org/linux/man-pages/man1/less.1.html
+
+# head
+> Shows the beginning of a file (10 lines by default).
+- -n | How many lines to show.
+$ head -n 5 notes.txt | The first 5 lines.
+@ https://ss64.com/bash/head.html
+
+# tail
+> Shows the end of a file (10 lines by default).
+- -n | How many lines to show.
+- -f | Keeps showing new lines as they arrive. Ctrl-C quits. Great for logs.
+$ tail -f /var/log/apt/history.log | Follows a log live (here, apt's install log).
+@ https://ss64.com/bash/tail.html
+
+# grep
+> Searches for text inside files or in another command's output.
+- -i | Ignores uppercase and lowercase.
+- -r | Searches every file in the subfolders.
+- -n | Shows the line number of each result.
+- -v | Inverts: shows the lines that do NOT have the text.
+- -l | Shows only the names of the files that have the text.
+- -c | Counts how many lines have the text.
+- -w | Whole words only.
+- -E | Uses extended regular expressions (|, +, ? without a backslash).
+$ grep -rn "TODO" . | Searches for TODO in every file, with the line number.
+$ ps aux | grep firefox | Filters the process list.
+@ https://ss64.com/bash/grep.html
+@ https://man7.org/linux/man-pages/man1/grep.1.html
+
+# find
+! findutils
+> Finds files and folders by name, type, size or date.
+- -name | By name. Quote wildcards: -name "*.txt".
+- -iname | By name, ignoring case.
+- -type | By type: f file, d folder, l link.
+- -size | By size: +100M is larger than 100 MB.
+- -mtime | By date: -7 is modified in the last 7 days.
+- -maxdepth | How many levels of subfolders to go down.
+$ find . -name "*.log" | Every .log from the current folder down.
+$ find /home -type d -name kof | Folders named kof.
+@ https://ss64.com/bash/find.html
+@ https://man7.org/linux/man-pages/man1/find.1.html
+
+# wc
+> Counts lines, words and bytes.
+- -l | Lines only.
+- -w | Words only.
+$ wc -l notes.txt | How many lines the file has.
+@ https://ss64.com/bash/wc.html
+
+# sort
+> Sorts lines.
+- -n | Numeric order (2 before 10).
+- -r | Reverse order.
+- -u | Removes repeated lines.
+$ sort -u names.txt | Sorts and removes repeats.
+@ https://ss64.com/bash/sort.html
+
+; ───────────── Permissions and users ─────────────
+
+# chmod
+> Changes the read (r), write (w) and execute (x) permissions.
+- -R | Applies to everything inside the folder (recursive).
+$ chmod +x script.sh | Makes the script executable.
+$ chmod 600 secret.txt | Only the owner reads and writes (6 = r+w, 0 = nothing).
+$ chmod 755 folder | The owner can do everything; group and others read and enter.
+@ https://ss64.com/bash/chmod.html
+@ https://man7.org/linux/man-pages/man1/chmod.1.html
+
+# chown
+> Changes the owner (and group) of files. Usually needs sudo.
+- -R | Applies to everything inside the folder.
+$ sudo chown you:you file | Gives the file to your user.
+@ https://ss64.com/bash/chown.html
+
+# sudo
+! sudo
+> "Super-user do": runs ONE command as administrator (root). It asks for YOUR password, not root's, and only works if you are in the sudo group. Everything is recorded in the journal.
+- -i | Opens a root shell (the prompt changes from $ to #). Type exit to go back to your user.
+- -s | Root shell, but stays in the current folder.
+- -l | Lists what you are allowed to run with sudo.
+- -k | Forgets the password you typed; next time it asks again.
+- -u | Runs as another user: sudo -u name command.
+$ sudo -l | Checks whether you can use sudo.
+$ sudo -i | Becomes root until you type exit.
+$ sudo apt update | Updates the package list as administrator.
+$ sudo !! | Repeats the last command with sudo (when it said "Permission denied").
+@ https://ss64.com/bash/sudo.html
+@ https://man7.org/linux/man-pages/man8/sudo.8.html
+
+# whoami
+> Shows your user name.
+$ whoami | Prints something like datadotpdf.
+@ https://ss64.com/bash/whoami.html
+
+; ───────────── Packages ─────────────
+
+# apt
+! apt
+> Installs, removes and updates programs on Debian, Ubuntu and Kali.
+$ sudo apt update | Downloads the list of available versions. Installs nothing.
+$ sudo apt upgrade | Updates the installed programs. Run it after update.
+$ sudo apt install htop | Installs the htop program.
+$ sudo apt remove htop | Removes the program.
+$ apt search editor | Looks for programs by name or description.
+@ https://manpages.debian.org/apt
+
+# apt install
+> Installs one or more programs.
+- -y | Answers "yes" to the confirmation automatically.
+$ sudo apt install -y git curl | Installs git and curl without asking.
+@ https://manpages.debian.org/apt
+
+; ───────────── Processes and system ─────────────
+
+# ps
+! procps
+> Lists the processes (running programs).
+- aux | All processes of all users, with CPU and memory use.
+$ ps aux | Full list.
+$ ps aux | grep python | Looks for a process by name.
+@ https://ss64.com/bash/ps.html
+
+# kill
+! procps
+> Sends a signal to a process, usually to end it.
+- -9 | SIGKILL: ends it by force, without the program being able to save anything. Last resort.
+- -15 | SIGTERM: asks it to end (the default).
+$ kill 1234 | Asks process 1234 to end.
+@ https://ss64.com/bash/kill.html
+
+# top
+! procps
+> Shows processes live, with CPU and memory use. q quits.
+$ top | Opens the monitor. Also try htop, which is friendlier.
+@ https://ss64.com/bash/top.html
+
+# htop
+> Colorful, interactive process monitor (a friendlier version of top). Not included in Kali: sudo apt install htop.
+- F6 | Chooses the column to sort by (CPU, memory...).
+- F9 | Sends a signal (ends) to the selected process.
+$ htop | Opens the monitor. q or F10 to quit.
+@ https://manpages.debian.org/htop
+
+# df
+> Shows the free space on the disks.
+- -h | Readable sizes (G, M).
+$ df -h | Space on each disk.
+@ https://ss64.com/bash/df.html
+
+# du
+> Shows how much space folders and files take up.
+- -h | Readable sizes.
+- -s | Only the total of each item, without listing subfolders.
+$ du -sh * | How much each item in the current folder takes up.
+@ https://ss64.com/bash/du.html
+
+; ───────────── Compression, network and remote access ─────────────
+
+# tar
+> Bundles and compresses files (.tar, .tar.gz).
+- -c | Create a new archive.
+- -x | Extract.
+- -t | List the contents without extracting.
+- -z | Uses gzip (.tar.gz).
+- -v | Shows each file.
+- -f | The .tar file name comes right after. Almost always needed.
+$ tar -czvf backup.tar.gz folder | Compresses the folder.
+$ tar -xzvf backup.tar.gz | Extracts into the current folder.
+@ https://ss64.com/bash/tar.html
+
+# ping
+! iputils-ping
+> Tests whether a computer answers over the network (ICMP echo). Shows the round-trip time (RTT). Ctrl-C to stop.
+- -c | How many packets to send before stopping.
+- -i | Interval between packets, in seconds.
+- -s | Data size of each packet (useful for testing MTU).
+- -W | How long to wait for the reply, in seconds.
+- -4, -6 | Forces IPv4 or IPv6.
+$ ping -c 4 kali.org | Sends 4 packets and stops.
+$ ping -c 4 192.168.0.1 | Tests your network's gateway (router).
+@ https://ss64.com/bash/ping.html
+@ https://manpages.debian.org/ping
+
+# ip
+! iproute2
+> Shows and configures the network (replaces the old ifconfig). Subcommands can be abbreviated: ip a = ip address.
+$ ip a | IP addresses of each network card (inet = IPv4, inet6 = IPv6).
+$ ip r | Routing table: "default via" is the gateway.
+$ ip link | Network cards, state (UP/DOWN) and MAC address.
+$ ip neigh | ARP table: the neighbors on the local network and their MACs.
+@ https://man7.org/linux/man-pages/man8/ip.8.html
+
+# ip a
+> Shows the addresses of each interface. Look for "inet" (IPv4 with the mask as /24, /16...) and "state UP".
+$ ip -br a | Short version: one line per interface.
+$ ip a show eth0 | Only the eth0 interface.
+@ https://man7.org/linux/man-pages/man8/ip-address.8.html
+
+# ip r
+> Shows the routing table. The line "default via X" tells you the gateway (your network's router).
+$ ip r | All routes.
+$ ip r get 8.8.8.8 | Which interface and gateway a destination would go out through.
+@ https://man7.org/linux/man-pages/man8/ip-route.8.html
+
+# ip link
+> Shows the network interfaces, whether they are up (UP) and the MAC address (link/ether).
+$ ip link | Lists the interfaces.
+$ sudo ip link set eth0 down | Turns off the eth0 interface (up turns it back on).
+@ https://man7.org/linux/man-pages/man8/ip-link.8.html
+
+# ip neigh
+> ARP/neighbor table: which IPs on the local network have been seen and the MAC of each. Same as the old "arp -a".
+$ ip neigh | Lists the neighbors.
+@ https://man7.org/linux/man-pages/man8/ip-neighbour.8.html
+
+# ssh
+! openssh-client
+> Connects to another computer from the terminal, over an encrypted connection.
+- -p | Port, if it is not 22.
+- -i | Private key file to use.
+$ ssh user@server | Logs into the server.
+$ ssh -p 2222 user@127.0.0.1 | Uses port 2222.
+@ https://ss64.com/bash/ssh.html
+@ https://man7.org/linux/man-pages/man1/ssh.1.html
+
+# curl
+> Downloads or sends data over HTTP and other protocols.
+- -O | Saves with the file's original name.
+- -L | Follows redirects.
+- -I | Shows only the response headers.
+$ curl -LO https://example.com/file.zip | Downloads the file.
+@ https://curl.se/docs/manpage.html
+
+; ───────────── Git ─────────────
+
+# git
+> Version control: keeps the history of a project's changes.
+$ git status | What changed since the last commit.
+$ git log --oneline | Short history.
+@ https://git-scm.com/docs
+
+# git add
+> Chooses the changes that go into the next commit.
+- -A | All changes, deleted files included.
+- -p | Chooses piece by piece, asking.
+$ git add . | Everything that changed in the current folder.
+@ https://git-scm.com/docs/git-add
+
+# git commit
+> Records the chosen changes with a message.
+- -m | The message comes next, in quotes.
+- -a | Automatically includes known files that changed.
+- -S | Signs the commit (shows as Verified on GitHub).
+$ git commit -m "fix bug" | Records with the message.
+@ https://git-scm.com/docs/git-commit
+
+# git push
+> Sends the commits to the remote repository (GitHub, for example).
+- -u | Links the local branch to the remote one; after that, plain git push is enough.
+$ git push -u origin main | First push of the main branch.
+@ https://git-scm.com/docs/git-push
+
+# git clone
+> Downloads a whole repository, with its history.
+$ git clone https://github.com/DATAdotPDF/kofterm.git | Copies KofTerm to your machine.
+@ https://git-scm.com/docs/git-clone
+
+; ───────────── Shell ─────────────
+
+# echo
+> Writes text on the screen.
+- -n | No line break at the end.
+- -e | Interprets \n, \t etc.
+$ echo $HOME | Shows the value of a variable.
+$ echo "hi" > file.txt | Writes to the file (erasing what was there).
+@ https://ss64.com/bash/echo.html
+
+# history
+> Shows the commands you have already typed.
+$ history | Numbered list.
+$ !42 | Repeats command number 42.
+@ https://ss64.com/bash/history.html
+
+# script
+> Records everything that appears in the terminal (and what you type) to a file. Useful to keep a class, a lab or to show an error. Type exit to stop recording.
+- -q | Does not show the start and end messages.
+- -a | Appends to the file instead of overwriting.
+- -c | Records just one command and stops.
+- -I, -O | Records the input (what you type) and the output in separate files.
+$ script network-class.txt | Starts recording to network-class.txt; exit to finish.
+$ script -q -c "ip a" output.txt | Records only the output of ip a.
+@ https://manpages.debian.org/script
+! bsdutils
+
+# man
+! man-db
+> Opens a command's manual. q quits, / searches.
+$ man ls | The ls manual.
+@ https://man7.org/linux/man-pages/man1/man.1.html
+
+# which
+> Shows where the program that runs when you type a name is.
+$ which python3 | Prints something like /usr/bin/python3.
+@ https://ss64.com/bash/which.html
+
+# clear
+> Clears the screen. In KofTerm, Ctrl-L does the same and keeps what you are typing.
+@ https://man7.org/linux/man-pages/man1/clear.1.html
+
+# nano
+> Simple text editor in the terminal. Ctrl-O saves, Ctrl-X quits.
+$ nano notes.txt | Opens (or creates) the file to edit.
+@ https://www.nano-editor.org/dist/latest/nano.html
+
+; ───────────── Shell operators ─────────────
+
+# |
+> Pipe: sends one command's output to the next one's input.
+$ ls -l | less | Reads a long listing with scrolling.
+$ cat log.txt | grep error | wc -l | Counts the lines with "error".
+@ https://www.gnu.org/software/bash/manual/bash.html#Pipelines
+
+# >
+> Redirects the output to a file, erasing what was in it.
+$ ls > list.txt | Saves the listing to the file.
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# >>
+> Redirects the output to the end of a file, without erasing what was there.
+$ echo "new line" >> notes.txt | Appends to the end.
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# 2>
+> Redirects error messages (stderr) to a file.
+$ find / -name x 2> /dev/null | Hides the "Permission denied" errors.
+@ https://www.gnu.org/software/bash/manual/bash.html#Redirections
+
+# &&
+> Runs the next command only if the previous one succeeded (exit code 0).
+$ sudo apt update && sudo apt upgrade | Upgrades only if the list was downloaded.
+@ https://www.gnu.org/software/bash/manual/bash.html#Lists
+
+# ||
+> Runs the next command only if the previous one failed.
+$ ping -c1 site || echo "down" | Warns if the site does not answer.
+@ https://www.gnu.org/software/bash/manual/bash.html#Lists
+
+# $?
+> The exit code of the last command: 0 succeeded, any other number failed.
+$ echo $? | Shows the previous command's code.
+@ https://www.gnu.org/software/bash/manual/bash.html#Special-Parameters
+
+# ~
+> Shortcut for your home folder (/home/your-user).
+$ cd ~/Downloads | Goes to Downloads.
+@ https://www.gnu.org/software/bash/manual/bash.html#Tilde-Expansion
+
+# *
+> Wildcard: any sequence of characters in file names.
+$ ls *.txt | Every .txt in the folder.
+$ rm *.tmp | Deletes every .tmp. Run ls *.tmp first to check.
+@ https://www.gnu.org/software/bash/manual/bash.html#Pattern-Matching
+
+; ───────────── Users and permissions ─────────────
+
+# su
+! util-linux
+> Switches user. Unlike sudo, it asks for the target user's password (on Kali, root has no password: use sudo -i).
+- - | Opens a full login (the other user's folder and variables).
+$ su - student | Becomes the user student.
+@ https://manpages.debian.org/su
+
+# id
+! coreutils
+> Shows your user number (uid), main group (gid) and all your groups. Seeing "sudo" in the list means you can become root.
+$ id | Your details.
+$ id student | Another user's details.
+@ https://manpages.debian.org/id
+
+# groups
+! coreutils
+> Lists a user's groups. Groups give extra permissions (sudo, wireshark, docker...).
+$ groups | Your groups.
+@ https://manpages.debian.org/groups
+
+# adduser
+> Creates a user interactively (home folder, password, name). It is the recommended way on Debian and Kali.
+$ sudo adduser student | Creates the user student.
+$ sudo adduser student sudo | Puts student in the sudo group (takes effect at the next login).
+@ https://manpages.debian.org/adduser
+
+# useradd
+! passwd
+> Creates a user the "low-level" way: no questions. Prefer adduser day to day.
+- -m | Creates the home folder.
+- -s | The user's shell (e.g. /bin/bash).
+- -G | Extra groups.
+$ sudo useradd -m -s /bin/bash student | Creates student with a folder and bash.
+@ https://manpages.debian.org/useradd
+
+# usermod
+! passwd
+> Changes an existing user.
+- -aG | Adds to a group without removing the others (without -a it replaces them all).
+- -L, -U | Locks or unlocks the account.
+$ sudo usermod -aG sudo student | Gives sudo to student.
+$ sudo usermod -aG wireshark $USER | Lets you capture packets without root.
+@ https://manpages.debian.org/usermod
+
+# deluser
+! adduser
+> Removes a user (or takes them out of a group).
+- --remove-home | Also deletes the home folder.
+$ sudo deluser student | Removes the user, keeping the files.
+$ sudo deluser student sudo | Takes student out of the sudo group.
+@ https://manpages.debian.org/deluser
+
+# passwd
+! passwd
+> Changes a password. Without a name, yours; with sudo and a name, another user's.
+- -l | Locks the account's password.
+- -S | Shows the password status.
+$ passwd | Changes your password.
+$ sudo passwd student | Sets student's password.
+@ https://manpages.debian.org/passwd
+
+# who
+! coreutils
+> Who is logged in now and from where (local terminal, or pts/ remotely over SSH).
+$ who | Lists the sessions.
+@ https://manpages.debian.org/who
+
+# w
+! procps
+> Like who, but also shows what each one is running and how long the system has been up.
+$ w | Sessions and activity.
+@ https://manpages.debian.org/w
+
+; ───────────── System and services ─────────────
+
+# uname
+! coreutils
+> Kernel and architecture information.
+- -a | Everything: kernel, version, machine.
+- -r | Only the kernel version.
+$ uname -a | Shows everything.
+@ https://manpages.debian.org/uname
+
+# hostnamectl
+! systemd
+> Shows or changes the machine's name; also shows the system and whether it is a VM (Virtualization).
+$ hostnamectl | System summary.
+$ sudo hostnamectl set-hostname lab01 | Renames the machine.
+@ https://manpages.debian.org/hostnamectl
+
+# uptime
+! procps
+> How long the system has been up and the load average (1, 5 and 15 minutes).
+$ uptime | Shows the uptime.
+@ https://manpages.debian.org/uptime
+
+# free
+! procps
+> RAM and swap memory: total, used and available.
+- -h | In readable units (MB, GB).
+$ free -h | Memory in an easy format.
+@ https://manpages.debian.org/free
+
+# lscpu
+! util-linux
+> Processor details: cores, model, virtualization.
+$ lscpu | Shows the processor.
+@ https://manpages.debian.org/lscpu
+
+# lsblk
+! util-linux
+> Lists disks and partitions as a tree, with size and where they are mounted.
+- -f | Also shows the file system and the UUID.
+$ lsblk | Disks and partitions.
+@ https://manpages.debian.org/lsblk
+
+# mount
+! util-linux
+> Mounts (attaches) a disk or partition to a folder. With no arguments, lists what is mounted.
+$ mount | grep sd | Shows the mounted disk partitions.
+$ sudo mount /dev/sdb1 /mnt | Mounts sdb1 on /mnt.
+@ https://manpages.debian.org/mount
+
+# dmesg
+! util-linux
+> Kernel messages: detected hardware, plugged-in USB, disk or network card errors.
+- -w | Keeps showing new messages.
+- -T | Readable time.
+$ sudo dmesg -T | tail | The latest kernel messages.
+@ https://manpages.debian.org/dmesg
+
+# systemctl
+! systemd
+> Controls the system's services (systemd): start, stop, restart and see the status.
+$ systemctl status ssh | Status of the SSH service.
+$ sudo systemctl start ssh | Starts SSH now.
+$ sudo systemctl enable --now ssh | Starts it now and at every boot.
+$ sudo systemctl stop ssh | Stops it.
+$ systemctl list-units --type=service --state=running | Running services.
+@ https://manpages.debian.org/systemctl
+
+# journalctl
+! systemd
+> Reads the systemd journal (logs). On Kali it replaces /var/log/syslog and /var/log/auth.log.
+- -u | Only one service (e.g. -u ssh).
+- -f | Follows live.
+- -b | Only since the last boot.
+- -p | By priority (e.g. -p err).
+- --since | Starting when (e.g. --since "1 hour ago").
+$ sudo journalctl -u ssh --since today | Today's SSH logs.
+$ sudo journalctl -f | Follows everything live.
+$ sudo journalctl -p err -b | Errors since boot.
+$ sudo journalctl _COMM=sudo | Who used sudo and for what.
+@ https://manpages.debian.org/journalctl
+
+# timedatectl
+! systemd
+> Shows and sets the date, time, time zone and sync (NTP). A wrong clock breaks certificates and logs.
+$ timedatectl | Clock status.
+$ sudo timedatectl set-timezone America/Sao_Paulo | Sets the time zone.
+@ https://manpages.debian.org/timedatectl
+
+# crontab
+! cron
+> Schedules commands to run on their own (cron). Each line: minute hour day month weekday command.
+- -l | Lists your tasks.
+- -e | Edits your tasks.
+$ crontab -l | Shows your scheduled tasks.
+$ crontab -e | Edits. E.g. "0 3 * * * command" runs at 3 a.m. every day.
+@ https://manpages.debian.org/crontab
+@ https://crontab.guru
+
+# env
+! coreutils
+> Shows the environment variables or runs a command with a different variable.
+$ env | All variables.
+$ echo $PATH | The folders where bash looks for commands.
+@ https://manpages.debian.org/env
+
+# export
+> Creates or changes an environment variable for this shell and the programs it starts.
+$ export EDITOR=nano | Sets the default editor.
+$ export PATH="$PATH:$HOME/bin" | Adds a folder to the PATH.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bourne-Shell-Builtins
+
+# alias
+> Creates a nickname for a command. To keep it, put it in ~/.bashrc.
+$ alias | Lists the aliases.
+$ alias ll='ls -la' | ll becomes ls -la.
+@ https://www.gnu.org/software/bash/manual/bash.html#Aliases
+
+# lsof
+! lsof
+> Lists open files, and on Linux connections are files too. Great for finding out who uses a port.
+- -i | Network connections (e.g. -i :80).
+$ sudo lsof -i :22 | Who is using port 22.
+$ sudo lsof -i -P -n | All connections, without translating names.
+@ https://manpages.debian.org/lsof
+
+; ───────────── Networking ─────────────
+
+# ss
+! iproute2
+> Shows connections and open ports (replaces netstat).
+- -t | TCP.
+- -u | UDP.
+- -l | Only listening ports (servers).
+- -n | Numbers instead of names (faster).
+- -p | Which program uses each port (needs sudo to see them all).
+$ ss -tuln | Open TCP/UDP ports waiting for connections.
+$ sudo ss -tunp | Active connections and their programs.
+@ https://man7.org/linux/man-pages/man8/ss.8.html
+
+# netstat
+! net-tools
+> Old version of ss (net-tools package). Still shows up in courses and exams; the options are similar.
+$ netstat -tuln | Listening ports.
+$ netstat -rn | Routing table (like ip r).
+@ https://manpages.debian.org/netstat
+
+# ifconfig
+! net-tools
+> Old version of ip a (net-tools package). Shows interfaces and addresses.
+$ ifconfig | Active interfaces.
+$ ifconfig -a | All of them, even the ones that are down.
+@ https://manpages.debian.org/ifconfig
+
+# traceroute
+> Shows each router (hop) on the way to a destination. Asterisks (* * *) are hops that do not answer.
+- -n | Does not translate IPs into names (faster).
+- -I | Uses ICMP instead of UDP.
+$ traceroute -n 8.8.8.8 | The path to Google's DNS.
+@ https://manpages.debian.org/traceroute
+
+# dig
+! bind9-dnsutils
+> Detailed DNS query: asks a server which IP (or other record) a name has.
+- +short | Only the answer.
+- @server | Asks a specific DNS server.
+$ dig kali.org | Full query.
+$ dig +short kali.org A | Only the IPv4.
+$ dig @1.1.1.1 kali.org MX | Mail servers, asking Cloudflare.
+$ dig -x 8.8.8.8 | Reverse DNS: the name of an IP.
+@ https://manpages.debian.org/dig
+
+# nslookup
+! bind9-dnsutils
+> Simple DNS query (it also exists on Windows, with similar usage).
+$ nslookup kali.org | The IP of a name.
+$ nslookup kali.org 1.1.1.1 | Asking another DNS server.
+@ https://manpages.debian.org/nslookup
+
+# host
+! bind9-dnsutils
+> DNS query with short, easy-to-read output.
+$ host kali.org | IPs and mail server.
+$ host 8.8.8.8 | The name of an IP.
+@ https://manpages.debian.org/host
+
+# whois
+> Who registered a domain or who owns a block of IPs.
+$ whois kali.org | The domain's registration data.
+@ https://manpages.debian.org/whois
+
+# wget
+> Downloads files from the web, even whole folders.
+- -c | Resumes an interrupted download.
+- -O | Output file name.
+$ wget https://example.com/file.iso | Downloads the file.
+@ https://manpages.debian.org/wget
+
+# nmcli
+! network-manager
+> Controls NetworkManager: connections, Wi-Fi, static IP or DHCP.
+$ nmcli device status | Status of each interface.
+$ nmcli connection show | Saved connections.
+$ nmcli device wifi list | Visible Wi-Fi networks.
+@ https://manpages.debian.org/nmcli
+
+# ipcalc
+! ipcalc
+> Calculates a subnet: mask, network address, broadcast, IP range and how many hosts fit. Good for checking subnetting exercises.
+$ ipcalc 192.168.10.0/26 | A /26 network: 64 addresses, 62 hosts.
+$ ipcalc 10.0.0.0/8 | A whole class A network.
+@ https://manpages.debian.org/ipcalc
+
+# python3
+> Runs Python programs. In the terminal it also handles quick tasks, like a test web server.
+- -m | Runs a standard library module as a program.
+- --directory | With http.server: which folder to serve (without it, it serves the whole current folder).
+- --bind | With http.server: which address to listen on. 127.0.0.1 lets only this machine in.
+$ python3 -m http.server 8000 --directory site | Serves only the site folder at http://YOUR_IP:8000 (Ctrl-C to stop). Anyone on the network can download what is in it.
+$ python3 -m http.server 8000 --bind 127.0.0.1 | Only this machine gets in: nobody on the network sees it.
+$ python3 --version | Shows the installed version.
+@ https://docs.python.org/3/library/http.server.html
+
+# nmap
+> Discovers computers and open ports on a network. Use it only on your lab network or with written permission: scanning other people's networks can be a crime.
+- -sn | Only finds who is up (no ports).
+- -sV | Tries to identify the service and version on each port.
+- -p | Which ports (e.g. -p 22,80 or -p-).
+- -O | Tries to guess the operating system (needs sudo).
+- -oN | Saves the result to a file.
+$ nmap -sn 192.168.56.0/24 | Who is up on the VM network (host-only).
+$ nmap -sV 192.168.56.101 | Ports and services of a lab machine.
+$ nmap localhost | Open ports on your own machine.
+@ https://nmap.org/book/man.html
+@ https://manpages.debian.org/nmap
+
+# arp-scan
+> Discovers the devices on the local network via ARP (shows IP, MAC and vendor). Only on your network.
+$ sudo arp-scan --localnet | Scans the main interface's network.
+@ https://manpages.debian.org/arp-scan
+
+# netdiscover
+> Discovers devices on the local network by listening to and sending ARP, on a screen that keeps updating. Only on your network.
+- -r | Range to scan.
+- -p | Passive mode: only listens.
+$ sudo netdiscover -r 192.168.56.0/24 | Scans the lab network.
+@ https://manpages.debian.org/netdiscover
+
+# tcpdump
+> Captures and shows the packets passing through an interface. Ctrl-C to stop.
+- -i | Interface (e.g. eth0, any).
+- -n | Does not translate IPs into names.
+- -c | Stops after N packets.
+- -w | Writes to a .pcap file (opens in Wireshark).
+$ sudo tcpdump -i eth0 -n | Shows eth0's packets.
+$ sudo tcpdump -i any -n icmp | Only ping (ICMP).
+$ sudo tcpdump -i eth0 -n port 53 | Only DNS.
+$ sudo tcpdump -i eth0 -w capture.pcap | Records it to analyze later.
+@ https://www.tcpdump.org/manpages/tcpdump.1.html
+
+# tshark
+> Wireshark in the terminal: captures and analyzes packets with the same filters.
+- -i | Interface.
+- -r | Reads a .pcap file.
+- -Y | Display filter (e.g. http, dns).
+$ sudo tshark -i eth0 | Captures on eth0.
+$ tshark -r capture.pcap -Y dns | Only DNS from a capture.
+@ https://www.wireshark.org/docs/man-pages/tshark.html
+
+# wireshark
+> Packet analyzer with a graphical interface. To use it without root: sudo usermod -aG wireshark $USER and log in again.
+$ wireshark capture.pcap | Opens a capture.
+@ https://www.wireshark.org/docs/wsug_html_chunked/
+
+# nc
+! netcat-traditional
+> Netcat: opens "raw" TCP/UDP connections. Good for testing whether a port answers or for talking between two VMs.
+- -z | Only tests whether the port is open.
+- -v | Shows details.
+- -l | Listens on a port (becomes a server).
+- -u | Uses UDP.
+$ nc -zv 192.168.56.101 22 | Is port 22 open?
+$ nc -lvp 4444 | Listens on port 4444 (on the other VM: nc IP 4444).
+@ https://manpages.debian.org/nc.traditional
+
+# scp
+! openssh-client
+> Copies files between computers over SSH.
+- -r | Whole folders.
+- -P | Port (capital P).
+$ scp file.txt user@192.168.56.101:/tmp/ | Sends a file.
+$ scp user@192.168.56.101:/etc/hosts . | Brings a file to the current folder.
+@ https://manpages.debian.org/scp
+
+# rsync
+> Syncs folders (locally or over SSH), copying only what changed.
+- -a | Keeps permissions and dates, and goes into subfolders.
+- -v | Shows what it copies.
+- --delete | Deletes at the destination what no longer exists at the source.
+$ rsync -av folder/ backup/ | Copies the contents of folder into backup.
+$ rsync -av folder/ user@server:~/folder/ | Sends over SSH.
+@ https://manpages.debian.org/rsync
+
+# ssh-keygen
+! openssh-client
+> Creates an SSH key pair: the private key stays with you and the public one (.pub) goes to the server. Login without a password, and safer.
+- -t | Key type (use ed25519).
+- -C | Comment (e.g. your e-mail).
+$ ssh-keygen -t ed25519 -C "student@lab" | Creates the key in ~/.ssh/id_ed25519.
+$ ssh-keygen -lf ~/.ssh/id_ed25519.pub | Shows the key's fingerprint.
+@ https://manpages.debian.org/ssh-keygen
+
+# ssh-copy-id
+! openssh-client
+> Installs your public key on the server (in its ~/.ssh/authorized_keys).
+$ ssh-copy-id user@192.168.56.101 | Copies the key; after that, ssh logs in without a password.
+@ https://manpages.debian.org/ssh-copy-id
+
+# iptables
+> Linux's classic firewall: rules per chain (INPUT, OUTPUT, FORWARD). On Kali it uses nftables underneath.
+- -L | Lists the rules.
+- -n | Numbers instead of names.
+- -v | Packet counters.
+$ sudo iptables -L -n -v | Shows the rules and how many packets matched each one.
+$ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT | Allows port 22 (SSH).
+@ https://manpages.debian.org/iptables
+
+# nft
+! nftables
+> nftables: Linux's current firewall, the replacement for iptables.
+$ sudo nft list ruleset | Shows all the rules.
+@ https://manpages.debian.org/nft
+@ https://wiki.nftables.org
+
+# ufw
+> Simplified ("uncomplicated") firewall. Not included in Kali: sudo apt install ufw.
+$ sudo ufw status verbose | Status and rules.
+$ sudo ufw allow 22/tcp | Allows SSH.
+$ sudo ufw enable | Turns the firewall on.
+@ https://manpages.debian.org/ufw
+
+; ───────────── Files and text (analysis) ─────────────
+
+# file
+! file
+> Tells a file's real type from its contents, not its extension.
+$ file picture.jpg | May reveal that it is, for example, a ZIP.
+$ file /bin/ls | A 64-bit ELF executable.
+@ https://manpages.debian.org/file
+
+# strings
+! binutils
+> Shows the readable pieces of text inside a binary file.
+- -n | Minimum text length (default 4).
+$ strings program | less | Looks for text inside the program.
+@ https://manpages.debian.org/strings
+
+# sha256sum
+! coreutils
+> Calculates the SHA-256 hash: a file's "fingerprint". If one byte changes, the whole hash changes.
+- -c | Checks hashes saved in a file (e.g. SHA256SUMS).
+$ sha256sum kali.iso | Calculates the hash to compare with the one on the website.
+$ sha256sum -c SHA256SUMS | Checks every file in the list.
+@ https://manpages.debian.org/sha256sum
+
+# md5sum
+! coreutils
+> MD5 hash. Still used to check downloads, but it is not safe against forgery: prefer sha256sum.
+$ md5sum file | Calculates the MD5.
+@ https://manpages.debian.org/md5sum
+
+# base64
+! coreutils
+> Encodes and decodes Base64. It is not encryption: anyone can decode it.
+- -d | Decodes.
+$ echo -n 'text' | base64 | Encodes.
+$ echo 'dGV4dA==' | base64 -d | Decodes.
+@ https://manpages.debian.org/base64
+
+# xxd
+> Shows a file in hexadecimal, byte by byte (hexdump).
+$ xxd file | head | The first bytes in hex.
+@ https://manpages.debian.org/xxd
+
+# openssl
+> Cryptography toolbox: TLS certificates, hashes, keys, random passwords.
+$ openssl s_client -connect kali.org:443 | Opens TLS and shows the certificate (Ctrl-C quits).
+$ openssl rand -base64 16 | Generates a random password.
+$ openssl dgst -sha256 file | SHA-256 hash.
+@ https://docs.openssl.org/master/man1/openssl/
+
+# diff
+! diffutils
+> Compares two files line by line.
+- -u | Unified format (the same as git diff).
+$ diff -u old.conf new.conf | What changed between the two.
+@ https://manpages.debian.org/diff
+
+# cut
+! coreutils
+> Cuts columns out of each line.
+- -d | Separator.
+- -f | Which fields.
+$ cut -d: -f1 /etc/passwd | Only the user names.
+@ https://manpages.debian.org/cut
+
+# awk
+! gawk
+> Processes text by columns (fields separated by spaces). $1 is the first column, $NF the last.
+- -F | Field separator.
+$ awk -F: '$3 >= 1000 {print $1}' /etc/passwd | "Human" users (uid 1000 or more).
+$ ip -br a | awk '{print $1, $3}' | Interface and IP.
+@ https://manpages.debian.org/gawk
+
+# sed
+> Edits text as a stream: replaces, deletes or shows lines.
+- -n | Shows only what is asked for.
+- -i | Changes the file itself (careful; make a backup).
+$ sed 's/old/new/g' file | Replaces every occurrence (on the screen only).
+$ sed -n '10,20p' file | Shows lines 10 to 20.
+@ https://manpages.debian.org/sed
+
+# tr
+! coreutils
+> Replaces or deletes characters.
+$ echo 'ABC' | tr 'A-Z' 'a-z' | Converts to lowercase.
+@ https://manpages.debian.org/tr
+
+# uniq
+! coreutils
+> Merges repeated adjacent lines (use it after sort).
+- -c | Counts how many times each one appears.
+$ sort access.txt | uniq -c | sort -rn | A ranking of the lines that appear the most.
+@ https://manpages.debian.org/uniq
+
+# tee
+! coreutils
+> Shows the output on the screen and writes it to a file at the same time.
+- -a | Appends instead of overwriting.
+$ nmap -sn 192.168.56.0/24 | tee scan.txt | Sees and saves the result.
+$ echo '192.168.56.101 target' | sudo tee -a /etc/hosts | Writes to a root-owned file.
+@ https://manpages.debian.org/tee
+
+# xargs
+! findutils
+> Turns one command's output into another command's arguments.
+$ find . -name '*.log' | xargs wc -l | Counts the lines of each .log.
+@ https://manpages.debian.org/xargs
+
+; ───────────── Important paths ─────────────
+
+# /etc
+> System settings, in text files. Editing them needs sudo.
+$ ls /etc | Lists the settings.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s07.html
+
+# /etc/passwd
+> List of users. Each line: name:x:uid:gid:description:folder:shell. The "x" means the password is in /etc/shadow. Everyone can read it.
+$ cat /etc/passwd | Shows the users.
+$ grep bash /etc/passwd | Users who use bash.
+@ https://manpages.debian.org/passwd.5
+
+# /etc/shadow
+> The password hashes and the expiry rules. Only root reads it: without sudo you get "Permission denied".
+$ sudo cat /etc/shadow | Shows it (as root).
+@ https://manpages.debian.org/shadow.5
+
+# /etc/group
+> List of groups and their members: group:x:gid:members.
+$ grep sudo /etc/group | Who is in the sudo group.
+@ https://manpages.debian.org/group.5
+
+# /etc/sudoers
+> Who can use sudo and how. Never edit it directly: use sudo visudo, which checks the syntax before saving.
+$ sudo visudo | Edits it safely.
+@ https://manpages.debian.org/sudoers
+
+# /etc/hosts
+> Local name table: resolves names before DNS. Useful to give names to the lab VMs.
+$ cat /etc/hosts | Shows it.
+$ echo '192.168.56.101 target' | sudo tee -a /etc/hosts | Now "ping target" works.
+@ https://manpages.debian.org/hosts
+
+# /etc/resolv.conf
+> Which DNS server the system uses (nameserver lines). Usually generated by NetworkManager.
+$ cat /etc/resolv.conf | Shows the DNS in use.
+@ https://manpages.debian.org/resolv.conf
+
+# /etc/hostname
+> The machine's name (the same as in the prompt). Change it with hostnamectl.
+$ cat /etc/hostname | Shows the name.
+@ https://manpages.debian.org/hostname.5
+
+# /etc/os-release
+> Which distribution and version are installed.
+$ cat /etc/os-release | The system's name and version.
+@ https://manpages.debian.org/os-release
+
+# /etc/services
+> Table of well-known ports: which service uses which port (22 ssh, 80 http, 443 https...).
+$ grep -w 22 /etc/services | Which service port 22 is.
+@ https://manpages.debian.org/services.5
+
+# /etc/ssh/sshd_config
+> SSH server settings: port, root login, password or key only. After editing: sudo systemctl restart ssh.
+$ sudo nano /etc/ssh/sshd_config | Edits it.
+$ grep -i '^PermitRootLogin' /etc/ssh/sshd_config | Can root log in over SSH?
+@ https://manpages.debian.org/sshd_config
+
+# /etc/fstab
+> Which disks and partitions are mounted at boot. A mistake here can keep the system from starting.
+$ cat /etc/fstab | Shows it.
+@ https://manpages.debian.org/fstab
+
+# /etc/crontab
+> The system's scheduled tasks (with one extra column: the user that runs it).
+$ cat /etc/crontab | Shows it.
+$ ls /etc/cron.d | Other system tasks.
+@ https://manpages.debian.org/crontab.5
+
+# /var/log
+> The log folder. On Kali most logs are in the journal (use journalctl); apt, Xorg and others stay here.
+$ ls /var/log | Lists the logs.
+$ tail /var/log/apt/history.log | The latest installed packages.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s10.html
+
+# /proc
+> Virtual folder with information about the kernel and each process (one folder per PID).
+$ cat /proc/cpuinfo | Processor.
+$ cat /proc/meminfo | Memory.
+$ ls /proc/$$ | Your own shell.
+@ https://man7.org/linux/man-pages/man5/proc.5.html
+
+# /dev/null
+> The "black hole": everything sent there disappears.
+$ command 2>/dev/null | Hides the error messages.
+$ find / -name '*.conf' 2>/dev/null | Searches without the list of "Permission denied".
+@ https://manpages.debian.org/null.4
+
+# /tmp
+> Temporary files; any user can write here and the system cleans it at boot. Do not keep anything important.
+$ cd /tmp | Goes to the temporary folder.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s18.html
+
+# /home
+> The users' home folders (/home/name). Yours is ~.
+$ ls /home | Users with a home folder.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s08.html
+
+# /root
+> root's home folder. Only root gets in: use sudo ls /root or sudo -i.
+$ sudo ls -la /root | Lists root's folder.
+@ https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s14.html
+
+# /usr/share/wordlists
+> On Kali: word lists used in password and discovery exercises (rockyou comes compressed as .gz).
+$ ls -l /usr/share/wordlists | Shows the lists.
+@ https://www.kali.org/tools/wordlists/
+
+# ~/.bashrc
+> Your bash settings, read by every new terminal: aliases, PATH, prompt. After editing: source ~/.bashrc.
+$ nano ~/.bashrc | Edits it.
+$ source ~/.bashrc | Applies it without opening another terminal.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bash-Startup-Files
+
+# ~/.bash_history
+> The commands you have already typed (saved when the shell exits).
+$ tail -20 ~/.bash_history | The last 20.
+@ https://www.gnu.org/software/bash/manual/bash.html#Bash-History-Facilities
+
+# ~/.ssh
+> Your SSH keys and settings. The folder must be 700 and the private key 600, or ssh refuses them.
+$ ls -la ~/.ssh | Shows the keys.
+$ chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_ed25519 | Fixes the permissions.
+@ https://manpages.debian.org/ssh
+
+# ~/.ssh/authorized_keys
+> Public keys allowed to log into YOUR account over SSH. One per line. Check it now and then.
+$ cat ~/.ssh/authorized_keys | Who can log in without a password.
+@ https://manpages.debian.org/sshd

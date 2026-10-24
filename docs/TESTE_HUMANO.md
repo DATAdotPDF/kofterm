@@ -297,6 +297,16 @@ coluna. Nada é instalado sem você apertar Enter.
 | R.10 | F3, depois role a roda | A coluna avisa "roda do mouse desligada"; a roda não rola mais (o terminal faz o que fazia antes); F3 de novo liga | |
 | R.11 | Abra `vim`, use a roda lá dentro e saia com `:q` | O vim decide o que a roda faz; de volta ao prompt, a roda rola a saída antiga de novo | |
 
+## S. Inglês (opcional)
+
+| # | Fazer | Deve acontecer | Resultado |
+|---|---|---|---|
+| S.1 ★ | Rode `kofterm lang` | "Idioma: português. Para inglês: kofterm lang en" | |
+| S.2 ★ | `kofterm lang en`, depois `exit` e abra `kofterm` de novo | A linha de boas-vindas e a coluna estão em inglês; digite `ls -la` devagar e a coluna explica em inglês | |
+| S.3 | Digite `sudo rm -rf /` (sem Enter!) | A coluna avisa "⚠ DANGER" com o motivo em inglês | |
+| S.4 | F1 | A aba diz "Offline index · 150 commands" | |
+| S.5 ★ | `kofterm lang pt`, `exit` e abra `kofterm` de novo | Tudo volta para o português | |
+
 ## Q. Impressões gerais (texto livre)
 
 1. A coluna à direita ajudou ou atrapalhou? A largura está boa?

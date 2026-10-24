@@ -1,4 +1,4 @@
-// Subcomandos: kofterm [contribute|check|install|update|uninstall|doctor|selftest|version|help]
+// Subcomandos: kofterm [contribute|check|install|update|uninstall|doctor|selftest|lang|version|help]
 // Sem argumentos, abre o terminal (main.kf).
 
 class Version {
@@ -17,6 +17,7 @@ printHelp() {
     println("  kofterm uninstall            remove o programa (seu historico fica, a menos que use --purge)")
     println("  kofterm doctor               confere a instalacao e mostra onde ficam seus dados")
     println("  kofterm selftest             testa o terminal: sinais, saidas grandes, marcador e historico")
+    println("  kofterm lang [pt|en]         idioma das telas e do indice (portugues e o padrao)")
     println("  kofterm version              mostra a versao")
     println("")
     println("Dentro do terminal: TAB aceita a sugestao, F2 mostra o indice na lateral, F1 busca no indice,")
@@ -217,7 +218,7 @@ Int runUninstall(List<String> args) {
     }
     rmdir(dir + "/datasets")
     if (purge) {
-        for (var f in listOf("history", "events", "panel", "mouse")) {
+        for (var f in listOf("history", "events", "panel", "mouse", "lang")) {
             unlink(dir + "/" + f)
         }
         rmdir(dir)
@@ -315,8 +316,9 @@ Int runDoctor() {
     println("  arquivos:   " + sourceRoot())
     println("  seus dados: " + dir + " (pasta 0700, arquivos 0600)")
     var idx = CommandIndex()
-    idx.load(loadLines(findShared(dir, "index/pt_BR.txt")))
-    println("  indice:     " + idx.entries.size + " entradas")
+    setLang(loadLines(dir + "/lang"))
+    idx.load(loadLines(indexPath(dir)))
+    println("  indice:     " + idx.entries.size + " entradas (" + indexFileName() + ")")
     println("  corpus:     " + loadLines(findShared(dir, "corpus/sessions.txt")).size + " linhas")
     println("  contribuicoes da comunidade: " + listFiles(findShared(dir, "datasets/contrib"), ".kofdata").size + " arquivo(s)")
     println("  aprendido com voce: " + loadLines(dir + "/events").size + " comandos, historico com " + loadLines(dir + "/history").size)
@@ -328,6 +330,31 @@ Int runDoctor() {
     println("  strace -f -e trace=network kofterm")
     println("(nao deve aparecer nenhuma chamada socket/connect do kofterm)")
     return 0
+}
+
+// `kofterm lang` mostra o idioma; `kofterm lang en` ou `pt` grava a escolha. Vale para as
+// janelas abertas depois (cada janela le o idioma ao abrir).
+Int runLang(List<String> args) {
+    var dir = dataDir()
+    if (args.size < 3) {
+        setLang(loadLines(dir + "/lang"))
+        println(tr("Idioma: português. Para inglês: kofterm lang en", "Language: English. For Portuguese: kofterm lang pt"))
+        return 0
+    }
+    var want = args.get(2)
+    if (want == "en") {
+        saveFile(dir + "/lang", "en\n")
+        println("KofTerm in English from the next window: type exit and open kofterm again.")
+        println("The index and the screens are in English; the ? recipes are still in Portuguese.")
+        return 0
+    }
+    if (want == "pt" || want == "pt_BR") {
+        saveFile(dir + "/lang", "pt\n")
+        println("KofTerm em português a partir da próxima janela: digite exit e abra o kofterm de novo.")
+        return 0
+    }
+    println("uso: kofterm lang [pt|en]")
+    return 2
 }
 
 // Executa um subcomando e devolve o codigo de saida, ou -1 se nao houver subcomando.
@@ -356,6 +383,9 @@ Int runSubcommand(List<String> args) {
     }
     if (cmd == "doctor") {
         return runDoctor()
+    }
+    if (cmd == "lang") {
+        return runLang(args)
     }
     if (cmd == "version" || cmd == "--version" || cmd == "-V") {
         println("KofTerm " + Version.NUMBER)

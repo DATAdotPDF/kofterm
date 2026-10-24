@@ -112,6 +112,8 @@ Depois, feche e abra de novo as janelas do KofTerm que estavam abertas: cada uma
 
 Experimente nesta ordem: digite `ls -la` devagar e olhe a coluna; rode `cat /etc/shadow` e veja a linha seguinte; peça `? qual meu ip`. Para testar tudo com calma, siga o [roteiro de teste](docs/TESTE_HUMANO.md).
 
+**Em inglês:** rode `kofterm lang en` e abra uma janela nova do KofTerm. O índice e todas as telas passam para o inglês; as receitas do `?` continuam em português por enquanto. `kofterm lang pt` volta.
+
 Outros comandos: `kofterm doctor` confere a instalação, `kofterm uninstall` remove o programa (o seu histórico fica; `--purge` apaga tudo).
 
 ## O que ele faz
@@ -171,7 +173,7 @@ Guia completo: [CONTRIBUTING.md](CONTRIBUTING.md) · [Código de Conduta](CODE_O
 | --- | --- |
 | **0.7.x** | Correções do teste da 0.7.0 e mais receitas de redes |
 | **0.8.0**, achar coisas (feita) | Busca no histórico com Ctrl+R, lista de candidatos ao completar arquivos e a rodinha do mouse rolando a saída antiga |
-| **0.9.0**, para todo mundo | Índice e receitas em inglês, emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais |
+| **0.9.0**, para todo mundo | Índice e telas em inglês (feito, `kofterm lang en`), receitas em inglês, emoji acima de U+FFFF e aviso claro quando o terminal for estreito demais |
 | **1.0.0**, estável | Testado por outras pessoas em várias distribuições e terminais, sem limitação que atrapalhe, formatos de arquivo estáveis |
 | **Depois** | Um modelo neural pequeno em KOF puro (`kof-nn`) que entende pedidos mais soltos, sempre apontando para receitas reais |
 
