@@ -660,7 +660,7 @@ class Session {
 
     List<String> searchPanel(Int w) {
         var out = listOf<String>()
-        out.add(esc() + "[7m" + pad(clip(tr(" Histórico · ↑↓ escolhe · Enter usa · Esc sai", " History · ↑↓ picks · Enter uses · Esc leaves"), w), w) + esc() + "[0m")
+        out.add(esc() + "[7m" + pad(fitParts(tr(" Histórico · ↑↓ escolhe · Enter usa · Esc sai", " History · ↑↓ picks · Enter uses · Esc leaves"), w), w) + esc() + "[0m")
         out.add("")
         if (searchHits.size == 0) {
             for (var t in wrapText(tr("Nada no histórico tem \"", "Nothing in the history has \"") + ed.line + tr("\". Apague uma letra ou Esc para voltar.", "\". Delete a letter, or Esc to go back."), w - 1)) {
@@ -692,7 +692,7 @@ class Session {
 
     List<String> pickPanel(Int w) {
         var out = listOf<String>()
-        out.add(esc() + "[7m" + pad(clip(tr(" Arquivos · TAB próximo · Enter usa · Esc sai", " Files · TAB next · Enter uses · Esc leaves"), w), w) + esc() + "[0m")
+        out.add(esc() + "[7m" + pad(fitParts(tr(" Arquivos · TAB próximo · Enter usa · Esc sai", " Files · TAB next · Enter uses · Esc leaves"), w), w) + esc() + "[0m")
         out.add("")
         var room = rows - 5
         var first = clampInt(pickSel - room / 2, 0, maxZero(pickList.size - room))
@@ -764,7 +764,7 @@ class Session {
         while (r < rows) {
             emit(cupRows.get(r))
             if (r == 0) {
-                emit(esc() + "[7m" + pad(clip(" ↑ " + view + tr(" linhas acima · role para baixo ou digite para voltar", " lines up · scroll down or type to go back"), w), w) + esc() + "[0m")
+                emit(esc() + "[7m" + pad(fitParts(" ↑ " + view + tr(" linhas acima · role para baixo ou digite para voltar", " lines up · scroll down or type to go back"), w), w) + esc() + "[0m")
             } else {
                 var g = vt.pastCount - view + r
                 if (g < 0) {
@@ -807,7 +807,7 @@ class Session {
 
     List<String> recipePanel(Int w) {
         var out = listOf<String>()
-        out.add(esc() + "[7m" + pad(clip(tr(" Receitas · TAB usa · F2 fecha", " Recipes (Portuguese) · TAB uses · F2 closes"), w), w) + esc() + "[0m")
+        out.add(esc() + "[7m" + pad(fitParts(tr(" Receitas · TAB usa · F2 fecha", " Recipes (Portuguese) · TAB uses · F2 closes"), w), w) + esc() + "[0m")
         out.add("")
         if (recipeHits.size == 0) {
             for (var t in wrapText(tr("Escreva depois do ? o que você quer fazer, do seu jeito. Exemplos:", "After the ?, write what you want to do. Recipes are in Portuguese for now. Examples:"), w - 1)) {
@@ -858,7 +858,12 @@ class Session {
     // fica parada e nada e redesenhado.
     panelDraw() {
         if (editing) {
-            panelContent = panelLines(panelWidth() - 1)
+            var w = panelWidth() - 1
+            var lines = panelLines(w)
+            panelContent = listOf<String>()
+            for (var l in lines) {
+                panelContent.add(clipVisible(l, w))
+            }
         }
         var r = 0
         while (r < rows) {
@@ -929,7 +934,7 @@ class Session {
             return recipePanel(w)
         }
         var out = listOf<String>()
-        out.add(esc() + "[7m" + pad(clip(tr(" Índice · F2 fecha · F1 busca", " Index · F2 closes · F1 search"), w), w) + esc() + "[0m")
+        out.add(esc() + "[7m" + pad(fitParts(tr(" Índice · F2 fecha · F1 busca", " Index · F2 closes · F1 search"), w), w) + esc() + "[0m")
         if (notice.length() > 0) {
             out.add("")
             for (var t in wrapText(notice, w - 1)) {
@@ -990,15 +995,23 @@ class Session {
                 }
                 out.add("")
                 out.add(" " + esc() + "[1;36m" + tr("O QUE DÁ PARA FAZER", "WHAT YOU CAN DO") + esc() + "[0m")
-                out.add(" " + esc() + "[33mTAB" + esc() + "[0m  " + tr("aceita o texto em cinza", "accepts the grey text"))
-                out.add(" " + esc() + "[33m↑ ↓" + esc() + "[0m  " + tr("comandos anteriores", "previous commands"))
-                out.add(" " + esc() + "[33mCtrl+R" + esc() + "[0m " + tr("busca no histórico", "searches the history"))
-                out.add(" " + esc() + "[33m" + tr("roda", "wheel") + esc() + "[0m " + tr("saída antiga (F3 liga/desliga)", "old output (F3 on/off)"))
-                out.add(" " + esc() + "[33mF1" + esc() + "[0m   " + tr("busca no índice", "searches the index"))
-                out.add(" " + esc() + "[33mF2" + esc() + "[0m   " + tr("mostra/esconde esta coluna", "shows/hides this column"))
-                out.add(" " + esc() + "[33m?" + esc() + "[0m    " + tr("peça do seu jeito:", "recipes, in Portuguese:"))
+                keyRow(out, "TAB", tr("aceita o texto em cinza", "accepts the grey text"), w)
+                keyRow(out, "↑ ↓", tr("comandos anteriores", "previous commands"), w)
+                keyRow(out, "Ctrl+R", tr("busca no histórico", "searches the history"), w)
+                keyRow(out, tr("roda", "wheel"), tr("saída antiga (F3 liga/desliga)", "old output (F3 on/off)"), w)
+                keyRow(out, "F1", tr("busca no índice", "searches the index"), w)
+                keyRow(out, "F2", tr("mostra/esconde esta coluna", "shows/hides this column"), w)
+                keyRow(out, "?", tr("peça do seu jeito:", "recipes, in Portuguese:"), w)
                 for (var ex in listOf("? instalar o htop", "? quanto espaço sobrou", "? achar arquivo relatorio", "? qual meu ip", "? acessar root")) {
-                    out.add("      " + esc() + "[90m" + clip(ex, w - 7) + esc() + "[0m")
+                    var first = true
+                    for (var t in wrapText(ex, w - 9)) {
+                        if (first) {
+                            out.add("        " + esc() + "[90m" + t + esc() + "[0m")
+                            first = false
+                        } else {
+                            out.add("          " + esc() + "[90m" + t + esc() + "[0m")
+                        }
+                    }
                 }
                 out.add("")
                 for (var t in wrapText(tr("Experimente: digite ls -la e veja cada opção explicada aqui.", "Try it: type ls -la and see each option explained here."), w - 1)) {
@@ -1090,6 +1103,19 @@ class Session {
             }
         }
         return out
+    }
+
+    // Uma tecla da lista "o que dá para fazer": a explicacao quebra nos espacos, alinhada.
+    keyRow(List<String> out, String key, String desc, Int w) {
+        var first = true
+        for (var t in wrapText(desc, w - 9)) {
+            if (first) {
+                out.add(" " + esc() + "[33m" + pad(key, 6) + esc() + "[0m " + t)
+                first = false
+            } else {
+                out.add("        " + t)
+            }
+        }
     }
 
     panelOptions(List<String> out, List<Opt> opts, Int w) {

@@ -14,6 +14,7 @@ English for the index and the screens. Portuguese stays the default.
 ### Fixed
 - The welcome line breaks between items, never in the middle of a word (it used to show "mous / e")
 - F1 tab: the name column grows to the longest name in the list (`/etc/resolv.conf` was cut to `/etc/resolv.`), and a description longer than the screen ends in `…` instead of stopping mid-word at the edge. In a command's page, a long option name (`--remove-home`) goes on its own line, like in the column
+- The column never draws past its border. In a narrow window, long lines of the key list used to spill into the next line of the Bash area ("a", "desliga)", "luna" left behind on the left); now every column line is cut to the column, the key list and the `?` examples wrap at spaces, and a header that does not fit drops its last items whole ("Índice · F2 fecha") instead of stopping mid-word
 
 ## [0.8.0] - 23/10/2026
 

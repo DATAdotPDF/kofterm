@@ -367,6 +367,71 @@ List<String> wrapText(String text, Int width) {
     return lines
 }
 
+// Corta um texto com cores (ESC [ ... letra) em `n` colunas visiveis; as cores nao contam.
+// Uma linha da coluna mais larga que a coluna passaria da borda e o terminal a quebraria
+// para o comeco da linha de baixo, em cima da area do bash.
+String clipVisible(String s, Int n) {
+    var count = 0
+    var i = 0
+    while (i < s.length()) {
+        if (s.charAt(i) as Int == 27) {
+            var j = i + 1
+            if (j < s.length() && s.charAt(j) as Int == 91) {
+                j = j + 1
+                while (j < s.length() && (s.charAt(j) as Int) < 64) {
+                    j = j + 1
+                }
+            }
+            i = j + 1
+        } else {
+            if (count == n) {
+                return s.substring(0, i)
+            }
+            count = count + 1
+            i = i + 1
+        }
+    }
+    return s
+}
+
+// Um cabecalho "A · B · C" que nao cabe perde os ultimos itens inteiros, nunca o meio de uma
+// palavra; se nem o primeiro cabe, corta.
+String fitParts(String s, Int w) {
+    var parts = splitOn(s, " · ")
+    var n = parts.size
+    while (n > 1) {
+        var out = parts.get(0)
+        var k = 1
+        while (k < n) {
+            out = out + " · " + parts.get(k)
+            k = k + 1
+        }
+        if (out.length() <= w) {
+            return out
+        }
+        n = n - 1
+    }
+    if (s.length() <= w || parts.get(0).length() <= w) {
+        return parts.get(0)
+    }
+    return parts.get(0).substring(0, w)
+}
+
+test "fitParts tira itens inteiros do fim" {
+    assert(fitParts(" Índice · F2 fecha · F1 busca", 40) == " Índice · F2 fecha · F1 busca")
+    assert(fitParts(" Índice · F2 fecha · F1 busca", 27) == " Índice · F2 fecha")
+    assert(fitParts(" Índice · F2 fecha · F1 busca", 10) == " Índice")
+    assert(fitParts(" Índice · F2 fecha", 4) == " Índ")
+}
+
+test "clipVisible corta nas colunas visiveis e ignora as cores" {
+    var e = "\u001b"
+    assert(clipVisible("abcdef", 4) == "abcd")
+    assert(clipVisible("abc", 4) == "abc")
+    assert(clipVisible(" " + e + "[33mroda" + e + "[0m saída", 7) == " " + e + "[33mroda" + e + "[0m s")
+    assert(clipVisible(e + "[1;36mÍndice" + e + "[0m", 3) == e + "[1;36mÍnd")
+}
+
 // Entrada ou uma entrada vazia (o KOF exige checar null antes de usar um Entry?).
 Entry must(Entry? e) {
     if (e != null) {
