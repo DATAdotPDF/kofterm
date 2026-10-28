@@ -2,6 +2,12 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
+## [Unreleased]
+
+### Added
+- A cryptography challenge for students (`desafios/cripto`, in Portuguese): seven exercises, one for each group of JCrypTool's Crypto Explorer (classical, symmetric, asymmetric, hash, MAC, random and signature), each solvable in JCrypTool and in the terminal. Answers are checked by their SHA-256, and the full solutions are in `SOLUCOES.md`
+- The `openssl` index entry shows how to decrypt AES, compute an HMAC and verify a signature
+
 ## [0.9.1] - 23/10/2026
 
 Emoji no longer close KofTerm, and a narrow window says why the column is gone.

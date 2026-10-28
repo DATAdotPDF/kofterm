@@ -1,0 +1,1 @@
+Relatorio de varredura: porta 23 aberta no host 10.0.0.5.

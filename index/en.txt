@@ -935,6 +935,9 @@ $ xxd file | head | The first bytes in hex.
 $ openssl s_client -connect kali.org:443 | Opens TLS and shows the certificate (Ctrl-C quits).
 $ openssl rand -base64 16 | Generates a random password.
 $ openssl dgst -sha256 file | SHA-256 hash.
+$ openssl enc -d -aes-128-ecb -K HEXKEY -in cipher.bin | Decrypts AES-128 with the key in hexadecimal.
+$ openssl dgst -sha256 -hmac 'key' msg.txt | HMAC-SHA256: a hash only someone with the key can recompute.
+$ openssl dgst -sha256 -verify pub.pem -signature doc.sig doc.txt | Checks a digital signature with the public key.
 @ https://docs.openssl.org/master/man1/openssl/
 
 # diff

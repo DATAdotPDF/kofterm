@@ -114,6 +114,8 @@ Experimente nesta ordem: digite `ls -la` devagar e olhe a coluna; rode `cat /etc
 
 **Em inglês:** rode `kofterm lang en` e abra uma janela nova do KofTerm. O índice, todas as telas e as receitas do `?` passam para o inglês (`? install htop`). `kofterm lang pt` volta.
 
+**Para estudar:** o [desafio de criptografia](desafios/cripto/README.md) tem sete exercícios (César, AES, RSA, hash, HMAC, números aleatórios e assinatura) para resolver no JCrypTool e no terminal, com a coluna explicando cada comando do `openssl`.
+
 Outros comandos: `kofterm doctor` confere a instalação, `kofterm uninstall` remove o programa (o seu histórico fica; `--purge` apaga tudo).
 
 ## O que ele faz

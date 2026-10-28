@@ -1,0 +1,4 @@
+# Hashes, HMACs e assinaturas dependem de cada byte: nada aqui pode virar CRLF no checkout.
+* text eol=lf
+*.bin binary
+*.sig binary
