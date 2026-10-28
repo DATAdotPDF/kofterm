@@ -1,5 +1,7 @@
 # Desafio: criptografia na prática
 
+[English version](en/README.md)
+
 Sete desafios curtos, um para cada grupo do **Crypto Explorer** do JCrypTool: clássico, simétrico,
 assimétrico, hash, MAC, números aleatórios e assinatura. Cada um esconde uma resposta que só aparece
 quando o algoritmo é usado do jeito certo.

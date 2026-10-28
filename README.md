@@ -114,7 +114,7 @@ Try this: type `ls -la` slowly and watch the column; run `cat /etc/shadow` and l
 
 **In English:** run `kofterm lang en` and open a new KofTerm window. The index, every screen and the `?` recipes switch to English (`? install htop`). `kofterm lang pt` switches back.
 
-**To study:** the [cryptography challenge](desafios/cripto/README.md) (Portuguese) has seven exercises (Caesar, AES, RSA, hash, HMAC, random numbers and signatures) to solve in JCrypTool and in the terminal, with the column explaining each `openssl` command.
+**To study:** the [cryptography challenge](desafios/cripto/en/README.md) has seven exercises (Caesar, AES, RSA, hash, HMAC, random numbers and signatures) to solve in JCrypTool and in the terminal, with the column explaining each `openssl` command.
 
 Other commands: `kofterm doctor` checks the installation, `kofterm uninstall` removes the program (your history stays; `--purge` deletes everything).
 
