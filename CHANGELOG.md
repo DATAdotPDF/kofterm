@@ -2,11 +2,6 @@
 
 All notable changes to KofTerm are documented here. Dates are in DD/MM/YYYY.
 
-## [Unreleased]
-
-### Added
-- The `openssl` index entry shows how to decrypt AES, compute an HMAC and verify a signature
-
 ## [0.9.1] - 23/10/2026
 
 Emoji no longer close KofTerm, and a narrow window says why the column is gone.
