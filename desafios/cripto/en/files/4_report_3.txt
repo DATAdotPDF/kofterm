@@ -1,1 +1,0 @@
-Scan report: port 3389 open on host 10.0.0.1.

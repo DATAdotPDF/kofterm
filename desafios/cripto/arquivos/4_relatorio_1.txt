@@ -1,1 +1,0 @@
-Relatorio de varredura: 3 hosts ativos na rede do laboratorio.

@@ -1,1 +1,0 @@
-Scan report: 3 live hosts on the lab network.
